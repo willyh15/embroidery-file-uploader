@@ -2,7 +2,36 @@ import { useState } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 const [selectedStitches, setSelectedStitches] = useState([]);
 const [bulkStitchType, setBulkStitchType] = useState("satin");
+const [edits, setEdits] = useState([]);
+const ws = useRef(null);
 
+useEffect(() => {
+  ws.current = new WebSocket("ws://localhost:8080");
+
+  ws.current.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "update" && data.fileUrl === fileUrl) {
+      setEdits(data.edits);
+    }
+  };
+
+  return () => ws.current.close();
+}, [fileUrl]);
+
+const handleEdit = (x, y, stitchType) => {
+  const newEdits = [...edits, { x, y, stitchType }];
+  setEdits(newEdits);
+  
+  ws.current.send(JSON.stringify({ type: "edit", fileUrl, edits: newEdits }));
+};
+
+<button onClick={() => handleEdit(50, 50, "satin")}>Add Stitch</button>
+
+<ul>
+  {edits.map((edit, index) => (
+    <li key={index}>Stitch at ({edit.x}, {edit.y}) - {edit.stitchType}</li>
+  ))}
+</ul>
 const handleSelectStitch = (index) => {
   setSelectedStitches((prev) =>
     prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
