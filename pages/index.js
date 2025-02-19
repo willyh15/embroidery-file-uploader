@@ -1,6 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+
+const [enhancedFile, setEnhancedFile] = useState(null);
+
+const handleEnhanceEdges = async (fileUrl) => {
+  const response = await fetch("/api/enhance-edges", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl }),
+  });
+
+  const data = await response.json();
+  setEnhancedFile(data.enhancedFile);
+};
+
+<button onClick={() => handleEnhanceEdges(fileUrl)}>Enhance Edge Details</button>
+
+{enhancedFile && (
+  <div>
+    <h3>Enhanced Stitch File</h3>
+    <a href={enhancedFile} download>Download Enhanced File</a>
+  </div>
+)}
 const [hoopSize, setHoopSize] = useState(null);
 const [hoopSizes, setHoopSizes] = useState([]);
 
