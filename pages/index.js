@@ -5,6 +5,24 @@ export default function Home() {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
+  // Fetch existing uploaded files on load
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await fetch("/api/list-files");
+        const data = await response.json();
+        if (response.ok) {
+          setUploadedFiles(data.files);
+        } else {
+          console.error("Error fetching files:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching files:", error);
+      }
+    };
+    fetchFiles();
+  }, []);
+
   const handleUpload = async (event) => {
     const selectedFiles = Array.from(event.target.files);
     setFiles(selectedFiles);
