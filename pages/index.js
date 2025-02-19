@@ -1,7 +1,25 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+const [hoopSize, setHoopSize] = useState(null);
+const [hoopSizes, setHoopSizes] = useState([]);
 
+useEffect(() => {
+  const fetchHoopSizes = async () => {
+    const response = await fetch("/api/get-hoop-sizes");
+    const data = await response.json();
+    setHoopSizes(data.hoopSizes);
+  };
+  
+  fetchHoopSizes();
+}, []);
+
+<select onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}>
+  <option value="">Select Hoop Size</option>
+  {hoopSizes.map((size) => (
+    <option key={size.name} value={size.name}>{size.name} ({size.width}x{size.height} mm)</option>
+  ))}
+</select>
 const [resizedFile, setResizedFile] = useState(null);
 
 const handleResize = async (fileUrl) => {
