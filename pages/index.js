@@ -1,6 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+
+const [resizedFile, setResizedFile] = useState(null);
+
+const handleResize = async (fileUrl) => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/resize-design", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, hoopSize }),
+  });
+
+  const data = await response.json();
+  setResizedFile(data.resizedFile);
+};
+
+<button onClick={() => handleResize(fileUrl)}>Resize for Hoop</button>
+
+{resizedFile && (
+  <div>
+    <h3>Resized File</h3>
+    <a href={resizedFile} download>Download Resized Design</a>
+  </div>
+)}
 const [rotatedFile, setRotatedFile] = useState(null);
 const [alignmentGuide, setAlignmentGuide] = useState(null);
 const [previewFile, setPreviewFile] = useState(null);
