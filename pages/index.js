@@ -15,6 +15,25 @@ export default function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredFiles, setFilteredFiles] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await fetch(`/api/list-files?page=${page}&limit=10`);
+        const data = await response.json();
+        if (response.ok) {
+          setUploadedFiles(data.files);
+          setTotalPages(data.totalPages);
+        }
+      } catch (error) {
+        console.error("Error fetching files:", error);
+      }
+    };
+    fetchFiles();
+  }, [page]);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -243,3 +262,22 @@ return (
   ))}
 </ul>
 
+  return (
+    <div>
+      <h2>Uploaded Files</h2>
+      <ul>
+        {uploadedFiles.map((url, index) => (
+          <li key={index}>
+            <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+          </li>
+        ))}
+      </ul>
+
+      <div>
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
+        <span> Page {page} of {totalPages} </span>
+        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
+      </div>
+    </div>
+  );
+}
