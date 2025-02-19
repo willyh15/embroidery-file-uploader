@@ -10,6 +10,23 @@ export default async function handler(req, res) {
 
   const userFolder = `users/${session.user.username}/`; // Store files in user-specific folders
 
+  const expiryDays = 30; // Files auto-delete after 30 days
+
+try {
+  for (const file of files) {
+    const filePath = `${userFolder}${file.name}`;
+    const { url } = await put(filePath, file, { access: "public" });
+
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + expiryDays);
+
+    uploadedFiles.push({ url, expiryDate });
+  }
+
+  return res.status(200).json({ urls: uploadedFiles });
+}
+
+
   const files = req.body.files;
   if (!files || files.length === 0) {
     return res.status(400).json({ error: "No files provided" });
