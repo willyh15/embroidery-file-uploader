@@ -1,7 +1,35 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+const [fileVersions, setFileVersions] = useState([]);
 
+const fetchVersions = async (fileUrl) => {
+  const response = await fetch(`/api/get-file-versions?fileUrl=${fileUrl}`);
+  const data = await response.json();
+  setFileVersions(data.versions);
+};
+
+const rollbackFile = async (fileUrl, version) => {
+  const response = await fetch("/api/rollback-file", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, version }),
+  });
+
+  const data = await response.json();
+  alert(`File reverted to version ${version}`);
+};
+
+<button onClick={() => fetchVersions(fileUrl)}>View File Versions</button>
+
+<ul>
+  {fileVersions.map((v, index) => (
+    <li key={index}>
+      Version: {new Date(v.version).toLocaleString()}
+      <button onClick={() => rollbackFile(fileUrl, v.version)}>Rollback</button>
+    </li>
+  ))}
+</ul>
 const [enhancedFile, setEnhancedFile] = useState(null);
 
 const handleEnhanceEdges = async (fileUrl) => {
