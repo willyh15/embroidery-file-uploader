@@ -51,6 +51,42 @@ export default function Home() {
     fetchFiles();
   }, []);
 
+  const handleBulkUpload = async (event) => {
+  const selectedFiles = Array.from(event.target.files);
+  if (!selectedFiles.length) return;
+
+  setUploading(true);
+  setUploadProgress(0);
+  setMessage("");
+
+  const formData = new FormData();
+  selectedFiles.forEach((file) => formData.append("files", file));
+
+  try {
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Upload failed");
+    }
+
+    const data = await response.json();
+    setUploadedFiles([...uploadedFiles, ...data.urls]);
+    setMessage("Bulk Upload Successful!");
+  } catch (error) {
+    setMessage("Upload failed. Please try again.");
+    console.error("Error uploading files:", error);
+  } finally {
+    setUploading(false);
+    setUploadProgress(100);
+  }
+};
+
+<input type="file" multiple onChange={handleBulkUpload} />
+
+
   const handleSearch = (query) => {
     setSearchQuery(query);
     const filtered = uploadedFiles.filter((url) =>
