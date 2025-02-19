@@ -3,7 +3,27 @@ import { signIn, signOut, useSession } from "next-auth/react";
 
 const [rotatedFile, setRotatedFile] = useState(null);
 const [alignmentGuide, setAlignmentGuide] = useState(null);
+const [previewFile, setPreviewFile] = useState(null);
 
+const handlePreview = async (fileUrl) => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/hoop-preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, hoopSize }),
+  });
+
+  const data = await response.json();
+  setPreviewFile(data.previewFile);
+};
+
+<button onClick={() => handlePreview(fileUrl)}>Preview in Hoop</button>
+
+{previewFile && <img src={previewFile} alt="Hoop Preview" />}
 const fetchAlignmentGuide = async () => {
   if (!hoopSize) {
     alert("Please select a hoop size first!");
