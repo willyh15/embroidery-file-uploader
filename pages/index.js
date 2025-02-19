@@ -1,7 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+const [splitFiles, setSplitFiles] = useState([]);
 
+const handleSplitDesign = async (fileUrl) => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/split-design", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, hoopSize }),
+  });
+
+  const data = await response.json();
+  setSplitFiles(data.splitFiles);
+};
+
+<button onClick={() => handleSplitDesign(fileUrl)}>Split Design for Multi-Hoop</button>
+
+<ul>
+  {splitFiles.map((file, index) => (
+    <li key={index}>
+      <a href={file} download>Download Hoop Part {index + 1}</a>
+    </li>
+  ))}
+</ul>
 
 export default function Home() {
   const { data: session } = useSession();
