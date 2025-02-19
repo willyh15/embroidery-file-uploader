@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+
+
 
 export default function Home() {
+  const { data: session } = useSession();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -117,8 +121,19 @@ export default function Home() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Embroidery File Uploader</h1>
+      {session ? (
+        <>
+          <p>Welcome, {session.user.username}!</p>
+          <button onClick={() => signOut()}>Logout</button>
 
+        {/* File upload UI */}
+        </>
+      ) : (
+        <>
+          <p>Please log in to upload files.</p>
+          <button onClick={() => signIn()}>Login</button>
+      <h1>Embroidery File Uploader</h1>
+      
       <div
         ref={dropRef}
         style={{
