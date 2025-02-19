@@ -29,7 +29,7 @@ export default function Home() {
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("file", selectedFiles[0]); // Uploading one file at a time for now
+    selectedFiles.forEach((file) => formData.append("files", file));
 
     try {
       const response = await fetch("/api/upload", {
@@ -39,7 +39,7 @@ export default function Home() {
 
       const data = await response.json();
       if (response.ok) {
-        setUploadedFiles([...uploadedFiles, data.url]);
+        setUploadedFiles([...uploadedFiles, ...data.urls]);
       } else {
         console.error("Upload failed:", data.error);
       }
