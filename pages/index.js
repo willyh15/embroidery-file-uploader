@@ -281,3 +281,19 @@ return (
     </div>
   );
 }
+
+const generateShareableLink = (fileUrl) => {
+  return `${window.location.origin}/view?file=${encodeURIComponent(fileUrl)}`;
+};
+
+<ul>
+  {uploadedFiles.map((url, index) => (
+    <li key={index}>
+      <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+      <button onClick={() => navigator.clipboard.writeText(generateShareableLink(url))}>
+        Copy Shareable Link
+      </button>
+    </li>
+  ))}
+</ul>
+
