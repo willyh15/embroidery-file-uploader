@@ -4,6 +4,24 @@ import { signIn, signOut, useSession } from "next-auth/react";
 const [hoopSize, setHoopSize] = useState(null);
 const [hoopSizes, setHoopSizes] = useState([]);
 
+const [fabricType, setFabricType] = useState("cotton");
+const [edgeCount, setEdgeCount] = useState(500);
+const [recommendedDensity, setRecommendedDensity] = useState(null);
+
+const handleRecommendDensity = async () => {
+  const response = await fetch("/api/recommend-stitch-density", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fabricType, edgeCount }),
+  });
+
+  const data = await response.json();
+  setRecommendedDensity(data.recommendedDensity);
+};
+
+<button onClick={handleRecommendDensity}>Get Stitch Density Recommendation</button>
+
+{recommendedDensity && <p>Recommended Stitch Density: {recommendedDensity}</p>}
 useEffect(() => {
   const fetchHoopSizes = async () => {
     const response = await fetch("/api/get-hoop-sizes");
