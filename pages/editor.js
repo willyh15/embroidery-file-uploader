@@ -1,8 +1,43 @@
 import { useState } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+const [selectedStitches, setSelectedStitches] = useState([]);
+const [bulkStitchType, setBulkStitchType] = useState("satin");
 
+const handleSelectStitch = (index) => {
+  setSelectedStitches((prev) =>
+    prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+  );
+};
+
+const applyBulkEdit = async () => {
+  const response = await fetch("/api/bulk-edit-stitches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, edits: selectedStitches.map((i) => ({ ...edits[i], stitchType: bulkStitchType })) }),
+  });
+
+  alert("Bulk edit applied!");
+};
+
+<ul>
+  {edits.map((edit, index) => (
+    <li key={index} onClick={() => handleSelectStitch(index)} style={{ cursor: "pointer", background: selectedStitches.includes(index) ? "lightgray" : "white" }}>
+      Stitch at ({edit.x}, {edit.y}) - {edit.stitchType}
+    </li>
+  ))}
+</ul>
+
+<select onChange={(e) => setBulkStitchType(e.target.value)}>
+  <option value="satin">Satin</option>
+  <option value="running">Running</option>
+  <option value="fill">Fill</option>
+</select>
+
+<button onClick={applyBulkEdit}>Apply Bulk Edit</button>
 const [collabEdits, setCollabEdits] = useState([]);
 const ws = useRef(null);
+
+
 
 useEffect(() => {
   ws.current = new WebSocket("ws://localhost:8080");
