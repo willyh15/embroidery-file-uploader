@@ -2,7 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 const [rotatedFile, setRotatedFile] = useState(null);
+const [alignmentGuide, setAlignmentGuide] = useState(null);
 
+const fetchAlignmentGuide = async () => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/generate-hoop-guides", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ hoopSize }),
+  });
+
+  const data = await response.json();
+  setAlignmentGuide(data.guideFile);
+};
+
+<button onClick={fetchAlignmentGuide}>Show Hoop Guides</button>
+
+{alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
 const handleAutoRotate = async (fileUrl) => {
   if (!hoopSize) {
     alert("Please select a hoop size first!");
