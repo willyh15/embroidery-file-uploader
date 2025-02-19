@@ -8,6 +8,35 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
+  const userFolder = `users/${session.user.username}/`; // Store files in user-specific folders
+
+  const files = req.body.files;
+  if (!files || files.length === 0) {
+    return res.status(400).json({ error: "No files provided" });
+  }
+
+  const uploadedFiles = [];
+
+  try {
+    for (const file of files) {
+      const filePath = `${userFolder}${file.name}`;
+      const { url } = await put(filePath, file, { access: "public" });
+      uploadedFiles.push(url);
+    }
+
+    return res.status(200).json({ urls: uploadedFiles });
+  } catch (error) {
+    return res.status(500).json({ error: "Upload failed", details: error.message });
+  }
+}
+
+export default async function handler(req, res) {
+  const session = await getSession({ req });
+
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
