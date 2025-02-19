@@ -11,8 +11,8 @@ export default NextAuth({
       },
       async authorize(credentials) {
         const users = [
-          { id: "1", username: "admin", password: "password123" },
-          { id: "2", username: "user", password: "userpass" },
+          { id: "1", username: "admin", password: "password123", role: "admin" },
+          { id: "2", username: "user", password: "userpass", role: "user" },
         ];
 
         const user = users.find(
@@ -24,5 +24,17 @@ export default NextAuth({
       },
     }),
   ],
+  callbacks: {
+    async session({ session, token }) {
+      session.user.role = token.role;
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 });
