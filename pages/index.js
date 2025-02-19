@@ -1,6 +1,29 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+const [isValidHoopSize, setIsValidHoopSize] = useState(null);
+
+const validateHoopSize = async (fileUrl) => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/validate-hoop-size", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, hoopSize }),
+  });
+
+  const data = await response.json();
+  setIsValidHoopSize(data.valid);
+};
+
+<button onClick={() => validateHoopSize(fileUrl)}>Validate Hoop Size</button>
+
+{isValidHoopSize !== null && (
+  <p>{isValidHoopSize ? "Design fits within hoop size ✅" : "Design exceeds hoop size ❌"}</p>
+)}
 const [splitFiles, setSplitFiles] = useState([]);
 
 const handleSplitDesign = async (fileUrl) => {
