@@ -12,6 +12,34 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
   const dropRef = useRef(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredFiles, setFilteredFiles] = useState([]);
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await fetch("/api/list-files");
+        const data = await response.json();
+        if (response.ok) {
+          setUploadedFiles(data.files);
+          setFilteredFiles(data.files);
+        }
+      } catch (error) {
+        console.error("Error fetching files:", error);
+      }
+    };
+    fetchFiles();
+  }, []);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    const filtered = uploadedFiles.filter((url) =>
+      url.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredFiles(filtered);
+  };
+
 
   // Fetch existing uploaded files on load
   useEffect(() => {
@@ -183,3 +211,35 @@ export default function Home() {
     </div>
   );
 }
+
+return (
+    <div>
+      <input
+        type="text"
+        placeholder="Search files..."
+        value={searchQuery}
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      <ul>
+        {filteredFiles.map((url, index) => (
+          <li key={index}>
+            <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+<ul>
+  {filteredFiles.map((url, index) => (
+    <li key={index} style={{ marginBottom: "10px" }}>
+      {url.match(/\.(png|jpe?g|webp)$/) ? (
+        <img src={url} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", marginRight: "10px" }} />
+      ) : (
+        <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+      )}
+    </li>
+  ))}
+</ul>
+
