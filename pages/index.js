@@ -1,6 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
+const [rotatedFile, setRotatedFile] = useState(null);
+
+const handleAutoRotate = async (fileUrl) => {
+  if (!hoopSize) {
+    alert("Please select a hoop size first!");
+    return;
+  }
+
+  const response = await fetch("/api/rotate-design", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, hoopSize }),
+  });
+
+  const data = await response.json();
+  setRotatedFile(data.rotatedFile);
+};
+
+<button onClick={() => handleAutoRotate(fileUrl)}>Auto Rotate for Best Fit</button>
+
+{rotatedFile && (
+  <div>
+    <h3>Optimized Orientation</h3>
+    <a href={rotatedFile} download>Download Rotated Design</a>
+  </div>
+)}
 const [isValidHoopSize, setIsValidHoopSize] = useState(null);
 const [adjustedFile, setAdjustedFile] = useState(null);
 const [scaleFactor, setScaleFactor] = useState(1.0);
