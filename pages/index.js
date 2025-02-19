@@ -2,7 +2,24 @@ import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 const [isValidHoopSize, setIsValidHoopSize] = useState(null);
+const [adjustedFile, setAdjustedFile] = useState(null);
+const [scaleFactor, setScaleFactor] = useState(1.0);
 
+const handleAdjustColors = async (fileUrl) => {
+  const response = await fetch("/api/adjust-thread-colors", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, scaleFactor }),
+  });
+
+  const data = await response.json();
+  setAdjustedFile(data.adjustedFile);
+};
+
+<input type="range" min="0.5" max="2" step="0.1" value={scaleFactor} onChange={(e) => setScaleFactor(e.target.value)} />
+<button onClick={() => handleAdjustColors(fileUrl)}>Adjust Thread Colors</button>
+
+{adjustedFile && <img src={adjustedFile} alt="Adjusted Thread Colors" />}
 const validateHoopSize = async (fileUrl) => {
   if (!hoopSize) {
     alert("Please select a hoop size first!");
