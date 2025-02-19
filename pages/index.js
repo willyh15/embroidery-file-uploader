@@ -59,6 +59,20 @@ export default function Home() {
   setUploadProgress(0);
   setMessage("");
 
+  const handleBulkDownload = async () => {
+  for (const file of uploadedFiles) {
+    const link = document.createElement("a");
+    link.href = file;
+    link.download = file.split("/").pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
+<button onClick={handleBulkDownload}>Download All Files</button>
+
+
   const formData = new FormData();
   selectedFiles.forEach((file) => formData.append("files", file));
 
