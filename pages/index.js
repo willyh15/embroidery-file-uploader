@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const [files, setFiles] = useState([]);
@@ -6,6 +6,8 @@ export default function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const dropRef = useRef(null);
 
   // Fetch existing uploaded files on load
   useEffect(() => {
@@ -25,8 +27,10 @@ export default function Home() {
     fetchFiles();
   }, []);
 
-  const handleUpload = async (event) => {
-    const selectedFiles = Array.from(event.target.files);
+  // Handle file upload via input or drag & drop
+  const handleUpload = async (selectedFiles) => {
+    if (!selectedFiles.length) return;
+
     setFiles(selectedFiles);
     setUploading(true);
     setUploadProgress(0);
@@ -57,6 +61,13 @@ export default function Home() {
     }
   };
 
+  // Handle drag & drop
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const selectedFiles = Array.from(event.dataTransfer.files);
+    handleUpload(selectedFiles);
+  };
+
   const handleDelete = async (fileUrl) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
 
@@ -79,28 +90,81 @@ export default function Home() {
     }
   };
 
+  // Highlight drop zone
+  useEffect(() => {
+    const dropArea = dropRef.current;
+    if (!dropArea) return;
+
+    const handleDragOver = (event) => {
+      event.preventDefault();
+      dropArea.style.border = "2px dashed #4CAF50";
+    };
+
+    const handleDragLeave = () => {
+      dropArea.style.border = "2px dashed #ccc";
+    };
+
+    dropArea.addEventListener("dragover", handleDragOver);
+    dropArea.addEventListener("dragleave", handleDragLeave);
+    dropArea.addEventListener("drop", handleDrop);
+
+    return () => {
+      dropArea.removeEventListener("dragover", handleDragOver);
+      dropArea.removeEventListener("dragleave", handleDragLeave);
+      dropArea.removeEventListener("drop", handleDrop);
+    };
+  }, []);
+
   return (
     <div style={{ padding: 20 }}>
       <h1>Embroidery File Uploader</h1>
 
-      <input type="file" multiple onChange={handleUpload} />
-      {uploading && <progress value={uploadProgress} max="100"></progress>}
+      <div
+        ref={dropRef}
+        style={{
+          border: "2px dashed #ccc",
+          padding: "20px",
+          textAlign: "center",
+          marginBottom: "10px",
+        }}
+      >
+        Drag & Drop files here or
+        <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
+      </div>
 
+      {uploading && <progress value={uploadProgress} max="100"></progress>}
       {message && <p>{message}</p>}
 
-      <h2>Uploaded Files</h2>
-      <ul>
-        {uploadedFiles.map((url, index) => (
-          <li key={index} style={{ marginBottom: "10px" }}>
-            {url.match(/\.(png|jpe?g|webp)$/) ? (
-              <img src={url} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", marginRight: "10px" }} />
-            ) : (
-              <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
-            )}
-            <button onClick={() => handleDelete(url)} style={{ marginLeft: "10px", cursor: "pointer" }}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      <button onClick={() => setShowModal(true)}>View Files</button>
+
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: "#fff",
+            padding: "20px",
+            boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <h2>Uploaded Files</h2>
+          <button onClick={() => setShowModal(false)}>Close</button>
+          <ul>
+            {uploadedFiles.map((url, index) => (
+              <li key={index} style={{ marginBottom: "10px" }}>
+                {url.match(/\.(png|jpe?g|webp)$/) ? (
+                  <img src={url} alt="Preview" style={{ width: "100px", height: "100px", objectFit: "cover", marginRight: "10px" }} />
+                ) : (
+                  <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+                )}
+                <button onClick={() => handleDelete(url)} style={{ marginLeft: "10px", cursor: "pointer" }}>Delete</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
