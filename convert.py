@@ -5,6 +5,35 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def optimize_hoop_placement(image_path, hoop_width, hoop_height):
+    img = Image.open(image_path)
+
+    aspect_ratio = img.width / img.height
+    hoop_ratio = hoop_width / hoop_height
+
+    if aspect_ratio > hoop_ratio:
+        new_width = hoop_width
+        new_height = int(hoop_width / aspect_ratio)
+    else:
+        new_height = hoop_height
+        new_width = int(hoop_height * aspect_ratio)
+
+    optimized_img = img.resize((new_width, new_height), Image.ANTIALIAS)
+    optimized_path = image_path.replace(".png", "_optimized_hoop.png")
+    optimized_img.save(optimized_path)
+
+    return optimized_path
+
+@app.route("/optimize-hoop-placement", methods=["POST"])
+def optimize_hoop():
+    data = request.json
+    if "fileUrl" not in data or "hoopSize" not in data:
+        return jsonify({"error": "Missing file URL or hoop size"}), 400
+
+    optimized_path = optimize_hoop_placement(data["fileUrl"], data["hoopSize"]["width"], data["hoopSize"]["height"])
+
+    return jsonify({"optimizedFile": optimized_path})
+
 def blend_thread_colors(image_path):
     img = Image.open(image_path).convert("RGBA")
     blended_img = img.filter(ImageFilter.GaussianBlur(radius=2))  # Softens color transitions
