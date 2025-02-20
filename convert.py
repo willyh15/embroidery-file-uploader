@@ -5,6 +5,34 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def refine_stitch_path(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    refined_stitches = []
+    for i, stitch in enumerate(pattern.stitches[:-1]):
+        x1, y1, command1 = stitch
+        x2, y2, command2 = pattern.stitches[i + 1]
+
+        if command1 == command2:  
+            weight = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+            if weight < 5:  
+                continue  
+
+        refined_stitches.append(stitch)
+
+    return refined_stitches
+
+@app.route("/refine-stitch-flow", methods=["POST"])
+def refine_stitch():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    refined_flow = refine_stitch_path(data["fileUrl"])
+
+    return jsonify({"refinedFlow": refined_flow})
+
 def estimate_thread_cost(embroidery_file, thread_price_per_meter=0.02):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
