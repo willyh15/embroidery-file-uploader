@@ -13,6 +13,22 @@ from PIL import Image
 from pyembroidery import EmbPattern
 import json
 
+from PIL import Image
+
+@app.route("/validate-hoop-size", methods=["POST"])
+def validate_hoop_size():
+    data = request.json
+    if "fileUrl" not in data or "hoopSize" not in data:
+        return jsonify({"error": "Missing file URL or hoop size"}), 400
+
+    img = Image.open(data["fileUrl"])
+    hoop_width, hoop_height = data["hoopSize"]["width"], data["hoopSize"]["height"]
+
+    if img.width > hoop_width or img.height > hoop_height:
+        return jsonify({"valid": False, "error": "Design exceeds hoop size!"}), 400
+
+    return jsonify({"valid": True})
+
 def split_design_across_hoops(image_path, hoop_width, hoop_height):
     img = Image.open(image_path)
 
