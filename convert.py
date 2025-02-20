@@ -15,6 +15,31 @@ import json
 
 from PIL import Image
 
+import tensorflow as tf
+
+model = tf.keras.models.load_model("thread_matcher_model.h5")
+
+def adjust_thread_color(image_path, scale_factor):
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    
+    # Scale color brightness based on size change
+    adjusted_img = cv2.convertScaleAbs(img, alpha=1.0 + (scale_factor - 1.0) * 0.3, beta=0)
+
+    adjusted_path = image_path.replace(".png", "_color_adjusted.png")
+    cv2.imwrite(adjusted_path, adjusted_img)
+
+    return adjusted_path
+
+@app.route("/adjust-thread-colors", methods=["POST"])
+def adjust_thread_colors():
+    data = request.json
+    if "fileUrl" not in data or "scaleFactor" not in data:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    adjusted_path = adjust_thread_color(data["fileUrl"], data["scaleFactor"])
+
+    return jsonify({"adjusted_file": adjusted_path})
+
 @app.route("/validate-hoop-size", methods=["POST"])
 def validate_hoop_size():
     data = request.json
