@@ -5,6 +5,31 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def predict_thread_breaks(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    breakpoints = []
+    for i, stitch in enumerate(pattern.stitches[:-1]):
+        x1, y1, command1 = stitch
+        x2, y2, command2 = pattern.stitches[i + 1]
+
+        tension_factor = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5  
+        if tension_factor > 30:  
+            breakpoints.append(f"Potential thread break at stitch {i}")
+
+    return breakpoints
+
+@app.route("/predict-thread-breaks", methods=["POST"])
+def predict_breaks():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    breaks = predict_thread_breaks(data["fileUrl"])
+
+    return jsonify({"breakpoints": breaks})
+
 def correct_fabric_distortion(image_path, stretch_factor):
     img = Image.open(image_path)
     corrected_img = img.resize((int(img.width * stretch_factor), int(img.height * stretch_factor)), Image.ANTIALIAS)
