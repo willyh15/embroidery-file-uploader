@@ -13,6 +13,38 @@ from PIL import Image
 from pyembroidery import EmbPattern
 import json
 
+def split_design_across_hoops(image_path, hoop_width, hoop_height):
+    img = Image.open(image_path)
+
+    num_cols = img.width // hoop_width + (1 if img.width % hoop_width else 0)
+    num_rows = img.height // hoop_height + (1 if img.height % hoop_height else 0)
+
+    hoop_files = []
+    for row in range(num_rows):
+        for col in range(num_cols):
+            left = col * hoop_width
+            upper = row * hoop_height
+            right = min(left + hoop_width, img.width)
+            lower = min(upper + hoop_height, img.height)
+
+            cropped_img = img.crop((left, upper, right, lower))
+            split_path = image_path.replace(".png", f"_hoop_{row}_{col}.png")
+            cropped_img.save(split_path)
+            hoop_files.append(split_path)
+
+    return hoop_files
+
+@app.route("/split-design", methods=["POST"])
+def split_design():
+    data = request.json
+    if "fileUrl" not in data or "hoopSize" not in data:
+        return jsonify({"error": "Missing file URL or hoop size"}), 400
+
+    hoop_width, hoop_height = data["hoopSize"]["width"], data["hoopSize"]["height"]
+    split_files = split_design_across_hoops(data["fileUrl"], hoop_width, hoop_height)
+
+    return jsonify({"split_files": split_files})
+
 def extract_stitch_path(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
