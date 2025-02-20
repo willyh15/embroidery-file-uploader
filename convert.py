@@ -5,6 +5,29 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 import networkx as nx
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+def generate_stitch_density_heatmap(image_path):
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    heatmap, _ = np.histogram(img, bins=50)
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(np.reshape(heatmap, (10, 5)), cmap="coolwarm", annot=False)
+    heatmap_path = image_path.replace(".png", "_heatmap.png")
+    plt.savefig(heatmap_path)
+
+    return heatmap_path
+
+@app.route("/stitch-heatmap", methods=["POST"])
+def stitch_heatmap():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    heatmap_path = generate_stitch_density_heatmap(data["fileUrl"])
+
+    return jsonify({"heatmapFile": heatmap_path})
 
 def recommend_underlay_stitch(fabric_type, density):
     recommendations = {
