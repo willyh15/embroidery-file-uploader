@@ -4,6 +4,31 @@ import numpy as np
 from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
+import networkx as nx
+
+def optimize_stitch_path(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    G = nx.DiGraph()
+    for i, stitch in enumerate(pattern.stitches[:-1]):
+        x1, y1, _ = stitch
+        x2, y2, _ = pattern.stitches[i + 1]
+        G.add_edge(i, i + 1, weight=((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5)
+
+    optimized_path = list(nx.shortest_path(G, source=0, target=len(pattern.stitches) - 1))
+    
+    return optimized_path
+
+@app.route("/optimize-stitch-flow", methods=["POST"])
+def optimize_stitch_flow():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    optimized_flow = optimize_stitch_path(data["fileUrl"])
+
+    return jsonify({"optimizedFlow": optimized_flow})
 
 def estimate_thread_usage(embroidery_file):
     pattern = EmbPattern()
