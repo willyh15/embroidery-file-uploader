@@ -3,11 +3,18 @@ from PIL import Image
 import numpy as np
 from pyembroidery import EmbPattern, EmbThread, write_dst
 
-from flask import Flask, request, jsonify
-from PIL import Image
-import numpy as np
-from pyembroidery import EmbPattern, EmbThread, write_dst, write_pes, write_exp, write_jef, write_xxx
+from concurrent.futures import ThreadPoolExecutor
 
+executor = ThreadPoolExecutor(max_workers=4)
+
+@app.route("/optimize-stitch-flow", methods=["POST"])
+def optimize_stitch_async():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    future = executor.submit(optimize_stitch_path, data["fileUrl"])
+    return jsonify({"message": "Optimization started"})
 app = Flask(__name__)
 
 def image_to_embroidery(image_path, output_path, format="dst", density=1.0, scale=1.0):
