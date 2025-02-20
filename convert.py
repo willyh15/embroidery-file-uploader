@@ -5,6 +5,24 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def compensate_fabric_stretch(image_path, stretch_factor):
+    img = Image.open(image_path)
+    compensated_img = img.resize((int(img.width * stretch_factor), int(img.height * stretch_factor)), Image.ANTIALIAS)
+    compensated_path = image_path.replace(".png", "_stretch_compensated.png")
+    compensated_img.save(compensated_path)
+
+    return compensated_path
+
+@app.route("/compensate-stretch", methods=["POST"])
+def compensate_stretch():
+    data = request.json
+    if "fileUrl" not in data or "stretchFactor" not in data:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    compensated_path = compensate_fabric_stretch(data["fileUrl"], data["stretchFactor"])
+
+    return jsonify({"compensatedFile": compensated_path})
+
 def refine_multi_hoop_alignment(image_paths, hoop_width, hoop_height, overlap=10):
     images = [Image.open(path) for path in image_paths]
     total_width = sum(img.width for img in images) - (len(images) - 1) * overlap
