@@ -4,12 +4,13 @@ import { signIn, signOut, useSession } from "next-auth/react";
 export default function Home() {
   const { data: session } = useSession();
 
-  // File management state
+  // State for file management
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const dropRef = useRef(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredFiles, setFilteredFiles] = useState([]);
@@ -37,8 +38,6 @@ export default function Home() {
   const [adjustedFile, setAdjustedFile] = useState(null);
   const [scaleFactor, setScaleFactor] = useState(1.0);
   const [splitFiles, setSplitFiles] = useState([]);
-
-  const dropRef = useRef(null);
 
   // Fetch hoop sizes
   useEffect(() => {
@@ -101,7 +100,6 @@ export default function Home() {
 
   return (
     <div style={{ padding: 20 }}>
-      {/* Authentication */}
       {session ? (
         <>
           <p>Welcome, {session.user.username}!</p>
@@ -136,13 +134,6 @@ export default function Home() {
       {/* File Search */}
       <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
 
-      {/* Pagination */}
-      <div>
-        <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
-        <span> Page {page} of {totalPages} </span>
-        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
-      </div>
-
       {/* File List */}
       <ul>
         {filteredFiles.map((url, index) => (
@@ -152,8 +143,17 @@ export default function Home() {
         ))}
       </ul>
 
-      {/* File Processing Buttons */}
+      {/* Hoop Size Validation */}
       <button onClick={() => validateHoopSize(fileUrl)}>Validate Hoop Size</button>
+      {isValidHoopSize !== null && (
+        <p>{isValidHoopSize ? "Design fits within hoop size ✅" : "Design exceeds hoop size ❌"}</p>
+      )}
+
+      {/* Stitch Density Recommendation */}
+      <button onClick={handleRecommendDensity}>Get Stitch Density Recommendation</button>
+      {recommendedDensity && <p>Recommended Stitch Density: {recommendedDensity}</p>}
+
+      {/* Processing Buttons */}
       <button onClick={() => handleResize(fileUrl)}>Resize for Hoop</button>
       <button onClick={() => handlePreview(fileUrl)}>Preview in Hoop</button>
       <button onClick={fetchAlignmentGuide}>Show Hoop Guides</button>
@@ -162,6 +162,16 @@ export default function Home() {
       {previewFile && <img src={previewFile} alt="Hoop Preview" />}
       {alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
       {rotatedFile && <a href={rotatedFile} download>Download Rotated Design</a>}
+
+      {/* Bulk File Download */}
+      <button onClick={handleBulkDownload}>Download All Files</button>
+
+      {/* Pagination */}
+      <div>
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
+        <span> Page {page} of {totalPages} </span>
+        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
+      </div>
 
       {/* File Rollback */}
       <button onClick={() => fetchVersions(fileUrl)}>View File Versions</button>
@@ -174,9 +184,6 @@ export default function Home() {
         ))}
       </ul>
 
-      {/* Bulk File Download */}
-      <button onClick={handleBulkDownload}>Download All Files</button>
-
       {/* Shareable Links */}
       <ul>
         {uploadedFiles.map((url, index) => (
@@ -185,16 +192,6 @@ export default function Home() {
             <button onClick={() => navigator.clipboard.writeText(generateShareableLink(url))}>
               Copy Shareable Link
             </button>
-          </li>
-        ))}
-      </ul>
-
-      {/* File Splitting */}
-      <button onClick={() => handleSplitDesign(fileUrl)}>Split Design for Multi-Hoop</button>
-      <ul>
-        {splitFiles.map((file, index) => (
-          <li key={index}>
-            <a href={file} download>Download Hoop Part {index + 1}</a>
           </li>
         ))}
       </ul>
