@@ -5,6 +5,29 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def estimate_thread_usage(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    total_length = sum(
+        ((pattern.stitches[i][0] - pattern.stitches[i - 1][0]) ** 2 +
+         (pattern.stitches[i][1] - pattern.stitches[i - 1][1]) ** 2) ** 0.5
+        for i in range(1, len(pattern.stitches))
+    )
+
+    estimated_usage = total_length / 1000  # Convert to meters
+    return estimated_usage
+
+@app.route("/estimate-thread-usage", methods=["POST"])
+def estimate_thread():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    thread_usage = estimate_thread_usage(data["fileUrl"])
+
+    return jsonify({"threadUsage": thread_usage})
+
 def optimize_hoop_placement(image_path, hoop_width, hoop_height):
     img = Image.open(image_path)
 
