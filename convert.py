@@ -15,6 +15,31 @@ import json
 
 from PIL import Image
 
+def rotate_design_for_best_fit(image_path, hoop_width, hoop_height):
+    img = Image.open(image_path)
+    img_ratio = img.width / img.height
+    hoop_ratio = hoop_width / hoop_height
+
+    # Rotate only if it improves fit
+    if (img_ratio > 1 and hoop_ratio < 1) or (img_ratio < 1 and hoop_ratio > 1):
+        img = img.rotate(90, expand=True)
+
+    rotated_path = image_path.replace(".png", "_rotated.png")
+    img.save(rotated_path)
+
+    return rotated_path
+
+@app.route("/rotate-design", methods=["POST"])
+def rotate_design():
+    data = request.json
+    if "fileUrl" not in data or "hoopSize" not in data:
+        return jsonify({"error": "Missing file URL or hoop size"}), 400
+
+    hoop_width, hoop_height = data["hoopSize"]["width"], data["hoopSize"]["height"]
+    rotated_path = rotate_design_for_best_fit(data["fileUrl"], hoop_width, hoop_height)
+
+    return jsonify({"rotated_file": rotated_path})
+
 import tensorflow as tf
 
 model = tf.keras.models.load_model("thread_matcher_model.h5")
