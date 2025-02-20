@@ -10,6 +10,29 @@ import seaborn as sns
 import cv2
 import numpy as np
 from PIL import Image
+from pyembroidery import EmbPattern
+import json
+
+def extract_stitch_path(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    stitch_path = []
+    for stitch in pattern.stitches:
+        x, y, command = stitch
+        stitch_path.append({"x": x, "y": y, "command": command})
+
+    return stitch_path
+
+@app.route("/stitch-path", methods=["POST"])
+def get_stitch_path():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    stitch_path = extract_stitch_path(data["fileUrl"])
+
+    return jsonify({"stitchPath": stitch_path})
 
 def optimize_thread_cuts(embroidery_file):
     pattern = EmbPattern()
