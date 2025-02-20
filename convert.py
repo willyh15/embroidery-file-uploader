@@ -7,6 +7,25 @@ from flask_caching import Cache
 import networkx as nx
 import matplotlib.pyplot as plt
 import seaborn as sns
+import cv2
+import numpy as np
+
+def smooth_stitch_path(image_path):
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    blurred = cv2.GaussianBlur(img, (5, 5), 0)
+    edges = cv2.Canny(blurred, 50, 150)
+
+    return edges
+
+@app.route("/smooth-stitch-path", methods=["POST"])
+def smooth_stitch():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    edges = smooth_stitch_path(data["fileUrl"])
+
+    return jsonify({"smoothedFile": edges})
 
 def generate_stitch_density_heatmap(image_path):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
