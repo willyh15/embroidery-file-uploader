@@ -2,9 +2,21 @@ from flask import Flask, request, jsonify
 from PIL import Image
 import numpy as np
 from pyembroidery import EmbPattern, EmbThread, write_dst
-
 from concurrent.futures import ThreadPoolExecutor
+from flask_caching import Cache
 
+cache = Cache(config={"CACHE_TYPE": "simple"})
+cache.init_app(app)
+
+@app.route("/estimate-thread-cost", methods=["POST"])
+@cache.cached(timeout=600, query_string=True)
+def estimate_cost():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    usage, cost = estimate_thread_cost(data["fileUrl"])
+    return jsonify({"threadUsage": usage, "estimatedCost": cost})
 executor = ThreadPoolExecutor(max_workers=4)
 
 @app.route("/optimize-stitch-flow", methods=["POST"])
