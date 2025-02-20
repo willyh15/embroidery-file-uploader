@@ -6,6 +6,26 @@ from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 import networkx as nx
 
+def recommend_underlay_stitch(fabric_type, density):
+    recommendations = {
+        "cotton": "Zigzag Underlay",
+        "denim": "Edge Walk Underlay",
+        "silk": "Mesh Underlay",
+        "polyester": "Fill Underlay",
+    }
+    
+    return recommendations.get(fabric_type, "Standard Underlay")
+
+@app.route("/recommend-underlay", methods=["POST"])
+def recommend_underlay():
+    data = request.json
+    if "fabricType" not in data or "density" not in data:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    recommended_underlay = recommend_underlay_stitch(data["fabricType"], data["density"])
+
+    return jsonify({"underlaySuggestion": recommended_underlay})
+
 
 def refine_multi_hoop_alignment(image_paths, overlap=10):
     images = [Image.open(path) for path in image_paths]
