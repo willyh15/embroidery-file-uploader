@@ -5,6 +5,28 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def minimize_jump_stitches(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    optimized_stitches = []
+    for stitch in pattern.stitches:
+        if len(optimized_stitches) == 0 or ((stitch[0] - optimized_stitches[-1][0]) ** 2 +
+                                            (stitch[1] - optimized_stitches[-1][1]) ** 2) ** 0.5 > 2:
+            optimized_stitches.append(stitch)
+
+    return optimized_stitches
+
+@app.route("/minimize-jumps", methods=["POST"])
+def minimize_jumps():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    optimized_stitches = minimize_jump_stitches(data["fileUrl"])
+
+    return jsonify({"optimizedJumps": optimized_stitches})
+
 def compensate_fabric_stretch(image_path, stretch_factor):
     img = Image.open(image_path)
     compensated_img = img.resize((int(img.width * stretch_factor), int(img.height * stretch_factor)), Image.ANTIALIAS)
