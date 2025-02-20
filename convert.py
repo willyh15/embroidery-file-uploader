@@ -9,6 +9,32 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
 import numpy as np
+from PIL import Image
+
+def align_multi_hoop_designs(image_paths, overlap=10):
+    images = [Image.open(path) for path in image_paths]
+    total_width = sum(img.width for img in images) - (len(images) - 1) * overlap
+    aligned_image = Image.new("RGB", (total_width, images[0].height), "white")
+
+    x_offset = 0
+    for img in images:
+        aligned_image.paste(img, (x_offset, 0))
+        x_offset += img.width - overlap
+
+    aligned_path = "/tmp/multi_hoop_aligned.png"
+    aligned_image.save(aligned_path)
+
+    return aligned_path
+
+@app.route("/align-multi-hoop", methods=["POST"])
+def align_multi_hoop():
+    data = request.json
+    if "fileUrls" not in data:
+        return jsonify({"error": "Missing file URLs"}), 400
+
+    aligned_path = align_multi_hoop_designs(data["fileUrls"])
+
+    return jsonify({"alignedFile": aligned_path})
 
 def smooth_stitch_path(image_path):
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
