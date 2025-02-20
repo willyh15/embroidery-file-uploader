@@ -11,6 +11,24 @@ import cv2
 import numpy as np
 from PIL import Image
 
+model = tf.keras.models.load_model("thread_tension_model.h5")
+fabric_encoder_classes = np.load("fabric_encoder_classes.npy", allow_pickle=True)
+
+def recommend_thread_tension(fabric_type, stitch_density):
+    fabric_index = np.where(fabric_encoder_classes == fabric_type)[0][0]
+    prediction = model.predict(np.array([[stitch_density, fabric_index]]))
+    return float(prediction[0][0])
+
+@app.route("/recommend-thread-tension", methods=["POST"])
+def recommend_tension():
+    data = request.json
+    if "fabricType" not in data or "stitchDensity" not in data:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    recommended_tension = recommend_thread_tension(data["fabricType"], data["stitchDensity"])
+
+    return jsonify({"recommendedTension": recommended_tension})
+
 def align_multi_hoop_designs(image_paths, overlap=10):
     images = [Image.open(path) for path in image_paths]
     total_width = sum(img.width for img in images) - (len(images) - 1) * overlap
