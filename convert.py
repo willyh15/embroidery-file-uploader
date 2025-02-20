@@ -5,6 +5,34 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def detect_embroidery_errors(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    errors = []
+    for i, stitch in enumerate(pattern.stitches[:-1]):
+        x1, y1, command1 = stitch
+        x2, y2, command2 = pattern.stitches[i + 1]
+
+        if abs(x2 - x1) > 50 or abs(y2 - y1) > 50:
+            errors.append(f"Jump stitch detected at stitch {i}")
+
+        if command1 == command2 and abs(x2 - x1) < 1 and abs(y2 - y1) < 1:
+            errors.append(f"Overlapping stitches at stitch {i}")
+
+    return errors
+
+@app.route("/detect-errors", methods=["POST"])
+def detect_errors():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    errors = detect_embroidery_errors(data["fileUrl"])
+
+    return jsonify({"errors": errors})
+
+
 def predict_thread_breaks(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
