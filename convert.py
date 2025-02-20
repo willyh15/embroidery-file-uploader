@@ -11,6 +11,30 @@ import cv2
 import numpy as np
 from PIL import Image
 
+def optimize_thread_cuts(embroidery_file):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    G = nx.Graph()
+    for i, stitch in enumerate(pattern.stitches[:-1]):
+        x1, y1, _ = stitch
+        x2, y2, _ = pattern.stitches[i + 1]
+        G.add_edge(i, i + 1, weight=((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5)
+
+    optimized_cuts = list(nx.minimum_spanning_tree(G).edges)
+    
+    return optimized_cuts
+
+@app.route("/optimize-thread-cuts", methods=["POST"])
+def optimize_thread_cuts_api():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    cuts = optimize_thread_cuts(data["fileUrl"])
+
+    return jsonify({"optimizedCuts": cuts})
+
 model = tf.keras.models.load_model("thread_tension_model.h5")
 fabric_encoder_classes = np.load("fabric_encoder_classes.npy", allow_pickle=True)
 
