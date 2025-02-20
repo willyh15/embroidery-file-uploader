@@ -6,6 +6,24 @@ from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 import networkx as nx
 
+
+def refine_multi_hoop_alignment(image_paths, overlap=10):
+    images = [Image.open(path) for path in image_paths]
+    total_width = sum(img.width for img in images) - (len(images) - 1) * overlap
+
+    aligned_image = Image.new("RGB", (total_width, images[0].height), "white")
+
+    x_offset = 0
+    for img in images:
+        aligned_image.paste(img, (x_offset, 0))
+        draw = ImageDraw.Draw(aligned_image)
+        draw.rectangle([(x_offset + overlap // 2, 10), (x_offset + overlap // 2 + 5, 50)], fill="red")  # Registration marks
+        x_offset += img.width - overlap
+
+    refined_path = "/tmp/multi_hoop_refined.png"
+    aligned_image.save(refined_path)
+
+    return refined_path
 def optimize_stitch_path(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
