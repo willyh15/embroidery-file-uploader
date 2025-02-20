@@ -5,6 +5,31 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def estimate_thread_cost(embroidery_file, thread_price_per_meter=0.02):
+    pattern = EmbPattern()
+    pattern.load(embroidery_file)
+
+    total_length = sum(
+        ((pattern.stitches[i][0] - pattern.stitches[i - 1][0]) ** 2 +
+         (pattern.stitches[i][1] - pattern.stitches[i - 1][1]) ** 2) ** 0.5
+        for i in range(1, len(pattern.stitches))
+    )
+
+    estimated_usage = total_length / 1000  
+    estimated_cost = estimated_usage * thread_price_per_meter  
+
+    return estimated_usage, estimated_cost
+
+@app.route("/estimate-thread-cost", methods=["POST"])
+def estimate_cost():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    usage, cost = estimate_thread_cost(data["fileUrl"])
+
+    return jsonify({"threadUsage": usage, "estimatedCost": cost})
+
 def detect_embroidery_errors(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
