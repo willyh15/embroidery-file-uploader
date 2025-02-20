@@ -5,6 +5,24 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def blend_thread_colors(image_path):
+    img = Image.open(image_path).convert("RGBA")
+    blended_img = img.filter(ImageFilter.GaussianBlur(radius=2))  # Softens color transitions
+    blended_path = image_path.replace(".png", "_blended.png")
+    blended_img.save(blended_path)
+
+    return blended_path
+
+@app.route("/blend-thread-colors", methods=["POST"])
+def blend_colors():
+    data = request.json
+    if "fileUrl" not in data:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    blended_path = blend_thread_colors(data["fileUrl"])
+
+    return jsonify({"blendedFile": blended_path})
+
 def minimize_jump_stitches(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
