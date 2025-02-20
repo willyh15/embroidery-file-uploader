@@ -5,6 +5,30 @@ from pyembroidery import EmbPattern, EmbThread, write_dst
 from concurrent.futures import ThreadPoolExecutor
 from flask_caching import Cache
 
+def refine_multi_hoop_alignment(image_paths, hoop_width, hoop_height, overlap=10):
+    images = [Image.open(path) for path in image_paths]
+    total_width = sum(img.width for img in images) - (len(images) - 1) * overlap
+
+    aligned_image = Image.new("RGB", (total_width, images[0].height), "white")
+
+    x_offset = 0
+    for img in images:
+        aligned_image.paste(img, (x_offset, 0))
+
+        # Auto-adjust alignment
+        shift_x = (hoop_width - img.width) // 2
+        shift_y = (hoop_height - img.height) // 2
+
+        draw = ImageDraw.Draw(aligned_image)
+        draw.rectangle([(x_offset + shift_x, shift_y), (x_offset + shift_x + 5, shift_y + 40)], fill="red")  
+
+        x_offset += img.width - overlap
+
+    refined_path = "/tmp/multi_hoop_refined.png"
+    aligned_image.save(refined_path)
+
+    return refined_path
+
 def refine_stitch_path(embroidery_file):
     pattern = EmbPattern()
     pattern.load(embroidery_file)
