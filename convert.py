@@ -10,16 +10,18 @@ from pyembroidery import EmbPattern, EmbThread, write_dst, write_pes, write_exp,
 
 app = Flask(__name__)
 
-def image_to_embroidery(image_path, output_path, format="dst"):
+def image_to_embroidery(image_path, output_path, format="dst", density=1.0, scale=1.0):
     img = Image.open(image_path).convert("L")
-    img_array = np.array(img)
+    img = img.resize((int(img.width * scale), int(img.height * scale)))
 
+    img_array = np.array(img)
     pattern = EmbPattern()
 
     for y, row in enumerate(img_array):
         for x, pixel in enumerate(row):
             if pixel < 128:
-                pattern.add_stitch_absolute(0, x, y)  
+                for _ in range(int(density)):  # Increase stitch density
+                    pattern.add_stitch_absolute(0, x, y)  
 
     pattern.end()
 
@@ -33,8 +35,6 @@ def image_to_embroidery(image_path, output_path, format="dst"):
         write_jef(pattern, output_path)
     elif format == "xxx":
         write_xxx(pattern, output_path)
-    else:
-        return None
 
     return output_path
 
