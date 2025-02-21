@@ -17,6 +17,23 @@ if (userMfaEnabled) {
   }
 }
 
+const user2FAEnabled = await kv.get(`2fa:${user.username}`);
+if (user2FAEnabled && !req.body.mfaToken) {
+  return res.status(403).json({ error: "2FA required" });
+}
+
+if (user2FAEnabled) {
+  const verifyResponse = await fetch("/api/verify-2fa", {
+    method: "POST",
+    body: JSON.stringify({ username: user.username, token: req.body.mfaToken }),
+  });
+
+  if (!verifyResponse.ok) {
+    return res.status(403).json({ error: "2FA verification failed" });
+  }
+}
+
+
 
 export default NextAuth({
   providers: [
