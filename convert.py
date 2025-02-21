@@ -12,6 +12,26 @@ import json
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+import boto3
+
+s3 = boto3.client("s3")
+BUCKET_NAME = "your-design-bucket"
+
+def upload_to_s3(file_path, s3_key):
+    s3.upload_file(file_path, BUCKET_NAME, s3_key)
+    return f"https://{BUCKET_NAME}.s3.amazonaws.com/{s3_key}"
+
+@app.route("/sync-design", methods=["POST"])
+def sync_design():
+    data = request.json
+    file_url = data.get("fileUrl")
+
+    if not file_url:
+        return jsonify({"error": "Missing file URL"}), 400
+
+    s3_url = upload_to_s3(file_url, f"designs/{file_url.split('/')[-1]}")
+    return jsonify({"cloud_url": s3_url})
+
 model = load_model("stitch_model.h5")
 
 @app.route("/auto-stitch", methods=["POST"])
