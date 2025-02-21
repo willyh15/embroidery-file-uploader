@@ -14,6 +14,30 @@ from tensorflow.keras.models import load_model
 
 import boto3
 
+from sklearn.cluster import KMeans
+
+def detect_thread_colors(image_path, num_colors=5):
+    img = cv2.imread(image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = img.reshape((-1, 3))
+
+    kmeans = KMeans(n_clusters=num_colors)
+    kmeans.fit(img)
+
+    return [tuple(map(int, color)) for color in kmeans.cluster_centers_]
+
+@app.route("/detect-colors", methods=["POST"])
+def detect_colors():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    file_path = f"/tmp/{file.filename}"
+    file.save(file_path)
+
+    colors = detect_thread_colors(file_path)
+    return jsonify({"thread_colors": colors})
+
 s3 = boto3.client("s3")
 BUCKET_NAME = "your-design-bucket"
 
