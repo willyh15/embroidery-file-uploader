@@ -3,6 +3,25 @@ const [storageLimit, setStorageLimit] = useState("");
 const [userRole, setUserRole] = useState("");
 const [username, setUsername] = useState("");
 
+const [analytics, setAnalytics] = useState([]);
+
+useEffect(() => {
+  const fetchAnalytics = async () => {
+    const response = await fetch("/api/get-analytics");
+    const data = await response.json();
+    setAnalytics(data.analytics);
+  };
+
+  fetchAnalytics();
+}, []);
+
+<ul>
+  {analytics.map((entry, index) => (
+    <li key={index}>{entry.user}: {entry.storageUsed} KB used</li>
+  ))}
+</ul>
+
+
 const createRole = async () => {
   await fetch("/api/create-role", {
     method: "POST",
