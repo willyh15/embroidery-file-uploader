@@ -1,3 +1,25 @@
+const [designs, setDesigns] = useState([]);
+
+const fetchDesigns = async () => {
+  const response = await fetch("/api/get-designs");
+  const data = await response.json();
+  setDesigns(data.designs);
+};
+
+useEffect(() => {
+  fetchDesigns();
+}, []);
+
+<ul>
+  {designs.map((design, index) => (
+    <li key={index}>
+      <a href={design.fileUrl} target="_blank">{design.fileUrl}</a>
+      <p>Price: ${design.price}</p>
+      <button onClick={() => purchaseDesign(design.fileUrl)}>Buy Design</button>
+    </li>
+  ))}
+</ul>
+
 const [reviews, setReviews] = useState({});
 const [rating, setRating] = useState(5);
 const [reviewText, setReviewText] = useState("");
