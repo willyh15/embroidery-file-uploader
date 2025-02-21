@@ -1,6 +1,23 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+const userMfaEnabled = await kv.get(`mfa:${user.username}`);
+if (userMfaEnabled && !req.body.mfaToken) {
+  return res.status(403).json({ error: "MFA required" });
+}
+
+if (userMfaEnabled) {
+  const verifyResponse = await fetch("/api/verify-mfa", {
+    method: "POST",
+    body: JSON.stringify({ username: user.username, token: req.body.mfaToken }),
+  });
+
+  if (!verifyResponse.ok) {
+    return res.status(403).json({ error: "MFA verification failed" });
+  }
+}
+
+
 export default NextAuth({
   providers: [
     CredentialsProvider({
