@@ -16,6 +16,28 @@ import boto3
 
 from sklearn.cluster import KMeans
 
+@app.route("/edit-stitch", methods=["POST"])
+def edit_stitch():
+    data = request.json
+    file_url = data.get("fileUrl")
+    edits = data.get("edits")
+
+    if not file_url or not edits:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    pattern = EmbPattern()
+    
+    for edit in edits:
+        x, y, stitch_type = edit["x"], edit["y"], edit["stitchType"]
+        pattern.add_stitch_absolute(stitch_type, x, y)
+
+    pattern.end()
+    output_path = file_url.replace(".dst", "_edited.dst")
+
+    write_dst(pattern, output_path)
+
+    return jsonify({"edited_file": output_path})
+
 def detect_thread_colors(image_path, num_colors=5):
     img = cv2.imread(image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
