@@ -5,6 +5,28 @@ const [bulkStitchType, setBulkStitchType] = useState("satin");
 const [edits, setEdits] = useState([]);
 const ws = useRef(null);
 
+const [edits, setEdits] = useState([]);
+const [editedFile, setEditedFile] = useState(null);
+
+const handleEdit = (x, y, stitchType) => {
+  setEdits([...edits, { x, y, stitchType }]);
+};
+
+const saveEdits = async (fileUrl) => {
+  const response = await fetch("/api/edit-stitch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, edits }),
+  });
+
+  const data = await response.json();
+  setEditedFile(data.editedFile);
+};
+
+<button onClick={() => saveEdits(fileUrl)}>Save Edits</button>
+
+{editedFile && <a href={editedFile} download>Download Edited File</a>}
+
 useEffect(() => {
   ws.current = new WebSocket("ws://localhost:8080");
 
