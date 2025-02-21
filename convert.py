@@ -8,12 +8,37 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
-import numpy as np
-from PIL import Image
-from pyembroidery import EmbPattern
 import json
+import tensorflow as tf
+from tensorflow.keras.models import load_model
 
-from PIL import Image
+model = load_model("stitch_model.h5")
+
+@app.route("/auto-stitch", methods=["POST"])
+def auto_stitch():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    file_path = f"/tmp/{file.filename}"
+    file.save(file_path)
+
+    img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+    img_resized = cv2.resize(img, (128, 128)) / 255.0
+    img_resized = np.expand_dims(img_resized, axis=[0, -1])
+
+    prediction = model.predict(img_resized)
+    stitch_pattern = np.argmax(prediction, axis=1)
+
+    pattern = EmbPattern()
+    for stitch in stitch_pattern:
+        pattern.add_stitch_absolute(stitch, 0, 0)
+
+    pattern.end()
+    output_path = file_path.replace(".png", ".dst")
+    write_dst(pattern, output_path)
+
+    return jsonify({"auto_stitched_file": output_path})
 
 def rotate_design_for_best_fit(image_path, hoop_width, hoop_height):
     img = Image.open(image_path)
