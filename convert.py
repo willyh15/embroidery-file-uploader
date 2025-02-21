@@ -16,6 +16,22 @@ import boto3
 
 from sklearn.cluster import KMeans
 
+@app.route("/optimize-stitch", methods=["POST"])
+def optimize_stitch():
+    if "file" not in request.files or "format" not in request.form:
+        return jsonify({"error": "Missing file or format"}), 400
+
+    file = request.files["file"]
+    format = request.form["format"]
+
+    file_path = f"/tmp/{file.filename}"
+    output_path = f"/tmp/{file.filename}.{format}"
+    file.save(file_path)
+
+    converted_path, stitch_type = generate_optimized_embroidery(file_path, output_path, format)
+
+    return jsonify({"optimized_file": converted_path, "stitch_type": stitch_type})
+
 @app.route("/edit-stitch", methods=["POST"])
 def edit_stitch():
     data = request.json
