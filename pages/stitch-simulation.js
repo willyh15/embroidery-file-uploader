@@ -1,33 +1,58 @@
 import { useState, useEffect } from "react";
 
-const [stitchPath, setStitchPath] = useState([]);
-const [currentIndex, setCurrentIndex] = useState(0);
+export default function StitchSimulation({ fileUrl }) {
+  const [stitchPath, setStitchPath] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-const fetchStitchPath = async (fileUrl) => {
-  const response = await fetch("/api/stitch-path", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrl }),
-  });
+  // Fetch the stitch path from the API
+  const fetchStitchPath = async () => {
+    if (!fileUrl) {
+      alert("No file selected for simulation.");
+      return;
+    }
 
-  const data = await response.json();
-  setStitchPath(data.stitchPath);
-};
+    try {
+      const response = await fetch("/api/stitch-path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
 
-useEffect(() => {
-  if (stitchPath.length === 0) return;
+      if (!response.ok) throw new Error("Failed to fetch stitch path");
 
-  const interval = setInterval(() => {
-    setCurrentIndex((prevIndex) => (prevIndex < stitchPath.length - 1 ? prevIndex + 1 : prevIndex));
-  }, 50);
+      const data = await response.json();
+      setStitchPath(data.stitchPath);
+      setCurrentIndex(0); // Reset animation
+    } catch (error) {
+      console.error("Error fetching stitch path:", error);
+      alert("An error occurred while fetching the stitch path.");
+    }
+  };
 
-  return () => clearInterval(interval);
-}, [stitchPath]);
+  // Animate stitch simulation
+  useEffect(() => {
+    if (stitchPath.length === 0) return;
 
-<button onClick={() => fetchStitchPath(fileUrl)}>Simulate Stitching</button>
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex < stitchPath.length - 1 ? prevIndex + 1 : prevIndex));
+    }, 50);
 
-<svg width="500" height="500" style={{ border: "1px solid black" }}>
-  {stitchPath.slice(0, currentIndex).map((stitch, index) => (
-    <circle key={index} cx={stitch.x} cy={stitch.y} r="2" fill="black" />
-  ))}
-</svg>
+    return () => clearInterval(interval);
+  }, [stitchPath]);
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <h2>Stitch Simulation</h2>
+
+      {/* Start Simulation Button */}
+      <button onClick={fetchStitchPath}>Simulate Stitching</button>
+
+      {/* SVG Stitch Visualization */}
+      <svg width="500" height="500" style={{ border: "1px solid black", marginTop: "20px" }}>
+        {stitchPath.slice(0, currentIndex).map((stitch, index) => (
+          <circle key={index} cx={stitch.x} cy={stitch.y} r="2" fill="black" />
+        ))}
+      </svg>
+    </div>
+  );
+}
