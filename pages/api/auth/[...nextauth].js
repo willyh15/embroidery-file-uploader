@@ -1,39 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-
-const userMfaEnabled = await kv.get(`mfa:${user.username}`);
-if (userMfaEnabled && !req.body.mfaToken) {
-  return res.status(403).json({ error: "MFA required" });
-}
-
-if (userMfaEnabled) {
-  const verifyResponse = await fetch("/api/verify-mfa", {
-    method: "POST",
-    body: JSON.stringify({ username: user.username, token: req.body.mfaToken }),
-  });
-
-  if (!verifyResponse.ok) {
-    return res.status(403).json({ error: "MFA verification failed" });
-  }
-}
-
-const user2FAEnabled = await kv.get(`2fa:${user.username}`);
-if (user2FAEnabled && !req.body.mfaToken) {
-  return res.status(403).json({ error: "2FA required" });
-}
-
-if (user2FAEnabled) {
-  const verifyResponse = await fetch("/api/verify-2fa", {
-    method: "POST",
-    body: JSON.stringify({ username: user.username, token: req.body.mfaToken }),
-  });
-
-  if (!verifyResponse.ok) {
-    return res.status(403).json({ error: "2FA verification failed" });
-  }
-}
-
-
+import { kv } from "@vercel/kv";
 
 export default NextAuth({
   providers: [
@@ -53,8 +20,27 @@ export default NextAuth({
           (u) => u.username === credentials.username && u.password === credentials.password
         );
 
-        if (user) return user;
-        return null;
+        if (!user) return null;
+
+        // ✅ Check MFA/2FA only during authorization
+        const userMfaEnabled = await kv.get(`mfa:${user.username}`);
+        if (userMfaEnabled && !credentials.mfaToken) {
+          throw new Error("MFA required");
+        }
+
+        if (userMfaEnabled) {
+          const verifyResponse = await fetch(process.env.NEXTAUTH_URL + "/api/verify-mfa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: user.username, token: credentials.mfaToken }),
+          });
+
+          if (!verifyResponse.ok) {
+            throw new Error("MFA verification failed");
+          }
+        }
+
+        return user;
       },
     }),
   ],
