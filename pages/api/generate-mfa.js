@@ -1,16 +1,19 @@
 import speakeasy from "speakeasy";
 import { kv } from "@vercel/kv";
-import { getSession } from "next-auth/react";
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
-
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const secret = speakeasy.generateSecret();
-  await kv.set(`mfa:${session.user.username}`, secret.base32);
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: "Missing username" });
+  }
 
-  return res.status(200).json({ secret: secret.otpauth_url });
+  const secret = speakeasy.generateSecret({ length: 20 });
+
+  await kv.set(`mfa:${username}`, secret.base32);
+
+  res.status(200).json({ secret: secret.base32 });
 }
