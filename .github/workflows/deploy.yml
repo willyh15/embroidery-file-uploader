@@ -20,11 +20,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: 📥 Install Dependencies & Generate Lockfile
+      - name: 📥 Install Dependencies & Fix Missing Modules
         run: |
           npm install --package-lock-only
           npm install --force
-          npm install @vercel/kv next-auth
+          npm install @vercel/kv next-auth @vercel/blob speakeasy
 
       - name: 🔄 Commit Updated package-lock.json
         run: |
