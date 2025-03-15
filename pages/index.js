@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 
-export default function Home() {
+// Ensure this component is only rendered on the client-side
+const Home = () => {
   const [isClient, setIsClient] = useState(false);
   const { data: session } = useSession();
 
@@ -112,7 +114,7 @@ export default function Home() {
     <div style={{ padding: 20 }}>
       {session ? (
         <>
-          <p>Welcome, {session.user.username}!</p>
+          <p>Welcome, {session.user?.name || "User"}!</p>
           <button onClick={() => signOut()}>Logout</button>
         </>
       ) : (
@@ -172,16 +174,9 @@ export default function Home() {
       {previewFile && <img src={previewFile} alt="Hoop Preview" />}
       {alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
       {rotatedFile && <a href={rotatedFile} download>Download Rotated Design</a>}
-
-      {/* Bulk File Download */}
-      <button onClick={handleBulkDownload}>Download All Files</button>
-
-      {/* Pagination */}
-      <div>
-        <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
-        <span> Page {page} of {totalPages} </span>
-        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
-      </div>
     </div>
   );
-}
+};
+
+// Ensure this page is only rendered client-side (disabling SSR)
+export default dynamic(() => Promise.resolve(Home), { ssr: false });
