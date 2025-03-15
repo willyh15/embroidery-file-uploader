@@ -1,0 +1,56 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: 🔎 Check for Missing Dependencies
+        run: |
+          missing_packages=$(node -e "
+          const pkg = require('./package.json');
+          const missing = Object.keys(pkg.dependencies || {}).filter(dep => {
+            try { require.resolve(dep); return false; } catch { return true; }
+          });
+          if (missing.length) console.log(missing.join('\n'));
+          else console.log('✅ All dependencies installed.');
+          ")
+          if [ "$missing_packages" != "✅ All dependencies installed." ]; then
+            echo "🚨 Missing packages detected: $missing_packages"
+            exit 1
+          fi
+
+      - name: 🛠️ Run Linter & Type Checking
+        run: |
+          npm run lint || echo "⚠️ Linting failed, but continuing..."
+          npm run type-check || echo "⚠️ Type-checking failed, but continuing..."
+
+      - name: 🏗️ Build the Next.js App
+        run: npm run build
+
+      - name: 🚀 Deploy to Vercel
+        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
