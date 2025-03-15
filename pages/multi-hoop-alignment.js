@@ -1,16 +1,27 @@
-const [alignedFile, setAlignedFile] = useState(null);
+import { useState, useEffect } from "react";
 
-const handleAlignMultiHoop = async (fileUrls) => {
-  const response = await fetch("/api/align-multi-hoop", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrls }),
-  });
+export default function MultiHoopAlignment() {
+  const [alignmentData, setAlignmentData] = useState([]);
+  const [hoopSize, setHoopSize] = useState(null);
 
-  const data = await response.json();
-  setAlignedFile(data.alignedFile);
-};
+  useEffect(() => {
+    const fetchAlignmentData = async () => {
+      const response = await fetch("/api/get-hoop-alignment");
+      const data = await response.json();
+      setAlignmentData(data.alignment);
+    };
 
-<button onClick={() => handleAlignMultiHoop(fileUrls)}>Align Multi-Hoop Design</button>
+    fetchAlignmentData();
+  }, []);
 
-{alignedFile && <img src={alignedFile} alt="Aligned Multi-Hoop Preview" />}
+  return (
+    <div>
+      <h1>Multi-Hoop Alignment</h1>
+      <ul>
+        {alignmentData.map((align, index) => (
+          <li key={index}>{align}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
