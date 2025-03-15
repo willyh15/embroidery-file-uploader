@@ -1,16 +1,33 @@
-const [heatmapFile, setHeatmapFile] = useState(null);
+import { useState, useEffect } from "react";
 
-const handleGenerateHeatmap = async (fileUrl) => {
-  const response = await fetch("/api/stitch-heatmap", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrl }),
-  });
+export default function StitchHeatmap() {
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
 
-  const data = await response.json();
-  setHeatmapFile(data.heatmapFile);
-};
+  useEffect(() => {
+    const fetchHeatmapData = async () => {
+      if (!selectedFile) return;
+      const response = await fetch(`/api/get-stitch-heatmap?file=${selectedFile}`);
+      const data = await response.json();
+      setHeatmapData(data.heatmap);
+    };
 
-<button onClick={() => handleGenerateHeatmap(fileUrl)}>Generate Stitch Heatmap</button>
+    fetchHeatmapData();
+  }, [selectedFile]);
 
-{heatmapFile && <img src={heatmapFile} alt="Stitch Density Heatmap" />}
+  return (
+    <div>
+      <h1>Stitch Heatmap</h1>
+      <select onChange={(e) => setSelectedFile(e.target.value)}>
+        <option value="">Select a file</option>
+        <option value="design1.pes">Design 1</option>
+        <option value="design2.pes">Design 2</option>
+      </select>
+      <ul>
+        {heatmapData.map((stitch, index) => (
+          <li key={index}>{`(${stitch.x}, ${stitch.y}) - Density: ${stitch.density}`}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
