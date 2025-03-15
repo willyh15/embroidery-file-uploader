@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 export default function Home() {
+  const [isClient, setIsClient] = useState(false);
   const { data: session } = useSession();
 
   // State for file management
@@ -38,6 +39,11 @@ export default function Home() {
   const [adjustedFile, setAdjustedFile] = useState(null);
   const [scaleFactor, setScaleFactor] = useState(1.0);
   const [splitFiles, setSplitFiles] = useState([]);
+
+  // Ensure this component runs on the client side only
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Fetch hoop sizes
   useEffect(() => {
@@ -97,6 +103,10 @@ export default function Home() {
     setSearchQuery(query);
     setFilteredFiles(uploadedFiles.filter((url) => url.toLowerCase().includes(query.toLowerCase())));
   };
+
+  if (!isClient) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <div style={{ padding: 20 }}>
@@ -172,29 +182,6 @@ export default function Home() {
         <span> Page {page} of {totalPages} </span>
         <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
       </div>
-
-      {/* File Rollback */}
-      <button onClick={() => fetchVersions(fileUrl)}>View File Versions</button>
-      <ul>
-        {fileVersions.map((v, index) => (
-          <li key={index}>
-            Version: {new Date(v.version).toLocaleString()}
-            <button onClick={() => rollbackFile(fileUrl, v.version)}>Rollback</button>
-          </li>
-        ))}
-      </ul>
-
-      {/* Shareable Links */}
-      <ul>
-        {uploadedFiles.map((url, index) => (
-          <li key={index}>
-            <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
-            <button onClick={() => navigator.clipboard.writeText(generateShareableLink(url))}>
-              Copy Shareable Link
-            </button>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
