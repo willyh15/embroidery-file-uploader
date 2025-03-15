@@ -1,17 +1,32 @@
-const [rgb, setRgb] = useState([255, 255, 255]);
-const [matchedThread, setMatchedThread] = useState("");
+import { useState, useEffect } from "react";
 
-const handleMatch = async () => {
-  const response = await fetch("/api/match-thread", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rgb }),
-  });
+export default function ColorMatching() {
+  const [selectedColor, setSelectedColor] = useState("#000000");
+  const [matchingThreads, setMatchingThreads] = useState([]);
 
-  const data = await response.json();
-  setMatchedThread(data.matchedThreadBrand);
-};
+  useEffect(() => {
+    const fetchMatchingThreads = async () => {
+      try {
+        const response = await fetch(`/api/get-thread-matches?color=${selectedColor}`);
+        const data = await response.json();
+        setMatchingThreads(data.threads);
+      } catch (error) {
+        console.error("Error fetching thread matches:", error);
+      }
+    };
 
-<button onClick={handleMatch}>Find Best Thread Match</button>
+    if (selectedColor) fetchMatchingThreads();
+  }, [selectedColor]);
 
-{matchedThread && <p>Best Thread Match: {matchedThread}</p>}
+  return (
+    <div>
+      <h1>Color Matching</h1>
+      <input type="color" value={selectedColor} onChange={(e) => setSelectedColor(e.target.value)} />
+      <ul>
+        {matchingThreads.map((thread, index) => (
+          <li key={index}>{thread.brand} - {thread.code} ({thread.name})</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
