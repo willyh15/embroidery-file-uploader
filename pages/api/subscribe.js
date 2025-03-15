@@ -1,28 +1,29 @@
 import Stripe from "stripe";
-import { getSession } from "next-auth/react";
-import { kv } from "@vercel/kv";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
-
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID;
+  const { email, planId } = req.body;
+  if (!email || !planId) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
 
-  const sessionStripe = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    customer_email: session.user.email,
-    line_items: [{ price: priceId, quantity: 1 }],
-    mode: "subscription",
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/subscription-success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/subscription-cancel`,
-  });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      customer_email: email,
+      line_items: [{ price: planId, quantity: 1 }],
+      mode: "subscription",
+      success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
+    });
 
-  await kv.set(`subscription:${session.user.email}`, { active: true });
-
-  return res.status(200).json({ url: sessionStripe.url });
-};
+    return res.status(200).json({ sessionId: session.id });
+  } catch (error) {
+    return res.status(500).json({ error: "Subscription failed", details: error.message });
+  }
+}
