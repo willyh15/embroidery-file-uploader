@@ -3,10 +3,10 @@ name: 🚀 Deploy to Vercel
 on:
   push:
     branches:
-      - main  # Runs on push to main branch
+      - main
   pull_request:
     branches:
-      - main  # Runs on PRs to main
+      - main
 
 jobs:
   build-and-deploy:
@@ -20,8 +20,19 @@ jobs:
         with:
           node-version: 18
 
-      - name: 📥 Force Install Dependencies (No Lockfile)
-        run: npm install --no-audit --no-fund --force
+      - name: 📥 Install Dependencies & Generate Lockfile
+        run: |
+          npm install --package-lock-only
+          npm install --force
+          npm install @vercel/kv next-auth
+
+      - name: 🔄 Commit Updated package-lock.json
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m "🔄 Auto-generate package-lock.json"
+          git push origin main || echo "No changes to commit"
 
       - name: 🏗️ Build Project
         run: npm run build
