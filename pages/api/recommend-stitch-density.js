@@ -5,16 +5,12 @@ export default async function handler(req, res) {
 
   const { fabricType, edgeCount } = req.body;
 
-  if (!fabricType || edgeCount === undefined) {
-    return res.status(400).json({ error: "Fabric type and edge count are required" });
+  if (!fabricType || !edgeCount) {
+    return res.status(400).json({ error: "Missing required parameters" });
   }
 
-  const response = await fetch("https://your-render-api.com/recommend-stitch-density", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fabricType, edgeCount }),
-  });
+  // Dummy logic to calculate recommended stitch density
+  const recommendedDensity = edgeCount > 1000 ? "High Density" : "Medium Density";
 
-  const data = await response.json();
-  return res.status(200).json({ recommendedDensity: data.recommended_density });
-};
+  return res.status(200).json({ recommendedDensity });
+}
