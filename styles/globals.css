@@ -64,14 +64,14 @@ button:hover {
   box-shadow: 0 6px 10px var(--shadow-color);
 }
 
-/* 🌸 Interactive Inputs */
+/* 🌸 Inputs, Select */
 input, select {
   font-family: "Montserrat", sans-serif;
   padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   outline: none;
-  transition: all 0.3s ease-in-out;
+  transition: 0.3s ease-in-out;
   background: var(--primary-bg);
   color: var(--primary-text);
 }
@@ -105,8 +105,8 @@ input:focus, select:focus {
   transition: all 0.3s ease-in-out;
   cursor: pointer;
   position: relative;
-  color: var(--primary-text);
   background: var(--secondary-bg);
+  color: var(--primary-text);
 }
 
 .upload-box:hover {
@@ -118,18 +118,6 @@ input:focus, select:focus {
   border-color: var(--accent-alt);
   background: var(--primary-bg);
   transform: scale(1.05);
-  transition: all 0.3s ease-in-out;
-}
-
-/* 🌸 File Previews */
-.file-preview {
-  margin-top: 10px;
-}
-
-.thumb {
-  max-width: 80px;
-  max-height: 80px;
-  margin-right: 8px;
 }
 
 /* 🌸 Soft Shadows */
@@ -149,6 +137,7 @@ input:focus, select:focus {
   justify-content: center;
   align-items: center;
   animation: fadeIn 0.3s ease-in-out;
+  z-index: 1000;
 }
 
 .modal {
@@ -224,6 +213,7 @@ input:focus, select:focus {
   align-items: center;
   background: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(5px);
+  z-index: 1100;
 }
 
 /* 🌸 Sidebar Navigation */
@@ -237,7 +227,7 @@ input:focus, select:focus {
   box-shadow: 2px 0 8px var(--shadow-color);
   padding: 20px;
   transition: left 0.3s ease-in-out;
-  z-index: 1000;
+  z-index: 1200;
 }
 
 .sidebar.open {
@@ -268,7 +258,9 @@ input:focus, select:focus {
 }
 
 .sidebar ul li a {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px;
   margin-bottom: 6px;
   border-radius: var(--radius);
@@ -288,7 +280,7 @@ input:focus, select:focus {
   top: 20px;
   left: 20px;
   cursor: pointer;
-  z-index: 1100;
+  z-index: 1300;
 }
 
 /* 🌸 Dark Mode Toggle */
@@ -297,7 +289,7 @@ input:focus, select:focus {
   top: 20px;
   right: 20px;
   cursor: pointer;
-  z-index: 1100;
+  z-index: 1300;
 }
 
 /* 🌸 Floating Action Button */
@@ -305,7 +297,7 @@ input:focus, select:focus {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 1200;
+  z-index: 1300;
   cursor: pointer;
 }
 
@@ -341,7 +333,7 @@ input:focus, select:focus {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 1300;
+  z-index: 1400;
 }
 
 .notification {
@@ -359,4 +351,15 @@ input:focus, select:focus {
 .notification.error {
   background: #ff6961;
   color: #fff;
+}
+
+/* 🌸 File Previews */
+.file-preview {
+  margin-top: 10px;
+}
+
+.thumb {
+  max-width: 80px;
+  max-height: 80px;
+  margin-right: 8px;
 }
