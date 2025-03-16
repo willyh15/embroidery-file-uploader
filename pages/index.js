@@ -5,14 +5,14 @@ import dynamic from "next/dynamic";
 // Ensure this component is only rendered on the client-side
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
-  const { data: session } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data || null;  // ✅ Fix: Prevents destructuring undefined
 
   // State for file management
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const dropRef = useRef(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
