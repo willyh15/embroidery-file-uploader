@@ -74,6 +74,24 @@ const Home = () => {
     fetchFiles();
   }, [page]);
 
+  // ✅ Fix: Define handleRecommendDensity to prevent crash
+  const handleRecommendDensity = async () => {
+    try {
+      const response = await fetch("/api/recommend-stitch-density", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fabricType, edgeCount }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get recommendation");
+
+      const data = await response.json();
+      setRecommendedDensity(data.recommendedDensity);
+    } catch (error) {
+      console.error("Error fetching stitch density recommendation:", error);
+    }
+  };
+
   // File Upload Handlers
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
@@ -145,15 +163,6 @@ const Home = () => {
 
       {/* File Search */}
       <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
-
-      {/* File List */}
-      <ul>
-        {filteredFiles.map((url, index) => (
-          <li key={index}>
-            <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
-          </li>
-        ))}
-      </ul>
 
       {/* Hoop Size Validation */}
       <button onClick={() => validateHoopSize(fileUrl)}>Validate Hoop Size</button>
