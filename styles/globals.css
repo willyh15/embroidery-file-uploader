@@ -217,61 +217,91 @@ input:focus, select:focus {
 }
 
 /* ──────────────────────────────────────────────────────────
-   RESPONSIVE SIDEBAR: uses different widths for mobile vs. desktop
+   OVERLAY SIDEBAR: simply overlays on top without pushing content
    ────────────────────────────────────────────────────────── */
 
-/* MOBILE VIEW (under 768px) */
-@media (max-width: 767px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -80vw;   /* hidden off-screen to the left */
-    width: 80vw;   /* 80% of viewport width on mobile */
-    height: 100%;
-    background: var(--secondary-bg);
-    box-shadow: 2px 0 8px var(--shadow-color);
-    padding: 20px;
-    transition: left 0.3s ease-in-out;
-    z-index: 1200;
-  }
-  .sidebar.open {
-    left: 0;       /* slide it in from the left */
-  }
-
-  .main-content {
-    transition: margin-left 0.3s ease-in-out;
-    margin-left: 0;
-  }
-  .main-content.shifted {
-    margin-left: 80vw;  /* shift content to the right by the same width */
-  }
+/* The overlay behind the sidebar (dimmed background) */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  z-index: 1199;
 }
 
-/* TABLET & DESKTOP (768px and up) */
-@media (min-width: 768px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: -20rem;  /* hidden off-screen to the left at ~320px */
-    width: 20rem;  /* 20rem is ~320px, adjustable */
-    height: 100%;
-    background: var(--secondary-bg);
-    box-shadow: 2px 0 8px var(--shadow-color);
-    padding: 20px;
-    transition: left 0.3s ease-in-out;
-    z-index: 1200;
-  }
-  .sidebar.open {
-    left: 0;       /* bring it in from the left */
-  }
+/* When open, reveal the dark overlay behind sidebar */
+.sidebar-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
 
-  .main-content {
-    transition: margin-left 0.3s ease-in-out;
-    margin-left: 0;
-  }
-  .main-content.shifted {
-    margin-left: 20rem; /* shift main content by 20rem (~320px) */
-  }
+/* The sidebar itself, overlay style (does NOT shift content) */
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 280px; /* or 20rem if you prefer  */
+  max-width: 80vw; /* on smaller screens, ensure it never overshoots */
+  background: var(--secondary-bg);
+  box-shadow: 2px 0 8px var(--shadow-color);
+  padding: 20px;
+  z-index: 1200;
+  transform: translateX(-100%);  /* hidden off-screen initially */
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Show the sidebar by sliding it in */
+.sidebar.open {
+  transform: translateX(0);
+}
+
+/* Sidebar header, close button, etc. */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.sidebar-header h2 {
+  margin: 0;
+}
+.close-sidebar-btn {
+  background: var(--accent-alt);
+  padding: 5px 10px;
+}
+
+/* Sidebar links */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: var(--radius);
+  color: var(--primary-text);
+  text-decoration: none;
+  transition: 0.2s;
+}
+.sidebar ul li a:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* For the main content, no margin shifting needed – it remains static */
+.main-content {
+  /* no margin-left or transform; content stays in place */
+  padding: 1rem;
 }
 
 /* 🌸 Menu Button */
@@ -280,7 +310,7 @@ input:focus, select:focus {
   top: 20px;
   left: 20px;
   cursor: pointer;
-  z-index: 1300;
+  z-index: 1301; /* on top of overlay */
 }
 
 /* 🌸 Dark Mode Toggle */
@@ -289,7 +319,7 @@ input:focus, select:focus {
   top: 20px;
   right: 20px;
   cursor: pointer;
-  z-index: 1300;
+  z-index: 1301;
 }
 
 /* 🌸 Floating Action Button */
@@ -297,7 +327,7 @@ input:focus, select:focus {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 1300;
+  z-index: 1301;
   cursor: pointer;
 }
 
