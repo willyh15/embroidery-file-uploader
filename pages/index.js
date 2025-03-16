@@ -18,7 +18,7 @@ import {
   SunIcon,
   SettingsIcon,
   ProfileIcon
-} from "../components/Icons"; // Additional icons for the UI
+} from "../components/Icons";
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
@@ -33,13 +33,13 @@ const Home = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
 
-  // 🆕 Sidebar / Menu state
+  // Sidebar / Menu state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // 🆕 Dark mode state
+  // Dark mode state
   const [darkMode, setDarkMode] = useState(false);
 
-  // 🆕 Success Notifications
+  // Success Notifications
   const [notifications, setNotifications] = useState([]);
 
   // ─────────── File Management States ───────────
@@ -58,7 +58,7 @@ const Home = () => {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // ─────────── Additional States (Stitch Density, etc.) ───────────
+  // ─────────── Additional States ───────────
   const [fabricType, setFabricType] = useState("cotton");
   const [edgeCount, setEdgeCount] = useState(500);
   const [recommendedDensity, setRecommendedDensity] = useState(null);
@@ -70,12 +70,10 @@ const Home = () => {
   const [scaleFactor, setScaleFactor] = useState(1.0);
   const [splitFiles, setSplitFiles] = useState([]);
 
-  // ✅ Ensure this component runs only on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // ✅ Fetch available hoop sizes
   useEffect(() => {
     const fetchHoopSizes = async () => {
       const response = await fetch("/api/get-hoop-sizes");
@@ -85,7 +83,7 @@ const Home = () => {
     fetchHoopSizes();
   }, []);
 
-  // ✅ File Upload Handler
+  // File Upload Handler
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -106,7 +104,7 @@ const Home = () => {
       addNotification("Files uploaded successfully!", "success");
     } catch (error) {
       setMessage("Upload failed. Please try again.");
-      console.error("Error uploading file:", error);
+      console.error(error);
       addNotification("Upload failed!", "error");
     } finally {
       setUploading(false);
@@ -114,18 +112,16 @@ const Home = () => {
     }
   };
 
-  // ✅ Helper: Success Notification
+  // Helper: Success Notification
   const addNotification = (text, type = "success") => {
     const id = Date.now();
     setNotifications([...notifications, { id, text, type }]);
-
-    // Auto-dismiss after 3 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     }, 3000);
   };
 
-  // ✅ Fetch Alignment Guide
+  // Fetch Alignment Guide
   const fetchAlignmentGuide = async () => {
     try {
       const response = await fetch("/api/get-alignment-guide", {
@@ -133,19 +129,18 @@ const Home = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hoopSize }),
       });
-
       if (!response.ok) throw new Error("Failed to fetch alignment guide");
 
       const data = await response.json();
       setAlignmentGuide(data.alignmentGuideUrl);
       addNotification("Hoop guide fetched!", "success");
     } catch (error) {
-      console.error("Error fetching alignment guide:", error);
+      console.error(error);
       addNotification("Failed to fetch hoop guide!", "error");
     }
   };
 
-  // 🆕 Toggle Dark Mode (Smooth transitions)
+  // Toggle Dark Mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     const root = document.documentElement;
@@ -158,16 +153,14 @@ const Home = () => {
     }
   };
 
-  // 🆕 Toggle Sidebar
+  // Toggle Sidebar
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   if (!isClient) return <Loader />;
 
   return (
     <div className={`${darkMode ? "dark-mode" : ""}`}>
-      {/* ───────────────────────────
-          🆕 SIDEBAR NAVIGATION
-          ─────────────────────────── */}
+      {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Menu</h2>
@@ -180,23 +173,20 @@ const Home = () => {
         </ul>
       </aside>
 
-      {/* 🆕 Sidebar Toggle Button */}
+      {/* SIDEBAR Toggle */}
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
 
-      {/* 🆕 Dark Mode Toggle */}
+      {/* Dark Mode Toggle */}
       <div className="dark-mode-toggle" onClick={toggleDarkMode}>
         {darkMode ? <SunIcon /> : <MoonIcon />}
       </div>
 
-      {/* ───────────────────────────
-          MAIN CONTENT SHIFT
-          ─────────────────────────── */}
-      <div className={`main-content ${sidebarOpen ? "shifted" : ""} container fadeIn`}>
-        {/* ───────────────────────────
-            AUTHENTICATION SECTION
-            ─────────────────────────── */}
+      {/* main-content SHIFT */}
+      <div className={`main-content container fadeIn ${sidebarOpen ? "shifted" : ""}`}>
+        
+        {/* AUTH */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
             <Button
@@ -218,9 +208,7 @@ const Home = () => {
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        {/* ───────────────────────────
-            FILE UPLOAD SECTION
-            ─────────────────────────── */}
+        {/* FILE UPLOAD */}
         <Card title="Upload Files">
           <div
             ref={dropRef}
@@ -236,17 +224,14 @@ const Home = () => {
               onChange={(e) => handleUpload(Array.from(e.target.files))}
             />
           </div>
-
           {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
 
-          {/* ✅ Upload Progress Bar */}
           {uploading && (
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
             </div>
           )}
 
-          {/* 🆕 File Previews */}
           {uploadedFiles.map((url, i) => (
             <div key={i} className="file-preview">
               <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
@@ -254,9 +239,7 @@ const Home = () => {
           ))}
         </Card>
 
-        {/* ───────────────────────────
-            HOOP SELECTION
-            ─────────────────────────── */}
+        {/* HOOP SELECTION */}
         <Card title="Hoop Selection">
           <select
             className="dropdown"
@@ -271,9 +254,7 @@ const Home = () => {
           </select>
         </Card>
 
-        {/* ───────────────────────────
-            FILE SEARCH
-            ─────────────────────────── */}
+        {/* SEARCH */}
         <Card title="Search Files">
           <div className="search-bar">
             <SearchIcon />
@@ -287,9 +268,7 @@ const Home = () => {
           </div>
         </Card>
 
-        {/* ───────────────────────────
-            HOOP ALIGNMENT GUIDE
-            ─────────────────────────── */}
+        {/* HOOP GUIDE */}
         <Button onClick={fetchAlignmentGuide}>
           <HoopIcon /> Show Hoop Guides
         </Button>
@@ -301,9 +280,7 @@ const Home = () => {
           />
         )}
 
-        {/* ───────────────────────────
-            UPLOAD CONFIRMATION MODAL
-            ─────────────────────────── */}
+        {/* MODAL */}
         <Modal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
@@ -312,9 +289,7 @@ const Home = () => {
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
-        {/* ───────────────────────────
-            FLOATING ACTION BUTTON (FAB)
-            ─────────────────────────── */}
+        {/* FAB */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
           <div className="fab"><PlusIcon /></div>
           {fabOpen && (
@@ -325,9 +300,7 @@ const Home = () => {
           )}
         </div>
 
-        {/* ───────────────────────────
-            NOTIFICATION SYSTEM
-            ─────────────────────────── */}
+        {/* NOTIFICATIONS */}
         <div className="notification-container">
           {notifications.map((note) => (
             <div key={note.id} className={`notification ${note.type}`}>
@@ -335,8 +308,7 @@ const Home = () => {
             </div>
           ))}
         </div>
-      </div>
-      {/* END .main-content */}
+      </div> {/* end main-content */}
     </div>
   );
 };
