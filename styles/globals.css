@@ -23,10 +23,10 @@ body {
 /* Container with fade-in + centering */
 .container.fadeIn {
   animation: fadeIn 0.5s ease-in-out;
-  max-width: 900px;       /* Adjust as needed */
-  margin: 2rem auto;      /* Center horizontally, add top/bottom space */
-  padding: 0 1rem;        /* Small horizontal padding for mobile */
-  text-align: center;     /* Center text within the container */
+  max-width: 900px;        /* Adjust as needed */
+  margin: 2rem auto;       /* Center horizontally, add top/bottom space */
+  padding: 0 1rem;         /* Small horizontal padding for mobile */
+  text-align: center;      /* Center text within the container */
 }
 
 /* 🌸 Typography */
@@ -36,12 +36,10 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--primary-text);
   margin: 0.5rem 0;
 }
-
 h1.title {
-  margin-top: 1.5rem;       /* Extra top margin for main heading */
-  margin-bottom: 1.5rem;    /* Spacing below main heading */
+  margin-top: 1.5rem;     
+  margin-bottom: 1.5rem;  
 }
-
 p {
   font-size: 1.1rem;
   color: var(--primary-text);
@@ -58,6 +56,7 @@ button {
   cursor: pointer;
   transition: all 0.3s ease-in-out;
   box-shadow: 0 4px 6px var(--shadow-color);
+  margin-top: 1rem; /* Add a little space above each button if needed */
 }
 
 button:hover {
@@ -77,6 +76,7 @@ input, select {
   background: var(--secondary-bg);
   color: var(--primary-text);
   text-align: center; /* center the input text */
+  margin-left: 0.5rem; /* tiny left margin to separate from icon if needed */
 }
 
 input:focus, select:focus {
@@ -91,11 +91,10 @@ input:focus, select:focus {
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
-  margin-bottom: 30px;    /* slightly larger gap between cards */
+  margin-bottom: 30px; /* slightly larger gap between cards */
   transition: all 0.2s ease-in-out;
-  text-align: center;     /* center text in card */
+  text-align: center;  /* center text in card */
 }
-
 .card:hover {
   transform: translateY(-3px);
 }
@@ -111,13 +110,12 @@ input:focus, select:focus {
   background: var(--secondary-bg);
   color: var(--primary-text);
   margin: 0 auto;
+  margin-bottom: 1.5rem; /* Add spacing below the box so button sits lower */
 }
-
 .upload-box:hover {
   border-color: var(--accent);
   transform: scale(1.02);
 }
-
 .upload-box.dragover {
   border-color: var(--accent-alt);
   background: var(--accent-alt);
@@ -144,7 +142,6 @@ input:focus, select:focus {
   animation: fadeIn 0.3s ease-in-out;
   z-index: 1000;
 }
-
 .modal {
   background: var(--secondary-bg);
   padding: 20px;
@@ -154,7 +151,6 @@ input:focus, select:focus {
   transform: scale(0.9);
   animation: scaleUp 0.2s ease-in-out forwards;
 }
-
 @keyframes scaleUp {
   to {
     transform: scale(1);
@@ -165,13 +161,12 @@ input:focus, select:focus {
 .progress-container {
   width: 100%;
   max-width: 400px;
-  margin: 0.5rem auto 0; /* center horizontally, space above bar */
+  margin: 0.5rem auto 0; 
   height: 8px;
   background: var(--border-color);
   border-radius: var(--radius);
   overflow: hidden;
 }
-
 .progress-bar {
   width: 0%;
   height: 100%;
@@ -195,7 +190,6 @@ input:focus, select:focus {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes spin {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -235,7 +229,6 @@ input:focus, select:focus {
   opacity: 1;
   visibility: visible;
 }
-
 .sidebar {
   position: fixed;
   top: 0;
@@ -253,7 +246,6 @@ input:focus, select:focus {
 .sidebar.open {
   transform: translateX(0);
 }
-
 .sidebar-header {
   display: flex;
   justify-content: space-between;
@@ -267,7 +259,6 @@ input:focus, select:focus {
   background: var(--accent-alt);
   padding: 5px 10px;
 }
-
 .sidebar ul {
   list-style: none;
   padding: 0;
@@ -306,7 +297,6 @@ input:focus, select:focus {
   z-index: 1301;
   cursor: pointer;
 }
-
 .fab {
   width: 56px;
   height: 56px;
@@ -318,11 +308,9 @@ input:focus, select:focus {
   justify-content: center;
   transition: all 0.3s;
 }
-
 .fab:hover {
   transform: scale(1.05);
 }
-
 .fab-options {
   margin-top: 10px;
   display: flex;
@@ -359,7 +347,6 @@ input:focus, select:focus {
 .file-preview {
   margin-top: 10px;
 }
-
 .thumb {
   max-width: 80px;
   max-height: 80px;
