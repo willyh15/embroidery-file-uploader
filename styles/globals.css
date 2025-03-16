@@ -216,73 +216,62 @@ input:focus, select:focus {
   z-index: 1100;
 }
 
-/* 🌸 Sidebar Navigation */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: -260px;
-  width: 260px;
-  height: 100%;
-  background: var(--secondary-bg);
-  box-shadow: 2px 0 8px var(--shadow-color);
-  padding: 20px;
-  transition: left 0.3s ease-in-out;
-  z-index: 1200;
+/* ──────────────────────────────────────────────────────────
+   RESPONSIVE SIDEBAR: uses different widths for mobile vs. desktop
+   ────────────────────────────────────────────────────────── */
+
+/* MOBILE VIEW (under 768px) */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -80vw;   /* hidden off-screen to the left */
+    width: 80vw;   /* 80% of viewport width on mobile */
+    height: 100%;
+    background: var(--secondary-bg);
+    box-shadow: 2px 0 8px var(--shadow-color);
+    padding: 20px;
+    transition: left 0.3s ease-in-out;
+    z-index: 1200;
+  }
+  .sidebar.open {
+    left: 0;       /* slide it in from the left */
+  }
+
+  .main-content {
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 0;
+  }
+  .main-content.shifted {
+    margin-left: 80vw;  /* shift content to the right by the same width */
+  }
 }
 
-.sidebar.open {
-  left: 0;
-}
+/* TABLET & DESKTOP (768px and up) */
+@media (min-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -20rem;  /* hidden off-screen to the left at ~320px */
+    width: 20rem;  /* 20rem is ~320px, adjustable */
+    height: 100%;
+    background: var(--secondary-bg);
+    box-shadow: 2px 0 8px var(--shadow-color);
+    padding: 20px;
+    transition: left 0.3s ease-in-out;
+    z-index: 1200;
+  }
+  .sidebar.open {
+    left: 0;       /* bring it in from the left */
+  }
 
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.sidebar-header h2 {
-  margin: 0;
-}
-
-.close-sidebar-btn {
-  background: var(--accent-alt);
-  padding: 5px 10px;
-}
-
-/* 🌸 Sidebar Links */
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sidebar ul li a {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px;
-  margin-bottom: 6px;
-  border-radius: var(--radius);
-  color: var(--primary-text);
-  text-decoration: none;
-  transition: 0.2s;
-}
-
-.sidebar ul li a:hover {
-  background: var(--accent);
-  color: #fff;
-}
-
-/* SHIFT using margin-left, not transform */
-.main-content {
-  margin-left: 0;
-  transition: margin-left 0.3s ease-in-out;
-  /* remove "transform: 0.3s" if you had it */
-}
-
-.main-content.shifted {
-  margin-left: 260px; /* same as sidebar width */
+  .main-content {
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 0;
+  }
+  .main-content.shifted {
+    margin-left: 20rem; /* shift main content by 20rem (~320px) */
+  }
 }
 
 /* 🌸 Menu Button */
@@ -328,7 +317,7 @@ input:focus, select:focus {
   transform: scale(1.05);
 }
 
-/* 🌸 FAB Options */
+/* FAB Options */
 .fab-options {
   margin-top: 10px;
   display: flex;
@@ -336,7 +325,7 @@ input:focus, select:focus {
   gap: 10px;
 }
 
-/* 🌸 Notification System */
+/* Notification System */
 .notification-container {
   position: fixed;
   top: 80px;
@@ -364,7 +353,7 @@ input:focus, select:focus {
   color: #fff;
 }
 
-/* 🌸 File Previews */
+/* File Previews */
 .file-preview {
   margin-top: 10px;
 }
