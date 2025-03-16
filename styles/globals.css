@@ -23,9 +23,10 @@ body {
 /* Container with fade-in + centering */
 .container.fadeIn {
   animation: fadeIn 0.5s ease-in-out;
-  max-width: 900px; /* Adjust as needed */
-  margin: 0 auto;   /* Center horizontally */
-  text-align: center; /* Center text within the container */
+  max-width: 900px;       /* Adjust as needed */
+  margin: 2rem auto;      /* Center horizontally, add top/bottom space */
+  padding: 0 1rem;        /* Small horizontal padding for mobile */
+  text-align: center;     /* Center text within the container */
 }
 
 /* 🌸 Typography */
@@ -34,6 +35,11 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   color: var(--primary-text);
   margin: 0.5rem 0;
+}
+
+h1.title {
+  margin-top: 1.5rem;       /* Extra top margin for main heading */
+  margin-bottom: 1.5rem;    /* Spacing below main heading */
 }
 
 p {
@@ -70,7 +76,7 @@ input, select {
   transition: 0.3s ease-in-out;
   background: var(--secondary-bg);
   color: var(--primary-text);
-  text-align: center; /* So inputs are also centered text */
+  text-align: center; /* center the input text */
 }
 
 input:focus, select:focus {
@@ -85,13 +91,9 @@ input:focus, select:focus {
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
-  margin-bottom: 20px;
+  margin-bottom: 30px;    /* slightly larger gap between cards */
   transition: all 0.2s ease-in-out;
-}
-
-/* Center text in each card */
-.card {
-  text-align: center;
+  text-align: center;     /* center text in card */
 }
 
 .card:hover {
@@ -108,7 +110,7 @@ input:focus, select:focus {
   position: relative;
   background: var(--secondary-bg);
   color: var(--primary-text);
-  margin: 0 auto; /* Additional horizontal centering if needed */
+  margin: 0 auto;
 }
 
 .upload-box:hover {
@@ -163,7 +165,7 @@ input:focus, select:focus {
 .progress-container {
   width: 100%;
   max-width: 400px;
-  margin: 0.5rem auto 0; /* center horizontally */
+  margin: 0.5rem auto 0; /* center horizontally, space above bar */
   height: 8px;
   background: var(--border-color);
   border-radius: var(--radius);
@@ -215,9 +217,8 @@ input:focus, select:focus {
 }
 
 /* ──────────────────────────────────────────────────────────
-   OVERLAY SIDEBAR: Overlays on top (no white).
+   OVERLAY SIDEBAR (no white):
    ────────────────────────────────────────────────────────── */
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -288,16 +289,16 @@ input:focus, select:focus {
   color: #fff;
 }
 
-/* 🌸 Menu Button */
+/* Menu Button */
 .menu-btn {
   position: fixed;
   top: 20px;
   left: 20px;
   cursor: pointer;
-  z-index: 1301; 
+  z-index: 1301;
 }
 
-/* 🌸 Floating Action Button */
+/* Floating Action Button */
 .fab-container {
   position: fixed;
   bottom: 30px;
