@@ -164,7 +164,7 @@ const Home = () => {
   if (!isClient) return <Loader />;
 
   return (
-    <div className={`container fadeIn ${darkMode ? "dark-mode" : ""}`}>
+    <div className={`${darkMode ? "dark-mode" : ""}`}>
       {/* ───────────────────────────
           🆕 SIDEBAR NAVIGATION
           ─────────────────────────── */}
@@ -191,146 +191,152 @@ const Home = () => {
       </div>
 
       {/* ───────────────────────────
-          AUTHENTICATION SECTION
+          MAIN CONTENT SHIFT
           ─────────────────────────── */}
-      {session ? (
-        <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-          <Button
-            onClick={() => signOut()}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
+      <div className={`main-content ${sidebarOpen ? "shifted" : ""} container fadeIn`}>
+        {/* ───────────────────────────
+            AUTHENTICATION SECTION
+            ─────────────────────────── */}
+        {session ? (
+          <Card title={`Welcome, ${session.user?.name || "User"}!`}>
+            <Button
+              onClick={() => signOut()}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <LogoutIcon /> Logout
+            </Button>
+            {showTooltip && <span className="tooltip">Sign out of your account</span>}
+          </Card>
+        ) : (
+          <Card title="Please log in to upload files.">
+            <Button onClick={() => signIn()}>
+              <LoginIcon /> Login
+            </Button>
+          </Card>
+        )}
+
+        <h1 className="title">Embroidery File Uploader</h1>
+
+        {/* ───────────────────────────
+            FILE UPLOAD SECTION
+            ─────────────────────────── */}
+        <Card title="Upload Files">
+          <div
+            ref={dropRef}
+            className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}
+            onDragEnter={() => setHovering(true)}
+            onDragLeave={() => setHovering(false)}
           >
-            <LogoutIcon /> Logout
-          </Button>
-          {showTooltip && <span className="tooltip">Sign out of your account</span>}
-        </Card>
-      ) : (
-        <Card title="Please log in to upload files.">
-          <Button onClick={() => signIn()}>
-            <LoginIcon /> Login
-          </Button>
-        </Card>
-      )}
-
-      <h1 className="title">Embroidery File Uploader</h1>
-
-      {/* ───────────────────────────
-          FILE UPLOAD SECTION
-          ─────────────────────────── */}
-      <Card title="Upload Files">
-        <div
-          ref={dropRef}
-          className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}
-          onDragEnter={() => setHovering(true)}
-          onDragLeave={() => setHovering(false)}
-        >
-          <UploadIcon />
-          Drag & Drop files here or
-          <input
-            type="file"
-            multiple
-            onChange={(e) => handleUpload(Array.from(e.target.files))}
-          />
-        </div>
-
-        {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
-
-        {/* ✅ Upload Progress Bar */}
-        {uploading && (
-          <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+            <UploadIcon />
+            Drag & Drop files here or
+            <input
+              type="file"
+              multiple
+              onChange={(e) => handleUpload(Array.from(e.target.files))}
+            />
           </div>
-        )}
 
-        {/* 🆕 File Previews */}
-        {uploadedFiles.map((url, i) => (
-          <div key={i} className="file-preview">
-            <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
-          </div>
-        ))}
-      </Card>
+          {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
 
-      {/* ───────────────────────────
-          HOOP SELECTION
-          ─────────────────────────── */}
-      <Card title="Hoop Selection">
-        <select
-          className="dropdown"
-          onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
-        >
-          <option value="">Select Hoop Size</option>
-          {hoopSizes.map((size) => (
-            <option key={size.name} value={size.name}>
-              {size.name} ({size.width}x{size.height} mm)
-            </option>
+          {/* ✅ Upload Progress Bar */}
+          {uploading && (
+            <div className="progress-container">
+              <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+            </div>
+          )}
+
+          {/* 🆕 File Previews */}
+          {uploadedFiles.map((url, i) => (
+            <div key={i} className="file-preview">
+              <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
+            </div>
           ))}
-        </select>
-      </Card>
+        </Card>
 
-      {/* ───────────────────────────
-          FILE SEARCH
-          ─────────────────────────── */}
-      <Card title="Search Files">
-        <div className="search-bar">
-          <SearchIcon />
-          <input
-            className="search-input"
-            type="text"
-            placeholder="Search files..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+        {/* ───────────────────────────
+            HOOP SELECTION
+            ─────────────────────────── */}
+        <Card title="Hoop Selection">
+          <select
+            className="dropdown"
+            onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
+          >
+            <option value="">Select Hoop Size</option>
+            {hoopSizes.map((size) => (
+              <option key={size.name} value={size.name}>
+                {size.name} ({size.width}x{size.height} mm)
+              </option>
+            ))}
+          </select>
+        </Card>
+
+        {/* ───────────────────────────
+            FILE SEARCH
+            ─────────────────────────── */}
+        <Card title="Search Files">
+          <div className="search-bar">
+            <SearchIcon />
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </Card>
+
+        {/* ───────────────────────────
+            HOOP ALIGNMENT GUIDE
+            ─────────────────────────── */}
+        <Button onClick={fetchAlignmentGuide}>
+          <HoopIcon /> Show Hoop Guides
+        </Button>
+        {alignmentGuide && (
+          <img
+            className="hand-drawn"
+            src={alignmentGuide}
+            alt="Hoop Alignment Guide"
           />
-        </div>
-      </Card>
-
-      {/* ───────────────────────────
-          HOOP ALIGNMENT GUIDE
-          ─────────────────────────── */}
-      <Button onClick={fetchAlignmentGuide}>
-        <HoopIcon /> Show Hoop Guides
-      </Button>
-      {alignmentGuide && (
-        <img
-          className="hand-drawn"
-          src={alignmentGuide}
-          alt="Hoop Alignment Guide"
-        />
-      )}
-
-      {/* ───────────────────────────
-          UPLOAD CONFIRMATION MODAL
-          ─────────────────────────── */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="Upload Successful"
-      >
-        <p>Your file has been uploaded successfully!</p>
-      </Modal>
-
-      {/* ───────────────────────────
-          FLOATING ACTION BUTTON (FAB)
-          ─────────────────────────── */}
-      <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
-        <div className="fab"><PlusIcon /></div>
-        {fabOpen && (
-          <div className="fab-options">
-            <Button onClick={() => setShowModal(true)}>Upload</Button>
-            <Button onClick={() => fetchAlignmentGuide()}>Hoop Guide</Button>
-          </div>
         )}
-      </div>
 
-      {/* ───────────────────────────
-          NOTIFICATION SYSTEM
-          ─────────────────────────── */}
-      <div className="notification-container">
-        {notifications.map((note) => (
-          <div key={note.id} className={`notification ${note.type}`}>
-            {note.text}
-          </div>
-        ))}
+        {/* ───────────────────────────
+            UPLOAD CONFIRMATION MODAL
+            ─────────────────────────── */}
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title="Upload Successful"
+        >
+          <p>Your file has been uploaded successfully!</p>
+        </Modal>
+
+        {/* ───────────────────────────
+            FLOATING ACTION BUTTON (FAB)
+            ─────────────────────────── */}
+        <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
+          <div className="fab"><PlusIcon /></div>
+          {fabOpen && (
+            <div className="fab-options">
+              <Button onClick={() => setShowModal(true)}>Upload</Button>
+              <Button onClick={() => fetchAlignmentGuide()}>Hoop Guide</Button>
+            </div>
+          )}
+        </div>
+
+        {/* ───────────────────────────
+            NOTIFICATION SYSTEM
+            ─────────────────────────── */}
+        <div className="notification-container">
+          {notifications.map((note) => (
+            <div key={note.id} className={`notification ${note.type}`}>
+              {note.text}
+            </div>
+          ))}
+        </div>
       </div>
+      {/* END .main-content */}
     </div>
   );
 };
