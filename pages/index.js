@@ -70,6 +70,9 @@ const Home = () => {
   const [scaleFactor, setScaleFactor] = useState(1.0);
   const [splitFiles, setSplitFiles] = useState([]);
 
+  // ──────────────────────────────────────────────────────────
+  //  INITIALIZE CLIENT & FETCH HOOP SIZES
+  // ──────────────────────────────────────────────────────────
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -83,7 +86,9 @@ const Home = () => {
     fetchHoopSizes();
   }, []);
 
-  // File Upload Handler
+  // ──────────────────────────────────────────────────────────
+  //  FILE UPLOAD HANDLER
+  // ──────────────────────────────────────────────────────────
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -112,7 +117,9 @@ const Home = () => {
     }
   };
 
-  // Helper: Success Notification
+  // ──────────────────────────────────────────────────────────
+  //  NOTIFICATION HELPER
+  // ──────────────────────────────────────────────────────────
   const addNotification = (text, type = "success") => {
     const id = Date.now();
     setNotifications([...notifications, { id, text, type }]);
@@ -121,7 +128,9 @@ const Home = () => {
     }, 3000);
   };
 
-  // Fetch Alignment Guide
+  // ──────────────────────────────────────────────────────────
+  //  FETCH ALIGNMENT GUIDE
+  // ──────────────────────────────────────────────────────────
   const fetchAlignmentGuide = async () => {
     try {
       const response = await fetch("/api/get-alignment-guide", {
@@ -140,7 +149,9 @@ const Home = () => {
     }
   };
 
-  // Toggle Dark Mode
+  // ──────────────────────────────────────────────────────────
+  //  DARK MODE TOGGLE
+  // ──────────────────────────────────────────────────────────
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     const root = document.documentElement;
@@ -153,9 +164,14 @@ const Home = () => {
     }
   };
 
-  // Toggle Sidebar
+  // ──────────────────────────────────────────────────────────
+  //  SIDEBAR TOGGLE
+  // ──────────────────────────────────────────────────────────
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+  // ──────────────────────────────────────────────────────────
+  //  EARLY LOADER WHEN SSR
+  // ──────────────────────────────────────────────────────────
   if (!isClient) return <Loader />;
 
   return (
@@ -173,7 +189,12 @@ const Home = () => {
         </ul>
       </aside>
 
-      {/* SIDEBAR Toggle */}
+      {/* OVERLAY BEHIND SIDEBAR */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay open" onClick={toggleSidebar} />
+      )}
+
+      {/* SIDEBAR Toggle Button */}
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
@@ -183,10 +204,10 @@ const Home = () => {
         {darkMode ? <SunIcon /> : <MoonIcon />}
       </div>
 
-      {/* main-content SHIFT */}
-      <div className={`main-content container fadeIn ${sidebarOpen ? "shifted" : ""}`}>
+      {/* MAIN CONTENT (no shifting) */}
+      <div className="main-content container fadeIn">
         
-        {/* AUTH */}
+        {/* AUTH SECTION */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
             <Button
@@ -208,7 +229,7 @@ const Home = () => {
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        {/* FILE UPLOAD */}
+        {/* FILE UPLOAD SECTION */}
         <Card title="Upload Files">
           <div
             ref={dropRef}
@@ -224,14 +245,17 @@ const Home = () => {
               onChange={(e) => handleUpload(Array.from(e.target.files))}
             />
           </div>
+
           {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
 
+          {/* Progress Bar */}
           {uploading && (
             <div className="progress-container">
               <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
             </div>
           )}
 
+          {/* File Previews */}
           {uploadedFiles.map((url, i) => (
             <div key={i} className="file-preview">
               <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
@@ -239,7 +263,7 @@ const Home = () => {
           ))}
         </Card>
 
-        {/* HOOP SELECTION */}
+        {/* HOOP Selection */}
         <Card title="Hoop Selection">
           <select
             className="dropdown"
@@ -289,7 +313,7 @@ const Home = () => {
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
-        {/* FAB */}
+        {/* FLOATING ACTION BUTTON */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
           <div className="fab"><PlusIcon /></div>
           {fabOpen && (
@@ -308,7 +332,7 @@ const Home = () => {
             </div>
           ))}
         </div>
-      </div> {/* end main-content */}
+      </div>
     </div>
   );
 };
