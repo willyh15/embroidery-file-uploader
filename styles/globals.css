@@ -1,32 +1,77 @@
+/* 🌸 Pastel & Feminine Theme */
+:root {
+  --primary-bg: #FDF8F1; /* Cream */
+  --primary-text: #5D4A66; /* Muted Lilac (For readability) */
+  --secondary-bg: #F2D7D9; /* Soft Blush Pink */
+  --accent: #F4A9A8; /* Warm Coral */
+  --accent-alt: #C1D7C3; /* Light Sage */
+  --border-color: rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.05);
+  --radius: 12px;
+}
+
+/* 🌸 Global Styles */
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
   margin: 0;
   padding: 0;
+  line-height: 1.6;
 }
 
-.container {
-  max-width: 600px;
-  margin: auto;
-  padding: 10px;
+/* 🌸 Headers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Quicksand", sans-serif;
+  font-weight: 600;
 }
 
+/* 🌸 Buttons */
 button {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  font-size: 16px;
-  margin-bottom: 10px;
+  font-family: "Quicksand", sans-serif;
+  background: var(--accent);
+  color: white;
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+  box-shadow: 0 4px 6px var(--shadow-color);
 }
 
+button:hover {
+  background: var(--accent-alt);
+}
+
+/* 🌸 Inputs */
 input, select {
-  width: 100%;
+  font-family: "Montserrat", sans-serif;
   padding: 10px;
-  margin-bottom: 10px;
-  font-size: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  outline: none;
+  transition: 0.2s ease-in-out;
 }
 
-@media (max-width: 600px) {
-  .container {
-    width: 90%;
-  }
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 5px var(--accent);
+}
+
+/* 🌸 Card UI */
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+/* 🌸 Hand-Drawn Icons (Simulated with SVG Filter) */
+img.hand-drawn {
+  filter: drop-shadow(1px 1px 2px var(--shadow-color));
+}
+
+/* 🌸 Soft Shadows */
+.soft-shadow {
+  box-shadow: 0 4px 10px var(--shadow-color);
 }
