@@ -130,3 +130,19 @@ img.hand-drawn {
   border-radius: var(--radius);
   margin-top: 10px;
 }
+
+/* 🌸 Loading Spinner */
+.loader {
+  border: 4px solid transparent;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
