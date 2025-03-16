@@ -18,7 +18,7 @@ import {
   SunIcon,
   SettingsIcon,
   ProfileIcon
-} from "../components/Icons"; // Additional icons
+} from "../components/Icons"; // Additional icons for the UI
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
@@ -118,7 +118,8 @@ const Home = () => {
   const addNotification = (text, type = "success") => {
     const id = Date.now();
     setNotifications([...notifications, { id, text, type }]);
-    // Auto-dismiss after 3s
+
+    // Auto-dismiss after 3 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     }, 3000);
@@ -144,7 +145,7 @@ const Home = () => {
     }
   };
 
-  // 🆕 Toggle Dark Mode (Refined transition)
+  // 🆕 Toggle Dark Mode (Smooth transitions)
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     const root = document.documentElement;
@@ -164,7 +165,9 @@ const Home = () => {
 
   return (
     <div className={`container fadeIn ${darkMode ? "dark-mode" : ""}`}>
-      {/* 🆕 Sidebar Navigation */}
+      {/* ───────────────────────────
+          🆕 SIDEBAR NAVIGATION
+          ─────────────────────────── */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Menu</h2>
@@ -187,7 +190,9 @@ const Home = () => {
         {darkMode ? <SunIcon /> : <MoonIcon />}
       </div>
 
-      {/* ✅ Authentication */}
+      {/* ───────────────────────────
+          AUTHENTICATION SECTION
+          ─────────────────────────── */}
       {session ? (
         <Card title={`Welcome, ${session.user?.name || "User"}!`}>
           <Button
@@ -209,7 +214,9 @@ const Home = () => {
 
       <h1 className="title">Embroidery File Uploader</h1>
 
-      {/* ✅ File Upload Section with Drag & Drop Effect */}
+      {/* ───────────────────────────
+          FILE UPLOAD SECTION
+          ─────────────────────────── */}
       <Card title="Upload Files">
         <div
           ref={dropRef}
@@ -219,8 +226,13 @@ const Home = () => {
         >
           <UploadIcon />
           Drag & Drop files here or
-          <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
+          <input
+            type="file"
+            multiple
+            onChange={(e) => handleUpload(Array.from(e.target.files))}
+          />
         </div>
+
         {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
 
         {/* ✅ Upload Progress Bar */}
@@ -238,7 +250,9 @@ const Home = () => {
         ))}
       </Card>
 
-      {/* ✅ Hoop Selection */}
+      {/* ───────────────────────────
+          HOOP SELECTION
+          ─────────────────────────── */}
       <Card title="Hoop Selection">
         <select
           className="dropdown"
@@ -253,7 +267,9 @@ const Home = () => {
         </select>
       </Card>
 
-      {/* ✅ File Search */}
+      {/* ───────────────────────────
+          FILE SEARCH
+          ─────────────────────────── */}
       <Card title="Search Files">
         <div className="search-bar">
           <SearchIcon />
@@ -267,20 +283,34 @@ const Home = () => {
         </div>
       </Card>
 
-      {/* ✅ Hoop Alignment Guide */}
+      {/* ───────────────────────────
+          HOOP ALIGNMENT GUIDE
+          ─────────────────────────── */}
       <Button onClick={fetchAlignmentGuide}>
         <HoopIcon /> Show Hoop Guides
       </Button>
       {alignmentGuide && (
-        <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />
+        <img
+          className="hand-drawn"
+          src={alignmentGuide}
+          alt="Hoop Alignment Guide"
+        />
       )}
 
-      {/* ✅ Upload Confirmation Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
+      {/* ───────────────────────────
+          UPLOAD CONFIRMATION MODAL
+          ─────────────────────────── */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Upload Successful"
+      >
         <p>Your file has been uploaded successfully!</p>
       </Modal>
 
-      {/* ✅ Floating Action Button (FAB) */}
+      {/* ───────────────────────────
+          FLOATING ACTION BUTTON (FAB)
+          ─────────────────────────── */}
       <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
         <div className="fab"><PlusIcon /></div>
         {fabOpen && (
@@ -291,7 +321,9 @@ const Home = () => {
         )}
       </div>
 
-      {/* 🆕 Notification System */}
+      {/* ───────────────────────────
+          NOTIFICATION SYSTEM
+          ─────────────────────────── */}
       <div className="notification-container">
         {notifications.map((note) => (
           <div key={note.id} className={`notification ${note.type}`}>
