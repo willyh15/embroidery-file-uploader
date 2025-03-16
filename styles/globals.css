@@ -32,8 +32,8 @@ p {
   color: var(--primary-text);
 }
 
-/* 🌸 Buttons */
-button, .btn {
+/* 🌸 Smooth Button Hover Effects */
+button {
   font-family: "Quicksand", sans-serif;
   background: var(--accent);
   color: white;
@@ -41,13 +41,30 @@ button, .btn {
   border-radius: var(--radius);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s ease-in-out;
   box-shadow: 0 4px 6px var(--shadow-color);
 }
 
-button:hover, .btn:hover {
+button:hover {
   background: var(--accent-alt);
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px var(--shadow-color);
+}
+
+/* 🌸 Interactive Inputs */
+input, select {
+  font-family: "Montserrat", sans-serif;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  outline: none;
+  transition: all 0.3s ease-in-out;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 5px var(--accent);
+  transform: scale(1.02);
 }
 
 /* 🌸 Upload Box */
