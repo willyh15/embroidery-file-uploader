@@ -43,32 +43,21 @@ function Home() {
   const [message, setMessage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredFiles, setFilteredFiles] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // Hoop State
+  // Hoop
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // Additional
-  const [fabricType, setFabricType] = useState("cotton");
-  const [edgeCount, setEdgeCount] = useState(500);
-  const [recommendedDensity, setRecommendedDensity] = useState(null);
-
+  // SSR
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
     async function fetchHoopSizes() {
-      try {
-        const res = await fetch("/api/get-hoop-sizes");
-        const data = await res.json();
-        setHoopSizes(data.hoopSizes);
-      } catch (e) {
-        console.error("Error fetching hoop sizes:", e);
-      }
+      const res = await fetch("/api/get-hoop-sizes");
+      const data = await res.json();
+      setHoopSizes(data.hoopSizes);
     }
     fetchHoopSizes();
   }, []);
@@ -119,7 +108,6 @@ function Home() {
         body: JSON.stringify({ hoopSize }),
       });
       if (!response.ok) throw new Error("Failed to fetch alignment guide");
-
       const data = await response.json();
       setAlignmentGuide(data.alignmentGuideUrl);
       addNotification("Hoop guide fetched!", "success");
@@ -129,17 +117,16 @@ function Home() {
     }
   }
 
-  // Sidebar Toggle
+  // Sidebar
   function toggleSidebar() {
     setSidebarOpen(!sidebarOpen);
   }
 
-  // Early SSR loader
   if (!isClient) return <Loader />;
 
   return (
     <div>
-      {/* OVERLAY SIDEBAR */}
+      {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Menu</h2>
@@ -152,18 +139,19 @@ function Home() {
         </ul>
       </aside>
 
-      {/* BACKDROP OVERLAY */}
+      {/* OVERLAY */}
       {sidebarOpen && (
         <div className="sidebar-overlay open" onClick={toggleSidebar} />
       )}
 
-      {/* SIDEBAR Toggle */}
+      {/* MENU BTN */}
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT (centered in CSS) */}
       <div className="main-content container fadeIn">
+
         {/* AUTH */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
@@ -181,7 +169,7 @@ function Home() {
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        {/* FILE UPLOAD */}
+        {/* UPLOAD */}
         <Card title="Upload Files">
           <div
             ref={dropRef}
@@ -190,30 +178,28 @@ function Home() {
             onDragLeave={() => setHovering(false)}
           >
             <UploadIcon />
-            Drag & Drop files here or
+            Drag &amp; Drop files here or
             <input
               type="file"
               multiple
               onChange={(e) => handleUpload(Array.from(e.target.files))}
             />
           </div>
+
           {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
 
+          {/* Progress */}
           {uploading && (
             <div className="progress-container">
-              <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+              <div
+                className="progress-bar"
+                style={{ width: `${uploadProgress}%` }}
+              />
             </div>
           )}
-
-          {/* Previews */}
-          {uploadedFiles.map((url, i) => (
-            <div key={i} className="file-preview">
-              <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
-            </div>
-          ))}
         </Card>
 
-        {/* Hoop Selection */}
+        {/* HOOP */}
         <Card title="Hoop Selection">
           <select
             className="dropdown"
@@ -228,7 +214,7 @@ function Home() {
           </select>
         </Card>
 
-        {/* Search */}
+        {/* SEARCH */}
         <Card title="Search Files">
           <div className="search-bar">
             <SearchIcon />
@@ -242,12 +228,16 @@ function Home() {
           </div>
         </Card>
 
-        {/* Hoop Guide */}
+        {/* HOOP GUIDE */}
         <Button onClick={fetchAlignmentGuide}>
           <HoopIcon /> Show Hoop Guides
         </Button>
         {alignmentGuide && (
-          <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />
+          <img
+            className="hand-drawn"
+            src={alignmentGuide}
+            alt="Hoop Alignment Guide"
+          />
         )}
 
         {/* MODAL */}
@@ -266,7 +256,7 @@ function Home() {
           )}
         </div>
 
-        {/* Notifications */}
+        {/* NOTIFICATIONS */}
         <div className="notification-container">
           {notifications.map((note) => (
             <div key={note.id} className={`notification ${note.type}`}>
