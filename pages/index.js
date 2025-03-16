@@ -92,6 +92,24 @@ const Home = () => {
     }
   };
 
+  // ✅ Fix: Define fetchAlignmentGuide to prevent crash
+  const fetchAlignmentGuide = async () => {
+    try {
+      const response = await fetch("/api/get-alignment-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hoopSize }),
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch alignment guide");
+
+      const data = await response.json();
+      setAlignmentGuide(data.alignmentGuideUrl);
+    } catch (error) {
+      console.error("Error fetching alignment guide:", error);
+    }
+  };
+
   // File Upload Handlers
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
@@ -164,25 +182,9 @@ const Home = () => {
       {/* File Search */}
       <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
 
-      {/* Hoop Size Validation */}
-      <button onClick={() => validateHoopSize(fileUrl)}>Validate Hoop Size</button>
-      {isValidHoopSize !== null && (
-        <p>{isValidHoopSize ? "Design fits within hoop size ✅" : "Design exceeds hoop size ❌"}</p>
-      )}
-
-      {/* Stitch Density Recommendation */}
-      <button onClick={handleRecommendDensity}>Get Stitch Density Recommendation</button>
-      {recommendedDensity && <p>Recommended Stitch Density: {recommendedDensity}</p>}
-
-      {/* Processing Buttons */}
-      <button onClick={() => handleResize(fileUrl)}>Resize for Hoop</button>
-      <button onClick={() => handlePreview(fileUrl)}>Preview in Hoop</button>
+      {/* Hoop Size Validation & Alignment Guide */}
       <button onClick={fetchAlignmentGuide}>Show Hoop Guides</button>
-      <button onClick={() => handleAutoRotate(fileUrl)}>Auto Rotate for Best Fit</button>
-
-      {previewFile && <img src={previewFile} alt="Hoop Preview" />}
       {alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
-      {rotatedFile && <a href={rotatedFile} download>Download Rotated Design</a>}
     </div>
   );
 };
