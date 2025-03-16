@@ -5,7 +5,17 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import Modal from "../components/Modal";
 import Loader from "../components/Loader";
-import { UploadIcon, SearchIcon, HoopIcon, LogoutIcon, LoginIcon, PlusIcon } from "../components/Icons"; // ✅ Added Themed Icons
+import {
+  UploadIcon,
+  SearchIcon,
+  HoopIcon,
+  LogoutIcon,
+  LoginIcon,
+  PlusIcon,
+  MenuIcon,
+  MoonIcon,
+  SunIcon
+} from "../components/Icons"; // 🆕 Example icons for sidebar, dark mode
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
@@ -19,6 +29,15 @@ const Home = () => {
   const [hovering, setHovering] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+
+  // 🆕 Sidebar / Menu state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // 🆕 Dark mode state
+  const [darkMode, setDarkMode] = useState(false);
+
+  // 🆕 Success Notifications
+  const [notifications, setNotifications] = useState([]);
 
   // 🔹 File Management States
   const [files, setFiles] = useState([]);
@@ -36,6 +55,19 @@ const Home = () => {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
+  // 🔹 Additional states for recommendedDensity, etc.
+  const [fabricType, setFabricType] = useState("cotton");
+  const [edgeCount, setEdgeCount] = useState(500);
+  const [recommendedDensity, setRecommendedDensity] = useState(null);
+  const [resizedFile, setResizedFile] = useState(null);
+  const [rotatedFile, setRotatedFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [isValidHoopSize, setIsValidHoopSize] = useState(null);
+  const [adjustedFile, setAdjustedFile] = useState(null);
+  const [scaleFactor, setScaleFactor] = useState(1.0);
+  const [splitFiles, setSplitFiles] = useState([]);
+
+  // ✅ Ensure this component runs only on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -68,12 +100,27 @@ const Home = () => {
       setUploadedFiles([...uploadedFiles, ...data.urls]);
       setMessage("Upload successful!");
       setShowModal(true);
+      // 🆕 Add success notification
+      addNotification("Files uploaded successfully!", "success");
     } catch (error) {
       setMessage("Upload failed. Please try again.");
       console.error("Error uploading file:", error);
+      addNotification("Upload failed!", "error");
     } finally {
       setUploading(false);
+      setUploadProgress(100);
     }
+  };
+
+  // ✅ Success Notification Helper
+  const addNotification = (text, type = "success") => {
+    const id = Date.now();
+    setNotifications([...notifications, { id, text, type }]);
+
+    // Auto-dismiss after 3s
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 3000);
   };
 
   // ✅ Fetch Alignment Guide
@@ -89,19 +136,61 @@ const Home = () => {
 
       const data = await response.json();
       setAlignmentGuide(data.alignmentGuideUrl);
+      addNotification("Hoop guide fetched!", "success");
     } catch (error) {
       console.error("Error fetching alignment guide:", error);
+      addNotification("Failed to fetch hoop guide!", "error");
     }
   };
+
+  // 🆕 Toggle Dark Mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    if (!darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // 🆕 Toggle Sidebar
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   if (!isClient) return <Loader />;
 
   return (
-    <div className="container fadeIn">
+    <div className={`container fadeIn ${darkMode ? "dark-mode" : ""}`}>
+      {/* 🆕 Sidebar Navigation */}
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-header">
+          <h2>Menu</h2>
+          <Button onClick={toggleSidebar} className="close-sidebar-btn">X</Button>
+        </div>
+        <ul>
+          <li><a href="#">Dashboard</a></li>
+          <li><a href="#">My Files</a></li>
+          <li><a href="#">Settings</a></li>
+        </ul>
+      </aside>
+
+      {/* 🆕 Sidebar Toggle Button */}
+      <div className="menu-btn" onClick={toggleSidebar}>
+        <MenuIcon />
+      </div>
+
+      {/* 🆕 Dark Mode Toggle */}
+      <div className="dark-mode-toggle" onClick={toggleDarkMode}>
+        {darkMode ? <SunIcon /> : <MoonIcon />}
+      </div>
+
       {/* ✅ Authentication */}
       {session ? (
         <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-          <Button onClick={() => signOut()} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+          <Button
+            onClick={() => signOut()}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
             <LogoutIcon /> Logout
           </Button>
           {showTooltip && <span className="tooltip">Sign out of your account</span>}
@@ -118,7 +207,12 @@ const Home = () => {
 
       {/* ✅ File Upload Section with Drag & Drop Effect */}
       <Card title="Upload Files">
-        <div ref={dropRef} className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}>
+        <div
+          ref={dropRef}
+          className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}
+          onDragEnter={() => setHovering(true)}
+          onDragLeave={() => setHovering(false)}
+        >
           <UploadIcon />
           Drag & Drop files here or
           <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
@@ -131,14 +225,26 @@ const Home = () => {
             <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
           </div>
         )}
+
+        {/* 🆕 File Previews */}
+        {uploadedFiles.map((url, i) => (
+          <div key={i} className="file-preview">
+            <img src={url} alt="Uploaded preview" className="hand-drawn thumb" />
+          </div>
+        ))}
       </Card>
 
       {/* ✅ Hoop Selection */}
       <Card title="Hoop Selection">
-        <select className="dropdown" onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}>
+        <select
+          className="dropdown"
+          onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
+        >
           <option value="">Select Hoop Size</option>
           {hoopSizes.map((size) => (
-            <option key={size.name} value={size.name}>{size.name} ({size.width}x{size.height} mm)</option>
+            <option key={size.name} value={size.name}>
+              {size.name} ({size.width}x{size.height} mm)
+            </option>
           ))}
         </select>
       </Card>
@@ -147,7 +253,13 @@ const Home = () => {
       <Card title="Search Files">
         <div className="search-bar">
           <SearchIcon />
-          <input className="search-input" type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </Card>
 
@@ -155,7 +267,9 @@ const Home = () => {
       <Button onClick={fetchAlignmentGuide}>
         <HoopIcon /> Show Hoop Guides
       </Button>
-      {alignmentGuide && <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />}
+      {alignmentGuide && (
+        <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />
+      )}
 
       {/* ✅ Upload Confirmation Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
@@ -171,6 +285,15 @@ const Home = () => {
             <Button onClick={() => fetchAlignmentGuide()}>Hoop Guide</Button>
           </div>
         )}
+      </div>
+
+      {/* 🆕 Notification System */}
+      <div className="notification-container">
+        {notifications.map((note) => (
+          <div key={note.id} className={`notification ${note.type}`}>
+            {note.text}
+          </div>
+        ))}
       </div>
     </div>
   );
