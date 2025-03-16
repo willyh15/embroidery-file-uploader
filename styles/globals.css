@@ -1,11 +1,10 @@
 /* 🌸 Dark Pink Theme (Single Mode) */
 :root {
-  /* Use a deeper pinkish color as your main background */
   --primary-bg: #33202E;       /* Dark, muted pink/purple */
   --primary-text: #FBD3E0;     /* Lighter pink text for contrast */
-  --secondary-bg: #44303D;     /* Secondary darker pink-ish for cards/boxes */
-  --accent: #F4A9A8;           /* Existing Warm Coral accent */
-  --accent-alt: #C1D7C3;       /* Light Sage as an alternate accent */
+  --secondary-bg: #44303D;     /* Secondary darker pink for cards/boxes */
+  --accent: #F4A9A8;           /* Warm Coral accent */
+  --accent-alt: #C1D7C3;       /* Light Sage alternate accent */
   --border-color: rgba(255, 255, 255, 0.2);
   --shadow-color: rgba(0, 0, 0, 0.5);
   --radius: 12px;
@@ -21,9 +20,12 @@ body {
   line-height: 1.6;
 }
 
-/* For fade-in animation on the container */
+/* Container with fade-in + centering */
 .container.fadeIn {
   animation: fadeIn 0.5s ease-in-out;
+  max-width: 900px; /* Adjust as needed */
+  margin: 0 auto;   /* Center horizontally */
+  text-align: center; /* Center text within the container */
 }
 
 /* 🌸 Typography */
@@ -31,6 +33,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: "Quicksand", sans-serif;
   font-weight: 600;
   color: var(--primary-text);
+  margin: 0.5rem 0;
 }
 
 p {
@@ -67,6 +70,7 @@ input, select {
   transition: 0.3s ease-in-out;
   background: var(--secondary-bg);
   color: var(--primary-text);
+  text-align: center; /* So inputs are also centered text */
 }
 
 input:focus, select:focus {
@@ -85,6 +89,11 @@ input:focus, select:focus {
   transition: all 0.2s ease-in-out;
 }
 
+/* Center text in each card */
+.card {
+  text-align: center;
+}
+
 .card:hover {
   transform: translateY(-3px);
 }
@@ -93,13 +102,13 @@ input:focus, select:focus {
 .upload-box {
   border: 2px dashed var(--border-color);
   padding: 20px;
-  text-align: center;
   border-radius: var(--radius);
   transition: all 0.3s ease-in-out;
   cursor: pointer;
   position: relative;
   background: var(--secondary-bg);
   color: var(--primary-text);
+  margin: 0 auto; /* Additional horizontal centering if needed */
 }
 
 .upload-box:hover {
@@ -153,10 +162,11 @@ input:focus, select:focus {
 /* 🌸 Upload Progress Bar */
 .progress-container {
   width: 100%;
+  max-width: 400px;
+  margin: 0.5rem auto 0; /* center horizontally */
   height: 8px;
   background: var(--border-color);
   border-radius: var(--radius);
-  margin-top: 10px;
   overflow: hidden;
 }
 
@@ -205,7 +215,7 @@ input:focus, select:focus {
 }
 
 /* ──────────────────────────────────────────────────────────
-   OVERLAY SIDEBAR: simply overlays on top, no white background
+   OVERLAY SIDEBAR: Overlays on top (no white).
    ────────────────────────────────────────────────────────── */
 
 .sidebar-overlay {
@@ -225,7 +235,6 @@ input:focus, select:focus {
   visibility: visible;
 }
 
-/* Sidebar */
 .sidebar {
   position: fixed;
   top: 0;
@@ -279,12 +288,7 @@ input:focus, select:focus {
   color: #fff;
 }
 
-/* Main content just stays in place, no white background. */
-.main-content {
-  padding: 1rem;
-}
-
-/* Menu Button */
+/* 🌸 Menu Button */
 .menu-btn {
   position: fixed;
   top: 20px;
@@ -293,16 +297,7 @@ input:focus, select:focus {
   z-index: 1301; 
 }
 
-/* Dark Mode Toggle */
-.dark-mode-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  cursor: pointer;
-  z-index: 1301;
-}
-
-/* Floating Action Button */
+/* 🌸 Floating Action Button */
 .fab-container {
   position: fixed;
   bottom: 30px;
@@ -327,7 +322,6 @@ input:focus, select:focus {
   transform: scale(1.05);
 }
 
-/* FAB Options */
 .fab-options {
   margin-top: 10px;
   display: flex;
