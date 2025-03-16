@@ -150,7 +150,7 @@ const Home = () => {
   if (!isClient) return <Loader />;
 
   return (
-    <div style={{ padding: 20 }}>
+    <div className="container fadeIn">
       {/* ✅ Authentication */}
       {session ? (
         <Card title={`Welcome, ${session.user?.name || "User"}!`}>
@@ -162,26 +162,27 @@ const Home = () => {
         </Card>
       )}
 
-      <h1>Embroidery File Uploader</h1>
+      <h1 className="title">Embroidery File Uploader</h1>
 
-      {/* ✅ File Upload Section */}
+      {/* ✅ File Upload Section with Drag & Drop Effect */}
       <Card title="Upload Files">
-        <div ref={dropRef} className="soft-shadow" style={{
-          border: "2px dashed var(--border-color)", 
-          padding: "20px", 
-          textAlign: "center",
-          background: "white",
-          borderRadius: "var(--radius)"
-        }}>
+        <div ref={dropRef} className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}>
           Drag & Drop files here or
           <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
         </div>
         {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
+
+        {/* ✅ Upload Progress Bar */}
+        {uploading && (
+          <div className="progress-container">
+            <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+          </div>
+        )}
       </Card>
 
       {/* ✅ Hoop Selection */}
       <Card title="Hoop Selection">
-        <select onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}>
+        <select className="dropdown" onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}>
           <option value="">Select Hoop Size</option>
           {hoopSizes.map((size) => (
             <option key={size.name} value={size.name}>{size.name} ({size.width}x{size.height} mm)</option>
@@ -191,12 +192,12 @@ const Home = () => {
 
       {/* ✅ File Search */}
       <Card title="Search Files">
-        <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
+        <input className="search-input" type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
       </Card>
 
       {/* ✅ Hoop Alignment Guide */}
       <Button onClick={fetchAlignmentGuide}>Show Hoop Guides</Button>
-      {alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
+      {alignmentGuide && <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />}
 
       {/* ✅ Upload Confirmation Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
