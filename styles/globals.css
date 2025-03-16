@@ -1,10 +1,10 @@
-/* 🌸 Pastel & Feminine Theme */
+/* 🌸 Enhanced Pastel & Feminine Theme */
 :root {
-  --primary-bg: #FDF8F1; /* Cream */
-  --primary-text: #5D4A66; /* Muted Lilac (For readability) */
-  --secondary-bg: #F2D7D9; /* Soft Blush Pink */
-  --accent: #F4A9A8; /* Warm Coral */
-  --accent-alt: #C1D7C3; /* Light Sage */
+  --primary-bg: #FDF8F1;
+  --primary-text: #5D4A66;
+  --secondary-bg: #F2D7D9;
+  --accent: #F4A9A8;
+  --accent-alt: #C1D7C3;
   --border-color: rgba(0, 0, 0, 0.1);
   --shadow-color: rgba(0, 0, 0, 0.05);
   --radius: 12px;
@@ -18,16 +18,22 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-/* 🌸 Headers */
+/* 🌸 Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: "Quicksand", sans-serif;
   font-weight: 600;
 }
 
+p {
+  font-size: 1.1rem;
+  color: var(--primary-text);
+}
+
 /* 🌸 Buttons */
-button {
+button, .btn {
   font-family: "Quicksand", sans-serif;
   background: var(--accent);
   color: white;
@@ -35,12 +41,13 @@ button {
   border-radius: var(--radius);
   border: none;
   cursor: pointer;
-  transition: 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
   box-shadow: 0 4px 6px var(--shadow-color);
 }
 
-button:hover {
+button:hover, .btn:hover {
   background: var(--accent-alt);
+  transform: scale(1.05);
 }
 
 /* 🌸 Inputs */
@@ -64,9 +71,14 @@ input:focus, select:focus {
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
+  transition: all 0.2s ease-in-out;
 }
 
-/* 🌸 Hand-Drawn Icons (Simulated with SVG Filter) */
+.card:hover {
+  transform: translateY(-3px);
+}
+
+/* 🌸 Hand-Drawn Icons */
 img.hand-drawn {
   filter: drop-shadow(1px 1px 2px var(--shadow-color));
 }
@@ -74,31 +86,6 @@ img.hand-drawn {
 /* 🌸 Soft Shadows */
 .soft-shadow {
   box-shadow: 0 4px 10px var(--shadow-color);
-}
-
-/* 🌸 Button Styles */
-.btn {
-  font-family: "Quicksand", sans-serif;
-  padding: 12px 18px;
-  border-radius: var(--radius);
-  border: none;
-  cursor: pointer;
-  transition: 0.2s ease-in-out;
-  box-shadow: 0 4px 6px var(--shadow-color);
-}
-
-.btn.primary {
-  background: var(--accent);
-  color: white;
-}
-
-.btn.secondary {
-  background: var(--secondary-bg);
-  color: var(--primary-text);
-}
-
-.btn:hover {
-  opacity: 0.85;
 }
 
 /* 🌸 Modal */
@@ -112,6 +99,7 @@ img.hand-drawn {
   display: flex;
   justify-content: center;
   align-items: center;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .modal {
@@ -120,15 +108,14 @@ img.hand-drawn {
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
   text-align: center;
+  transform: scale(0.9);
+  animation: scaleUp 0.2s ease-in-out forwards;
 }
 
-.close-btn {
-  background: var(--accent);
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: var(--radius);
-  margin-top: 10px;
+@keyframes scaleUp {
+  to {
+    transform: scale(1);
+  }
 }
 
 /* 🌸 Loading Spinner */
