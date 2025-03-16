@@ -4,14 +4,15 @@ import dynamic from "next/dynamic";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Modal from "../components/Modal";
+import Loader from "../components/Loader";
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
   const sessionData = useSession();
-  const session = sessionData?.data || null; // ✅ Prevents destructuring undefined
+  const session = sessionData?.data || null;
   const dropRef = useRef(null);
 
-  // State for file management
+  // 🔹 State for file management
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -21,18 +22,18 @@ const Home = () => {
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  // File versioning & hoop-related state
   const [fileVersions, setFileVersions] = useState([]);
+
+  // 🔹 Hoop-related state
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // Stitch density recommendation state
+  // 🔹 Stitch density recommendation state
   const [fabricType, setFabricType] = useState("cotton");
   const [edgeCount, setEdgeCount] = useState(500);
   const [recommendedDensity, setRecommendedDensity] = useState(null);
 
-  // File processing state
+  // 🔹 File processing state
   const [resizedFile, setResizedFile] = useState(null);
   const [rotatedFile, setRotatedFile] = useState(null);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
@@ -42,15 +43,15 @@ const Home = () => {
   const [scaleFactor, setScaleFactor] = useState(1.0);
   const [splitFiles, setSplitFiles] = useState([]);
 
-  // Modal state
+  // 🔹 Modal state
   const [showModal, setShowModal] = useState(false);
 
-  // Ensure this component runs on the client side only
+  // ✅ Ensure this component runs only on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Fetch hoop sizes
+  // ✅ Fetch available hoop sizes
   useEffect(() => {
     const fetchHoopSizes = async () => {
       const response = await fetch("/api/get-hoop-sizes");
@@ -60,7 +61,7 @@ const Home = () => {
     fetchHoopSizes();
   }, []);
 
-  // Fetch uploaded files
+  // ✅ Fetch uploaded files (pagination support)
   useEffect(() => {
     const fetchFiles = async () => {
       try {
@@ -95,7 +96,7 @@ const Home = () => {
     }
   };
 
-  // ✅ Fetch alignment guide
+  // ✅ Fetch hoop alignment guide
   const fetchAlignmentGuide = async () => {
     try {
       const response = await fetch("/api/get-alignment-guide", {
@@ -113,7 +114,7 @@ const Home = () => {
     }
   };
 
-  // ✅ File Upload Handler
+  // ✅ File Upload Handler with loading state
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -146,7 +147,7 @@ const Home = () => {
     setFilteredFiles(uploadedFiles.filter((url) => url.toLowerCase().includes(query.toLowerCase())));
   };
 
-  if (!isClient) return <p>Loading...</p>;
+  if (!isClient) return <Loader />;
 
   return (
     <div style={{ padding: 20 }}>
@@ -175,7 +176,7 @@ const Home = () => {
           Drag & Drop files here or
           <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
         </div>
-        <Button onClick={handleUpload}>Upload File</Button>
+        {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
       </Card>
 
       {/* ✅ Hoop Selection */}
@@ -193,7 +194,7 @@ const Home = () => {
         <input type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
       </Card>
 
-      {/* ✅ Hoop Size Validation & Alignment Guide */}
+      {/* ✅ Hoop Alignment Guide */}
       <Button onClick={fetchAlignmentGuide}>Show Hoop Guides</Button>
       {alignmentGuide && <img src={alignmentGuide} alt="Hoop Alignment Guide" />}
 
@@ -205,5 +206,4 @@ const Home = () => {
   );
 };
 
-// Ensure this page is only rendered client-side (disabling SSR)
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
