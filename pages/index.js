@@ -5,6 +5,7 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import Modal from "../components/Modal";
 import Loader from "../components/Loader";
+
 import {
   UploadIcon,
   SearchIcon,
@@ -14,8 +15,10 @@ import {
   PlusIcon,
   MenuIcon,
   MoonIcon,
-  SunIcon
-} from "../components/Icons"; // 🆕 Example icons for sidebar, dark mode
+  SunIcon,
+  SettingsIcon,
+  ProfileIcon
+} from "../components/Icons"; // Additional icons
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
@@ -23,7 +26,7 @@ const Home = () => {
   const session = sessionData?.data || null;
   const dropRef = useRef(null);
 
-  // 🔹 UI States
+  // ─────────── UI States ───────────
   const [showModal, setShowModal] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
   const [hovering, setHovering] = useState(false);
@@ -39,7 +42,7 @@ const Home = () => {
   // 🆕 Success Notifications
   const [notifications, setNotifications] = useState([]);
 
-  // 🔹 File Management States
+  // ─────────── File Management States ───────────
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -51,11 +54,11 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [fileVersions, setFileVersions] = useState([]);
 
-  // 🔹 Hoop Selection
+  // ─────────── Hoop Selection ───────────
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // 🔹 Additional states for recommendedDensity, etc.
+  // ─────────── Additional States (Stitch Density, etc.) ───────────
   const [fabricType, setFabricType] = useState("cotton");
   const [edgeCount, setEdgeCount] = useState(500);
   const [recommendedDensity, setRecommendedDensity] = useState(null);
@@ -100,7 +103,6 @@ const Home = () => {
       setUploadedFiles([...uploadedFiles, ...data.urls]);
       setMessage("Upload successful!");
       setShowModal(true);
-      // 🆕 Add success notification
       addNotification("Files uploaded successfully!", "success");
     } catch (error) {
       setMessage("Upload failed. Please try again.");
@@ -112,11 +114,10 @@ const Home = () => {
     }
   };
 
-  // ✅ Success Notification Helper
+  // ✅ Helper: Success Notification
   const addNotification = (text, type = "success") => {
     const id = Date.now();
     setNotifications([...notifications, { id, text, type }]);
-
     // Auto-dismiss after 3s
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -143,13 +144,16 @@ const Home = () => {
     }
   };
 
-  // 🆕 Toggle Dark Mode
+  // 🆕 Toggle Dark Mode (Refined transition)
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+    const root = document.documentElement;
     if (!darkMode) {
-      document.documentElement.classList.add("dark");
+      root.classList.add("dark");
+      addNotification("Dark Mode Activated", "success");
     } else {
-      document.documentElement.classList.remove("dark");
+      root.classList.remove("dark");
+      addNotification("Light Mode Activated", "success");
     }
   };
 
@@ -167,9 +171,9 @@ const Home = () => {
           <Button onClick={toggleSidebar} className="close-sidebar-btn">X</Button>
         </div>
         <ul>
-          <li><a href="#">Dashboard</a></li>
+          <li><a href="#"><ProfileIcon /> Profile</a></li>
+          <li><a href="#"><SettingsIcon /> Settings</a></li>
           <li><a href="#">My Files</a></li>
-          <li><a href="#">Settings</a></li>
         </ul>
       </aside>
 
