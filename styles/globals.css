@@ -274,15 +274,15 @@ input:focus, select:focus {
   color: #fff;
 }
 
-/* 🌸 MAIN CONTENT SHIFT FOR SIDEBAR */
+/* SHIFT using margin-left, not transform */
 .main-content {
-  transition: transform 0.3s ease-in-out;
   margin-left: 0;
+  transition: margin-left 0.3s ease-in-out;
+  /* remove "transform: 0.3s" if you had it */
 }
 
-/* Shift content by the sidebar width (260px) when sidebar is open */
 .main-content.shifted {
-  transform: translateX(260px);
+  margin-left: 260px; /* same as sidebar width */
 }
 
 /* 🌸 Menu Button */
