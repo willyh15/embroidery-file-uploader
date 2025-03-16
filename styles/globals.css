@@ -10,6 +10,16 @@
   --radius: 12px;
 }
 
+:root.dark {
+  --primary-bg: #2c2c2c;
+  --primary-text: #eee;
+  --secondary-bg: #444;
+  --accent: #F4A9A8;
+  --accent-alt: #C1D7C3;
+  --border-color: rgba(255, 255, 255, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.6);
+}
+
 /* 🌸 Global Styles */
 body {
   font-family: "Montserrat", sans-serif;
@@ -18,6 +28,9 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
+}
+
+.container.fadeIn {
   animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -59,61 +72,23 @@ input, select {
   border-radius: var(--radius);
   outline: none;
   transition: all 0.3s ease-in-out;
-}
-
-input:focus, select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 5px var(--accent);
-  transform: scale(1.02);
-}
-
-/* 🌸 Upload Box */
-.upload-box {
-  border: 2px dashed var(--border-color);
-  padding: 20px;
-  text-align: center;
-  background: white;
-  border-radius: var(--radius);
-  transition: all 0.3s ease-in-out;
-  cursor: pointer;
-  position: relative;
-}
-
-.upload-box:hover {
-  border-color: var(--accent);
-  background: var(--secondary-bg);
-  transform: scale(1.02);
-}
-
-/* 🌸 Drag & Drop Effect */
-.upload-box.dragover {
-  border-color: var(--accent-alt);
   background: var(--primary-bg);
-  transform: scale(1.05);
-  transition: all 0.3s ease-in-out;
-}
-
-/* 🌸 Inputs */
-input, select {
-  font-family: "Montserrat", sans-serif;
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  outline: none;
-  transition: 0.2s ease-in-out;
+  color: var(--primary-text);
 }
 
 input:focus, select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 5px var(--accent);
+  transform: scale(1.02);
 }
 
 /* 🌸 Card UI */
 .card {
-  background: white;
+  background: var(--primary-bg);
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
+  margin-bottom: 20px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -121,9 +96,40 @@ input:focus, select:focus {
   transform: translateY(-3px);
 }
 
-/* 🌸 Hand-Drawn Icons */
-img.hand-drawn {
-  filter: drop-shadow(1px 1px 2px var(--shadow-color));
+/* 🌸 Upload Box */
+.upload-box {
+  border: 2px dashed var(--border-color);
+  padding: 20px;
+  text-align: center;
+  border-radius: var(--radius);
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+  position: relative;
+  color: var(--primary-text);
+  background: var(--secondary-bg);
+}
+
+.upload-box:hover {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
+.upload-box.dragover {
+  border-color: var(--accent-alt);
+  background: var(--primary-bg);
+  transform: scale(1.05);
+  transition: all 0.3s ease-in-out;
+}
+
+/* 🌸 File Previews */
+.file-preview {
+  margin-top: 10px;
+}
+
+.thumb {
+  max-width: 80px;
+  max-height: 80px;
+  margin-right: 8px;
 }
 
 /* 🌸 Soft Shadows */
@@ -146,7 +152,7 @@ img.hand-drawn {
 }
 
 .modal {
-  background: white;
+  background: var(--primary-bg);
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: 0 4px 10px var(--shadow-color);
@@ -189,7 +195,7 @@ img.hand-drawn {
   margin: auto;
 }
 
-/* 🌸 Fade-In Animation */
+/* 🌸 Fade-In & Spin Keyframes */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -199,6 +205,11 @@ img.hand-drawn {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* 🌸 Fullscreen Loader */
@@ -215,17 +226,137 @@ img.hand-drawn {
   backdrop-filter: blur(5px);
 }
 
-/* 🌸 Spinning Loader */
-.loader {
-  width: 50px;
-  height: 50px;
-  border: 6px solid var(--secondary-bg);
-  border-top: 6px solid var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+/* 🌸 Sidebar Navigation */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -260px;
+  width: 260px;
+  height: 100%;
+  background: var(--secondary-bg);
+  box-shadow: 2px 0 8px var(--shadow-color);
+  padding: 20px;
+  transition: left 0.3s ease-in-out;
+  z-index: 1000;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+}
+
+.close-sidebar-btn {
+  background: var(--accent-alt);
+  padding: 5px 10px;
+}
+
+/* 🌸 Sidebar Links */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li a {
+  display: block;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: var(--radius);
+  color: var(--primary-text);
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.sidebar ul li a:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* 🌸 Menu Button */
+.menu-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* 🌸 Dark Mode Toggle */
+.dark-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* 🌸 Floating Action Button */
+.fab-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1200;
+  cursor: pointer;
+}
+
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 4px 6px var(--shadow-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.fab:hover {
+  transform: scale(1.05);
+}
+
+/* 🌸 FAB Options */
+.fab-options {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 🌸 Notification System */
+.notification-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1300;
+}
+
+.notification {
+  padding: 10px 15px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px var(--shadow-color);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.notification.success {
+  background: var(--accent-alt);
+  color: var(--primary-text);
+}
+
+.notification.error {
+  background: #ff6961;
+  color: #fff;
 }
