@@ -201,7 +201,7 @@ img.hand-drawn {
   }
 }
 
-/* 🌸 Loader Overlay */
+/* 🌸 Fullscreen Loader */
 .loader-overlay {
   position: fixed;
   top: 0;
@@ -215,7 +215,7 @@ img.hand-drawn {
   backdrop-filter: blur(5px);
 }
 
-/* 🌸 Loader Animation */
+/* 🌸 Spinning Loader */
 .loader {
   width: 50px;
   height: 50px;
