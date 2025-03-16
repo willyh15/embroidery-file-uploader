@@ -118,6 +118,23 @@ img.hand-drawn {
   }
 }
 
+/* 🌸 Upload Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: var(--radius);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease-in-out;
+}
+
 /* 🌸 Loading Spinner */
 .loader {
   border: 4px solid transparent;
