@@ -50,6 +50,32 @@ button:hover, .btn:hover {
   transform: scale(1.05);
 }
 
+/* 🌸 Upload Box */
+.upload-box {
+  border: 2px dashed var(--border-color);
+  padding: 20px;
+  text-align: center;
+  background: white;
+  border-radius: var(--radius);
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+  position: relative;
+}
+
+.upload-box:hover {
+  border-color: var(--accent);
+  background: var(--secondary-bg);
+  transform: scale(1.02);
+}
+
+/* 🌸 Drag & Drop Effect */
+.upload-box.dragover {
+  border-color: var(--accent-alt);
+  background: var(--primary-bg);
+  transform: scale(1.05);
+  transition: all 0.3s ease-in-out;
+}
+
 /* 🌸 Inputs */
 input, select {
   font-family: "Montserrat", sans-serif;
