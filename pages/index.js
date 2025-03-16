@@ -5,6 +5,7 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import Modal from "../components/Modal";
 import Loader from "../components/Loader";
+import { UploadIcon, SearchIcon, HoopIcon, LogoutIcon, LoginIcon, PlusIcon } from "../components/Icons"; // ✅ Added Themed Icons
 
 const Home = () => {
   const [isClient, setIsClient] = useState(false);
@@ -12,7 +13,14 @@ const Home = () => {
   const session = sessionData?.data || null;
   const dropRef = useRef(null);
 
-  // 🔹 State for file management
+  // 🔹 UI States
+  const [showModal, setShowModal] = useState(false);
+  const [alignmentGuide, setAlignmentGuide] = useState(null);
+  const [hovering, setHovering] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+
+  // 🔹 File Management States
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -24,29 +32,10 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [fileVersions, setFileVersions] = useState([]);
 
-  // 🔹 Hoop-related state
+  // 🔹 Hoop Selection
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // 🔹 Stitch density recommendation state
-  const [fabricType, setFabricType] = useState("cotton");
-  const [edgeCount, setEdgeCount] = useState(500);
-  const [recommendedDensity, setRecommendedDensity] = useState(null);
-
-  // 🔹 File processing state
-  const [resizedFile, setResizedFile] = useState(null);
-  const [rotatedFile, setRotatedFile] = useState(null);
-  const [alignmentGuide, setAlignmentGuide] = useState(null);
-  const [previewFile, setPreviewFile] = useState(null);
-  const [isValidHoopSize, setIsValidHoopSize] = useState(null);
-  const [adjustedFile, setAdjustedFile] = useState(null);
-  const [scaleFactor, setScaleFactor] = useState(1.0);
-  const [splitFiles, setSplitFiles] = useState([]);
-
-  // 🔹 Modal state
-  const [showModal, setShowModal] = useState(false);
-
-  // ✅ Ensure this component runs only on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -61,60 +50,7 @@ const Home = () => {
     fetchHoopSizes();
   }, []);
 
-  // ✅ Fetch uploaded files (pagination support)
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const response = await fetch(`/api/list-files?page=${page}&limit=10`);
-        const data = await response.json();
-        if (response.ok) {
-          setUploadedFiles(data.files);
-          setTotalPages(data.totalPages);
-        }
-      } catch (error) {
-        console.error("Error fetching files:", error);
-      }
-    };
-    fetchFiles();
-  }, [page]);
-
-  // ✅ Fetch stitch density recommendation
-  const handleRecommendDensity = async () => {
-    try {
-      const response = await fetch("/api/recommend-stitch-density", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fabricType, edgeCount }),
-      });
-
-      if (!response.ok) throw new Error("Failed to get recommendation");
-
-      const data = await response.json();
-      setRecommendedDensity(data.recommendedDensity);
-    } catch (error) {
-      console.error("Error fetching stitch density recommendation:", error);
-    }
-  };
-
-  // ✅ Fetch hoop alignment guide
-  const fetchAlignmentGuide = async () => {
-    try {
-      const response = await fetch("/api/get-alignment-guide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hoopSize }),
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch alignment guide");
-
-      const data = await response.json();
-      setAlignmentGuide(data.alignmentGuideUrl);
-    } catch (error) {
-      console.error("Error fetching alignment guide:", error);
-    }
-  };
-
-  // ✅ File Upload Handler with loading state
+  // ✅ File Upload Handler
   const handleUpload = async (selectedFiles) => {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -137,14 +73,25 @@ const Home = () => {
       console.error("Error uploading file:", error);
     } finally {
       setUploading(false);
-      setUploadProgress(100);
     }
   };
 
-  // ✅ File search
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setFilteredFiles(uploadedFiles.filter((url) => url.toLowerCase().includes(query.toLowerCase())));
+  // ✅ Fetch Alignment Guide
+  const fetchAlignmentGuide = async () => {
+    try {
+      const response = await fetch("/api/get-alignment-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hoopSize }),
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch alignment guide");
+
+      const data = await response.json();
+      setAlignmentGuide(data.alignmentGuideUrl);
+    } catch (error) {
+      console.error("Error fetching alignment guide:", error);
+    }
   };
 
   if (!isClient) return <Loader />;
@@ -154,11 +101,16 @@ const Home = () => {
       {/* ✅ Authentication */}
       {session ? (
         <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-          <Button onClick={() => signOut()}>Logout</Button>
+          <Button onClick={() => signOut()} onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
+            <LogoutIcon /> Logout
+          </Button>
+          {showTooltip && <span className="tooltip">Sign out of your account</span>}
         </Card>
       ) : (
         <Card title="Please log in to upload files.">
-          <Button onClick={() => signIn()}>Login</Button>
+          <Button onClick={() => signIn()}>
+            <LoginIcon /> Login
+          </Button>
         </Card>
       )}
 
@@ -167,6 +119,7 @@ const Home = () => {
       {/* ✅ File Upload Section with Drag & Drop Effect */}
       <Card title="Upload Files">
         <div ref={dropRef} className={`upload-box soft-shadow ${uploading ? 'dragover' : ''}`}>
+          <UploadIcon />
           Drag & Drop files here or
           <input type="file" multiple onChange={(e) => handleUpload(Array.from(e.target.files))} />
         </div>
@@ -192,17 +145,33 @@ const Home = () => {
 
       {/* ✅ File Search */}
       <Card title="Search Files">
-        <input className="search-input" type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => handleSearch(e.target.value)} />
+        <div className="search-bar">
+          <SearchIcon />
+          <input className="search-input" type="text" placeholder="Search files..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
       </Card>
 
       {/* ✅ Hoop Alignment Guide */}
-      <Button onClick={fetchAlignmentGuide}>Show Hoop Guides</Button>
+      <Button onClick={fetchAlignmentGuide}>
+        <HoopIcon /> Show Hoop Guides
+      </Button>
       {alignmentGuide && <img className="hand-drawn" src={alignmentGuide} alt="Hoop Alignment Guide" />}
 
       {/* ✅ Upload Confirmation Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
         <p>Your file has been uploaded successfully!</p>
       </Modal>
+
+      {/* ✅ Floating Action Button (FAB) */}
+      <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
+        <div className="fab"><PlusIcon /></div>
+        {fabOpen && (
+          <div className="fab-options">
+            <Button onClick={() => setShowModal(true)}>Upload</Button>
+            <Button onClick={() => fetchAlignmentGuide()}>Hoop Guide</Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
