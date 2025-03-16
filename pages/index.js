@@ -24,20 +24,17 @@ function Home() {
   const sessionData = useSession();
   const session = sessionData?.data || null;
 
-  // Refs
   const dropRef = useRef(null);
 
-  // UI States
+  // UI states
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
   const [hovering, setHovering] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
-
-  // Notifications
   const [notifications, setNotifications] = useState([]);
 
-  // File Management
+  // File management
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
@@ -48,7 +45,6 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
-  // SSR
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -65,13 +61,13 @@ function Home() {
   // Notifications
   function addNotification(text, type = "success") {
     const id = Date.now();
-    setNotifications((prev) => [...prev, { id, text, type }]);
+    setNotifications(prev => [...prev, { id, text, type }]);
     setTimeout(() => {
-      setNotifications((n) => n.filter((nt) => nt.id !== id));
+      setNotifications(n => n.filter(nt => nt.id !== id));
     }, 3000);
   }
 
-  // Upload Handler
+  // Upload handler
   async function handleUpload(selectedFiles) {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -79,7 +75,8 @@ function Home() {
     setMessage("");
 
     const formData = new FormData();
-    selectedFiles.forEach((file) => formData.append("files", file));
+    selectedFiles.forEach(file => formData.append("files", file));
+
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
@@ -99,7 +96,7 @@ function Home() {
     }
   }
 
-  // Hoop Guide
+  // Fetch alignment guide
   async function fetchAlignmentGuide() {
     try {
       const response = await fetch("/api/get-alignment-guide", {
@@ -108,6 +105,7 @@ function Home() {
         body: JSON.stringify({ hoopSize }),
       });
       if (!response.ok) throw new Error("Failed to fetch alignment guide");
+
       const data = await response.json();
       setAlignmentGuide(data.alignmentGuideUrl);
       addNotification("Hoop guide fetched!", "success");
@@ -149,10 +147,10 @@ function Home() {
         <MenuIcon />
       </div>
 
-      {/* MAIN CONTENT (centered in CSS) */}
+      {/* MAIN CONTENT */}
       <div className="main-content container fadeIn">
 
-        {/* AUTH */}
+        {/* AUTH SECTION */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
             <Button onClick={() => signOut()}>
@@ -169,7 +167,7 @@ function Home() {
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        {/* UPLOAD */}
+        {/* UPLOAD SECTION */}
         <Card title="Upload Files">
           <div
             ref={dropRef}
@@ -182,11 +180,14 @@ function Home() {
             <input
               type="file"
               multiple
-              onChange={(e) => handleUpload(Array.from(e.target.files))}
+              onChange={e => handleUpload(Array.from(e.target.files))}
             />
           </div>
 
-          {uploading ? <Loader /> : <Button onClick={handleUpload}>Upload File</Button>}
+          {/* More spacing under the upload box => button */}
+          <Button style={{ marginTop: "1rem" }} onClick={handleUpload}>
+            Upload File
+          </Button>
 
           {/* Progress */}
           {uploading && (
@@ -199,14 +200,14 @@ function Home() {
           )}
         </Card>
 
-        {/* HOOP */}
+        {/* HOOP SELECTION */}
         <Card title="Hoop Selection">
           <select
             className="dropdown"
-            onChange={(e) => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
+            onChange={e => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
           >
             <option value="">Select Hoop Size</option>
-            {hoopSizes.map((size) => (
+            {hoopSizes.map(size => (
               <option key={size.name} value={size.name}>
                 {size.name} ({size.width}x{size.height} mm)
               </option>
@@ -214,22 +215,28 @@ function Home() {
           </select>
         </Card>
 
-        {/* SEARCH */}
+        {/* SEARCH FILES */}
         <Card title="Search Files">
-          <div className="search-bar">
+          {/* Center the icon and input together in a small flex container */}
+          <div className="search-bar" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem"
+          }}>
             <SearchIcon />
             <input
               className="search-input"
               type="text"
               placeholder="Search files..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
         </Card>
 
         {/* HOOP GUIDE */}
-        <Button onClick={fetchAlignmentGuide}>
+        <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
           <HoopIcon /> Show Hoop Guides
         </Button>
         {alignmentGuide && (
@@ -237,16 +244,24 @@ function Home() {
             className="hand-drawn"
             src={alignmentGuide}
             alt="Hoop Alignment Guide"
+            style={{ marginTop: "1rem" }}
           />
         )}
 
         {/* MODAL */}
-        <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title="Upload Successful"
+        >
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
-        {/* FAB */}
-        <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
+        {/* FLOATING ACTION BUTTON */}
+        <div
+          className="fab-container"
+          onClick={() => setFabOpen(!fabOpen)}
+        >
           <div className="fab"><PlusIcon /></div>
           {fabOpen && (
             <div className="fab-options">
@@ -258,7 +273,7 @@ function Home() {
 
         {/* NOTIFICATIONS */}
         <div className="notification-container">
-          {notifications.map((note) => (
+          {notifications.map(note => (
             <div key={note.id} className={`notification ${note.type}`}>
               {note.text}
             </div>
