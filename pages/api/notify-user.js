@@ -1,4 +1,3 @@
-// pages/api/send-notification.js (for example)
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
