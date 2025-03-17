@@ -4,7 +4,7 @@ import { getSession } from "next-auth/react";
 // Initialize your Upstash Redis client using environment variables
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,     // e.g. "https://usw1-xxxx-12345.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "************"
+  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "your-secret-token"
 });
 
 export default async function handler(req, res) {
