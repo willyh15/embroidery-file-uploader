@@ -1,3 +1,12 @@
+import { Redis } from "@upstash/redis";
+import speakeasy from "speakeasy";
+
+// ✅ Create a Redis client (using environment variables)
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
+
 export default async function handler(req, res) {
   const { username, token } = req.body;
 
@@ -5,7 +14,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  const secret = await kv.get(`2fa:${username}`);
+  // ✅ Upstash usage for "get"
+  const secret = await redis.get(`2fa:${username}`);
   if (!secret) {
     return res.status(404).json({ error: "No 2FA setup for this user" });
   }
