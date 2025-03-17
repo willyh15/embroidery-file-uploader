@@ -4,7 +4,7 @@ import { Redis } from "@upstash/redis";
 // 1. Initialize Upstash Redis client with your environment variables
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,     // e.g. "https://xxxxxx.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "xxxxxx"
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,   // e.g. "xxxxxx"
 });
 
 export default async function handler(req, res) {
@@ -15,17 +15,13 @@ export default async function handler(req, res) {
 
   try {
     // 2. Fetch the subscription value from Upstash Redis
-    //    If you stored the subscription as a JSON string, you may need to parse it
     const subscriptionData = await redis.get(`subscription:${session.user.email}`);
 
-    // If subscriptionData is a JSON string, parse it:
-    // const subscription = subscriptionData ? JSON.parse(subscriptionData) : null;
-    // But if you stored it as a simple boolean or object natively, parse usage may vary.
+    // Parse the subscription data if stored as JSON
+    const subscription = subscriptionData ? JSON.parse(subscriptionData) : null;
 
-    // 3. Return whether or not the subscription is active
-    // Example if you stored it as { active: true/false }
-    const isPremium = subscriptionData?.active || false;
-
+    // 3. Return whether the subscription is active
+    const isPremium = subscription?.active || false;
     return res.status(200).json({ isPremium });
   } catch (error) {
     console.error("Error fetching subscription:", error);
