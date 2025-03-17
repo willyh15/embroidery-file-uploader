@@ -1,10 +1,5 @@
 // utils/rateLimit.js
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+import { redis } from "./redisClient";
 
 export const rateLimit = async (ip, limit = 10, timeframe = 60) => {
   const key = `rate-limit:${ip}`;
