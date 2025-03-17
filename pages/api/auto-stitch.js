@@ -9,12 +9,24 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "File URL is required" });
   }
 
-  const response = await fetch("https://your-render-api.com/auto-stitch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrl }),
-  });
+  // Use an environment variable for the auto-stitch API endpoint.
+  const autoStitchUrl = process.env.AUTO_STITCH_URL; // e.g. "https://your-render-api.com/auto-stitch"
+  if (!autoStitchUrl) {
+    return res.status(500).json({ error: "Auto stitch API URL not configured" });
+  }
 
-  const data = await response.json();
-  return res.status(200).json({ autoStitchedFile: data.auto_stitched_file });
-};
+  try {
+    const response = await fetch(autoStitchUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+
+    const data = await response.json();
+
+    return res.status(200).json({ autoStitchedFile: data.auto_stitched_file });
+  } catch (error) {
+    console.error("Error calling auto stitch API:", error);
+    return res.status(500).json({ error: "Failed to process auto stitch" });
+  }
+}
