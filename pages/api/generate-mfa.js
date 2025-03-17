@@ -1,5 +1,11 @@
 import speakeasy from "speakeasy";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+
+// 1. Instantiate your Redis client using Upstash credentials from your environment variables
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,      // from Upstash console
+  token: process.env.KV_REST_API_TOKEN,  // from Upstash console
+});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,8 +18,9 @@ export default async function handler(req, res) {
   }
 
   const secret = speakeasy.generateSecret({ length: 20 });
+  
+  // 2. Replace "kv.set(...)" with your Upstash Redis method, for example redis.set(...)
+  await redis.set(`mfa:${username}`, secret.base32);
 
-  await kv.set(`mfa:${username}`, secret.base32);
-
-  res.status(200).json({ secret: secret.base32 });
+  return res.status(200).json({ secret: secret.base32 });
 }
