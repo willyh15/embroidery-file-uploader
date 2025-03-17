@@ -1,4 +1,3 @@
-// pages/api/save-palette.js
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
