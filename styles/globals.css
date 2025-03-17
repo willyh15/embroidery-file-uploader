@@ -76,7 +76,6 @@ input, select {
   background: var(--secondary-bg);
   color: var(--primary-text);
   text-align: center; /* center the input text */
-  margin-left: 0.5rem; /* tiny left margin to separate from icon if needed */
 }
 
 input:focus, select:focus {
