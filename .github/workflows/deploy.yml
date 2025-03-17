@@ -24,7 +24,8 @@ jobs:
         run: |
           npm install --package-lock-only
           npm install --force
-          npm install @vercel/kv next-auth @vercel/blob speakeasy resend stripe react-zoom-pan-pinch
+          # Added "@upstash/redis" to the list:
+          npm install @vercel/kv next-auth @vercel/blob speakeasy resend stripe react-zoom-pan-pinch @upstash/redis
 
       - name: 🔄 Commit Updated package-lock.json
         run: |
