@@ -1,5 +1,11 @@
-import { kv } from "@vercel/kv";
 import { getSession } from "next-auth/react";
+import { Redis } from "@upstash/redis";
+
+// Initialize Upstash Redis client with your environment variables
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
@@ -14,7 +20,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
 
-  await kv.hset(`file:${fileUrl}`, { visibility });
-
-  return res.status(200).json({ message: "File visibility updated" });
+  try {
+    // Use Upstash Redis hset to update file visibility
+    await redis.hset(`file:${fileUrl}`, { visibility });
+    return res.status(200).json({ message: "File visibility updated" });
+  } catch (error) {
+    console.error("Error updating file visibility:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 }
