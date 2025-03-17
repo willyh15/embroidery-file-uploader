@@ -1,17 +1,13 @@
-// rate-limit.js (or wherever you keep this function)
-// ❌ Remove: import { kv } from "@vercel/kv";
+// utils/rateLimit.js
 import { Redis } from "@upstash/redis";
 
-// ✅ Create a Redis client (using environment variables)
 const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
+  url: process.env.KV_REST_API_URL,  // make sure these env variables are set in your production environment
   token: process.env.KV_REST_API_TOKEN,
 });
 
-export const rateLimit = async (ip, limit = 10, timeframe = 60) => {
+export async function rateLimit(ip, limit = 10, timeframe = 60) {
   const key = `rate-limit:${ip}`;
-
-  // ✅ Upstash usage for "get"
   const currentCount = await redis.get(key);
   const count = currentCount ? parseInt(currentCount, 10) : 0;
 
@@ -19,11 +15,8 @@ export const rateLimit = async (ip, limit = 10, timeframe = 60) => {
     return false;
   }
 
-  // ✅ Upstash usage for "incr"
   await redis.incr(key);
-
-  // ✅ Upstash usage for "expire"
   await redis.expire(key, timeframe);
 
   return true;
-};
+}
