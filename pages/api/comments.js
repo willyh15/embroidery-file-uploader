@@ -1,6 +1,6 @@
 // pages/api/comments.js
 import { Redis } from "@upstash/redis";
-import { rateLimit } from "../../utils/rateLimit"; // Updated import path
+import { rateLimit } from "utils/rateLimit"; // Updated import path
 
 // Create your Upstash Redis client (if you need it for other operations)
 const redis = new Redis({
