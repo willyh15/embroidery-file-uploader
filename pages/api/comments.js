@@ -8,7 +8,7 @@ const redis = new Redis({
 });
 
 // For demonstration, referencing a custom rateLimit() you might already have:
-import rateLimit from "../../utils/rateLimit"; // or wherever it's defined
+import { rateLimit } from "../../utils/rateLimit"; // or wherever it's defined
 
 export default async function handler(req, res) {
   const ip =
