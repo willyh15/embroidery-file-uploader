@@ -20,8 +20,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
 
-  // Convert the adjustments array to JSON and store it under the key
-  // "bulk-adjustments:<fileUrl>"
+  // Convert the adjustments array to JSON and store it under the key "bulk-adjustments:<fileUrl>"
   await redis.set(`bulk-adjustments:${fileUrl}`, JSON.stringify(adjustments));
 
   return res.status(200).json({ message: "Bulk adjustments applied successfully" });
