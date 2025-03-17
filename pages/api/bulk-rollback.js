@@ -2,9 +2,8 @@ import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
 /**
- * 1. Instantiate Upstash Redis client using your Upstash environment vars.
- *    Make sure you defined KV_REST_API_URL and KV_REST_API_TOKEN in
- *    your environment variables on Vercel.
+ * Instantiate Upstash Redis client using your Upstash environment variables.
+ * Make sure you defined KV_REST_API_URL and KV_REST_API_TOKEN in your Vercel environment.
  */
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,      // from your Upstash Dashboard
@@ -24,8 +23,9 @@ export default async function handler(req, res) {
 
   const rollbackFiles = [];
 
-  // 2. Replace "kv.lrange(...)" with "redis.lrange(...)"
-  //    and "kv.ltrim(...)" with "redis.ltrim(...)"
+  // For each file, retrieve its version history using redis.lrange,
+  // then if there is a previous version, add it to the rollbackFiles array
+  // and trim the latest version from the list.
   for (const fileName of fileNames) {
     const versions = await redis.lrange(`versions:${fileName}`, 0, -1);
     if (versions.length < 2) continue; // Skip if no previous versions
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const previousVersion = JSON.parse(versions[1]); // second-latest version
     rollbackFiles.push({ fileName, url: previousVersion.url });
 
-    // Remove only the latest version from the list, keeping the previous
+    // Remove only the latest version, keeping the previous versions intact.
     await redis.ltrim(`versions:${fileName}`, 1, -1);
   }
 
