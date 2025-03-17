@@ -1,4 +1,3 @@
-// pages/api/rollback-files.js
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
