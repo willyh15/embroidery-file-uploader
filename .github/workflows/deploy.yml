@@ -28,10 +28,10 @@ jobs:
           npm install @vercel/kv next-auth @vercel/blob speakeasy resend stripe react-zoom-pan-pinch @upstash/redis
 
       - name: 🔄 Commit Updated package-lock.json
-        run: |
+        run:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add package-lock.json
+          git add package-lock.json package.json
           git commit -m "🔄 Auto-generate package-lock.json"
           git push origin main || echo "No changes to commit"
 
