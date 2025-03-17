@@ -1,11 +1,11 @@
-// pages/api/add-review.js (for example)
+// pages/api/add-review.js
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
-// 1. Instantiate your Upstash Redis client using env vars
+// Instantiate the Upstash Redis client using your environment variables from your Upstash dashboard
 const redis = new Redis({
-  url: process.env.KV_REST_API_URL,     // from your Upstash Dashboard
-  token: process.env.KV_REST_API_TOKEN, // from your Upstash Dashboard
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  // 2. Use 'redis.lpush(...)' to prepend a review to the list
+  // Use the Upstash Redis client to push the review into a list
   await redis.lpush(`reviews:${fileUrl}`, JSON.stringify({
     user: session.user.username,
     rating,
