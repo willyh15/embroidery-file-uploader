@@ -1,4 +1,4 @@
-// pages/api/update-file.js (for example)
+// pages/api/edit-file.js (for example)
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
