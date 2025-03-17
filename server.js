@@ -1,7 +1,16 @@
 const WebSocket = require("ws");
 const express = require("express");
 const fs = require("fs");
-const { kv } = require("@vercel/kv");
+// ❌ Remove: const { kv } = require("@vercel/kv");
+
+// ✅ Import Upstash Redis
+const { Redis } = require("@upstash/redis");
+
+// ✅ Create a Redis client (using environment variables)
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 const app = express();
 app.use(express.json());
@@ -29,13 +38,19 @@ wss.on("connection", (ws) => {
       if (data.type === "edit") {
         activeEdits[data.fileUrl] = data.edits;
 
+        // Broadcast updated edits to all other connected clients
         wss.clients.forEach((client) => {
           if (client !== ws && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: "update", fileUrl: data.fileUrl, edits: data.edits }));
+            client.send(JSON.stringify({
+              type: "update",
+              fileUrl: data.fileUrl,
+              edits: data.edits,
+            }));
           }
         });
 
-        await kv.set(`live-edit:${data.fileUrl}`, JSON.stringify(data.edits));
+        // ✅ Upstash Redis: store the edits by file URL
+        await redis.set(`live-edit:${data.fileUrl}`, JSON.stringify(data.edits));
       }
     } catch (error) {
       console.error("Error processing WebSocket message:", error);
