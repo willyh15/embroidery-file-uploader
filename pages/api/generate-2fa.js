@@ -2,10 +2,10 @@ import speakeasy from "speakeasy";
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
-// Initialize Upstash Redis client using environment variables
+// Initialize Upstash Redis client using your new environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  url: process.env.UPSTASH_REDIS_REST_URL,   // e.g. "https://usw1-xxxx.upstash.io"
+  token: process.env.UPSTASH_REDIS_REST_TOKEN, // your Upstash REST token
 });
 
 export default async function handler(req, res) {
