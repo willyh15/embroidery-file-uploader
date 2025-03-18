@@ -9,12 +9,21 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "File URL is required" });
   }
 
-  const response = await fetch("https://your-render-api.com/optimize-stitch-path", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrl }),
-  });
+  try {
+    const response = await fetch("https://your-render-api.com/optimize-stitch-path", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
 
-  const data = await response.json();
-  return res.status(200).json({ optimizedFile: data.optimized_file });
+    if (!response.ok) {
+      throw new Error("External API call failed");
+    }
+
+    const data = await response.json();
+    return res.status(200).json({ optimizedFile: data.optimized_file });
+  } catch (error) {
+    console.error("Error optimizing stitch path:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
