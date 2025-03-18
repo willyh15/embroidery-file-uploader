@@ -9,8 +9,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Hoop size is required" });
   }
 
-  // Dummy URL for now; replace this with actual logic
-  const alignmentGuideUrl = `https://example.com/guides/${hoopSize.width}x${hoopSize.height}.png`;
+  try {
+    // Call your external API that generates the alignment guide
+    const response = await fetch("https://your-render-api.com/generate-hoop-guides", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hoopSize }),
+    });
 
-  return res.status(200).json({ alignmentGuideUrl });
+    if (!response.ok) {
+      throw new Error("Failed to generate hoop guides");
+    }
+
+    const data = await response.json();
+    // Assume your external API returns an object with a "guideFile" property
+    return res.status(200).json({ alignmentGuideUrl: data.guideFile });
+  } catch (error) {
+    console.error("Error generating hoop guides:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 }
