@@ -1,8 +1,7 @@
-// pages/api/log-access.js
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
-// 1. Create your Upstash Redis client with environment variables
+// Instantiate your Upstash Redis client using environment variables
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,      // from your Upstash Dashboard
   token: process.env.KV_REST_API_TOKEN,  // from your Upstash Dashboard
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
   }
 
   const { fileUrl } = req.body;
-
   if (!fileUrl) {
     return res.status(400).json({ error: "File URL is required" });
   }
@@ -28,7 +26,7 @@ export default async function handler(req, res) {
     timestamp: new Date().toISOString(),
   };
 
-  // 2. Replace "kv.lpush(...)" with "redis.lpush(...)" 
+  // Use the Upstash Redis client's lpush method to store the log entry
   await redis.lpush(`file-access:${fileUrl}`, JSON.stringify(logEntry));
 
   return res.status(200).json({ message: "Access logged" });
