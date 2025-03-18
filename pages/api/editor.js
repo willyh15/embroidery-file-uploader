@@ -42,7 +42,11 @@ export default function Editor() {
         <option value="fill">Fill</option>
       </select>
 
-      <button onClick={applyBulkAdjustments} disabled={loading} style={{ marginLeft: "1rem" }}>
+      <button 
+        onClick={applyBulkAdjustments} 
+        disabled={loading} 
+        style={{ marginLeft: "1rem" }}
+      >
         {loading ? "Applying..." : "Apply Bulk Adjustments"}
       </button>
 
