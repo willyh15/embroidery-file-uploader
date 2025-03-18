@@ -20,11 +20,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid parameters" });
   }
 
-  // 2. Replace `kv.hset(...)` with `redis.hset(...)`
-  // Here we store the palette under the key: color-palette:{username}, 
-  // mapping paletteName -> JSON.stringify(colors)
+  // 2. Store the palette under the key "color-palette:{username}"
+  // mapping the provided paletteName to a JSON string of colors
   await redis.hset(`color-palette:${session.user.username}`, {
-    [paletteName]: JSON.stringify(colors)
+    [paletteName]: JSON.stringify(colors),
   });
 
   return res.status(200).json({ message: "Palette saved successfully" });
