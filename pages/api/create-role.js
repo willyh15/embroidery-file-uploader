@@ -1,15 +1,16 @@
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// 1. Initialize your Upstash Redis client with environment variables
+// Initialize your Upstash Redis client using environment variables
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,     // e.g. "https://xxxx.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "xxxxxx"
+  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "your_token_here"
 });
 
 export default async function handler(req, res) {
   const session = await getSession({ req });
 
+  // Only allow admin users to assign roles
   if (!session || session.user.role !== "admin") {
     return res.status(403).json({ error: "Forbidden" });
   }
@@ -21,13 +22,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 2. Upstash has a similar HSET command
-    //    If storageLimit is a string or number, store it directly
-    //    If you need an object, consider JSON-stringifying
-    await redis.hset(`roles:${roleName}`, {
-      storageLimit
-    });
-
+    // Use Upstash Redis hset to store the role configuration
+    await redis.hset(`roles:${roleName}`, { storageLimit });
     return res.status(200).json({ message: `Role ${roleName} created successfully` });
   } catch (error) {
     console.error("Error creating role:", error);
