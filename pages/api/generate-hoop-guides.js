@@ -9,7 +9,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Hoop size is required" });
   }
 
-  const response = await fetch("https://your-render-api.com/generate-hoop-guides", {
+  // Use an environment variable for the external API URL
+  const renderApiUrl = process.env.RENDER_API_URL || "https://your-render-api.com";
+
+  const response = await fetch(`${renderApiUrl}/generate-hoop-guides`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ hoopSize }),
@@ -17,4 +20,4 @@ export default async function handler(req, res) {
 
   const data = await response.json();
   return res.status(200).json({ guideFile: data.guide_file });
-};
+}
