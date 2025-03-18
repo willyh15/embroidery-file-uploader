@@ -19,6 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log the download by pushing a JSON string onto a Redis list keyed by the user's username.
     await redis.lpush(
       `downloads:${session.user.username}`,
       JSON.stringify({
