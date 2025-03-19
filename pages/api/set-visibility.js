@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use Upstash Redis hset to update file visibility
+    // Update the file visibility using Upstash Redis hset method
     await redis.hset(`file:${fileUrl}`, { visibility });
     return res.status(200).json({ message: "File visibility updated" });
   } catch (error) {
