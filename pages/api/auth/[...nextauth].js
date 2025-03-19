@@ -15,7 +15,7 @@ export default NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        // Uncomment and use if you need MFA token input:
+        // Uncomment if you want to use MFA tokens:
         // mfaToken: { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
@@ -32,7 +32,7 @@ export default NextAuth({
 
         if (!user) return null;
 
-        // Check MFA/2FA only during authorization using Upstash Redis
+        // Check for MFA/2FA using Upstash Redis client
         const userMfaEnabled = await redis.get(`mfa:${user.username}`);
         if (userMfaEnabled && !credentials.mfaToken) {
           throw new Error("MFA required");
@@ -59,7 +59,7 @@ export default NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      // Safely destructure session.user (or default to an empty object)
+      // Ensure session.user is defined before trying to assign role
       session.user = { ...(session.user || {}), role: token?.role || "user" };
       return session;
     },
