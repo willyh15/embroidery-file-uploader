@@ -21,9 +21,7 @@ import {
 
 function Home() {
   const [isClient, setIsClient] = useState(false);
-  const sessionData = useSession();
-  const session = sessionData?.data || null;
-
+  const { data: session, status } = useSession();
   const dropRef = useRef(null);
 
   // UI states
@@ -41,7 +39,7 @@ function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Hoop
+  // Hoop selection
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
@@ -58,12 +56,19 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
+  // Log the session for debugging (remove later if desired)
+  useEffect(() => {
+    if (session) {
+      console.log("Session:", session);
+    }
+  }, [session]);
+
   // Notifications
   function addNotification(text, type = "success") {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, text, type }]);
     setTimeout(() => {
-      setNotifications(n => n.filter(nt => nt.id !== id));
+      setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
   }
 
@@ -115,7 +120,7 @@ function Home() {
     }
   }
 
-  // Sidebar
+  // Sidebar toggle
   function toggleSidebar() {
     setSidebarOpen(!sidebarOpen);
   }
@@ -142,14 +147,13 @@ function Home() {
         <div className="sidebar-overlay open" onClick={toggleSidebar} />
       )}
 
-      {/* MENU BTN */}
+      {/* MENU BUTTON */}
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
 
       {/* MAIN CONTENT */}
       <div className="main-content container fadeIn">
-
         {/* AUTH SECTION */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
@@ -159,7 +163,7 @@ function Home() {
           </Card>
         ) : (
           <Card title="Please log in to upload files.">
-            <Button onClick={() => signIn()}>
+            <Button onClick={() => signIn("credentials", { callbackUrl: "/admin" })}>
               <LoginIcon /> Login
             </Button>
           </Card>
@@ -183,13 +187,9 @@ function Home() {
               onChange={e => handleUpload(Array.from(e.target.files))}
             />
           </div>
-
-          {/* More spacing under the upload box => button */}
           <Button style={{ marginTop: "1rem" }} onClick={handleUpload}>
             Upload File
           </Button>
-
-          {/* Progress */}
           {uploading && (
             <div className="progress-container">
               <div
@@ -217,13 +217,15 @@ function Home() {
 
         {/* SEARCH FILES */}
         <Card title="Search Files">
-          {/* Center the icon and input together in a small flex container */}
-          <div className="search-bar" style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem"
-          }}>
+          <div
+            className="search-bar"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem"
+            }}
+          >
             <SearchIcon />
             <input
               className="search-input"
@@ -258,10 +260,7 @@ function Home() {
         </Modal>
 
         {/* FLOATING ACTION BUTTON */}
-        <div
-          className="fab-container"
-          onClick={() => setFabOpen(!fabOpen)}
-        >
+        <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
           <div className="fab"><PlusIcon /></div>
           {fabOpen && (
             <div className="fab-options">
