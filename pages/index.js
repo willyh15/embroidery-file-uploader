@@ -156,11 +156,7 @@ function Home() {
           </Card>
         ) : (
           <Card title="Please log in to upload files.">
-            <Button
-              onClick={() =>
-                signIn("credentials", { callbackUrl: "/admin" })
-              }
-            >
+            <Button onClick={() => signIn("credentials", { callbackUrl: "/admin" })}>
               <LoginIcon /> Login
             </Button>
           </Card>
@@ -260,9 +256,7 @@ function Home() {
 
         {/* FLOATING ACTION BUTTON */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
-          <div className="fab">
-            <PlusIcon />
-          </div>
+          <div className="fab"><PlusIcon /></div>
           {fabOpen && (
             <div className="fab-options">
               <Button onClick={() => setShowModal(true)}>Upload</Button>
