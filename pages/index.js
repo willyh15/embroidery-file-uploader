@@ -21,7 +21,7 @@ import {
 
 function Home() {
   const [isClient, setIsClient] = useState(false);
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const dropRef = useRef(null);
 
   // UI states
@@ -32,14 +32,14 @@ function Home() {
   const [fabOpen, setFabOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // File management
+  // File management states
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Hoop selection
+  // Hoop selection states
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
@@ -56,14 +56,7 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
-  // Log the session for debugging (remove later if desired)
-  useEffect(() => {
-    if (session) {
-      console.log("Session:", session);
-    }
-  }, [session]);
-
-  // Notifications
+  // Notifications function
   function addNotification(text, type = "success") {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, text, type }]);
@@ -142,7 +135,7 @@ function Home() {
         </ul>
       </aside>
 
-      {/* OVERLAY */}
+      {/* SIDEBAR OVERLAY */}
       {sidebarOpen && (
         <div className="sidebar-overlay open" onClick={toggleSidebar} />
       )}
@@ -163,7 +156,11 @@ function Home() {
           </Card>
         ) : (
           <Card title="Please log in to upload files.">
-            <Button onClick={() => signIn("credentials", { callbackUrl: "/admin" })}>
+            <Button
+              onClick={() =>
+                signIn("credentials", { callbackUrl: "/admin" })
+              }
+            >
               <LoginIcon /> Login
             </Button>
           </Card>
@@ -184,7 +181,7 @@ function Home() {
             <input
               type="file"
               multiple
-              onChange={e => handleUpload(Array.from(e.target.files))}
+              onChange={(e) => handleUpload(Array.from(e.target.files))}
             />
           </div>
           <Button style={{ marginTop: "1rem" }} onClick={handleUpload}>
@@ -204,10 +201,12 @@ function Home() {
         <Card title="Hoop Selection">
           <select
             className="dropdown"
-            onChange={e => setHoopSize(hoopSizes.find(h => h.name === e.target.value))}
+            onChange={(e) =>
+              setHoopSize(hoopSizes.find((h) => h.name === e.target.value))
+            }
           >
             <option value="">Select Hoop Size</option>
-            {hoopSizes.map(size => (
+            {hoopSizes.map((size) => (
               <option key={size.name} value={size.name}>
                 {size.name} ({size.width}x{size.height} mm)
               </option>
@@ -232,7 +231,7 @@ function Home() {
               type="text"
               placeholder="Search files..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </Card>
@@ -261,7 +260,9 @@ function Home() {
 
         {/* FLOATING ACTION BUTTON */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
-          <div className="fab"><PlusIcon /></div>
+          <div className="fab">
+            <PlusIcon />
+          </div>
           {fabOpen && (
             <div className="fab-options">
               <Button onClick={() => setShowModal(true)}>Upload</Button>
@@ -272,7 +273,7 @@ function Home() {
 
         {/* NOTIFICATIONS */}
         <div className="notification-container">
-          {notifications.map(note => (
+          {notifications.map((note) => (
             <div key={note.id} className={`notification ${note.type}`}>
               {note.text}
             </div>
