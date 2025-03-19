@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { Redis } from "@upstash/redis";
 
-// Instantiate the Upstash Redis client using your environment variables
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -15,31 +14,22 @@ export default NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        // If you use MFA in your login form, you could add:
-        // mfaToken: { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
-        // Hard-coded users for demonstration (replace with your user database as needed)
         const users = [
           { id: "1", username: "admin", password: "password123", role: "admin" },
           { id: "2", username: "user", password: "userpass", role: "user" },
         ];
-
         const user = users.find(
           (u) =>
             u.username === credentials.username &&
             u.password === credentials.password
         );
-
         if (!user) return null;
-
-        // Check for MFA/2FA using Upstash Redis client (instead of kv)
         const userMfaEnabled = await redis.get(`mfa:${user.username}`);
-
         if (userMfaEnabled && !credentials.mfaToken) {
           throw new Error("MFA required");
         }
-
         if (userMfaEnabled) {
           const verifyResponse = await fetch(
             process.env.NEXTAUTH_URL + "/api/verify-mfa",
@@ -52,19 +42,17 @@ export default NextAuth({
               }),
             }
           );
-
           if (!verifyResponse.ok) {
             throw new Error("MFA verification failed");
           }
         }
-
         return user;
       },
     }),
   ],
   callbacks: {
     async session({ session, token }) {
-      session.user.role = token.role;
+      session.user = { ...session.user, role: token?.role || "user" };
       return session;
     },
     async jwt({ token, user }) {
