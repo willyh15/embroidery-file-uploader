@@ -1,10 +1,10 @@
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// Initialize Upstash Redis client
+// Initialize Upstash Redis client using environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,      // e.g. "https://usw1-something.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN   // e.g. "xxxxxxx"
+  url: process.env.UPSTASH_REDIS_REST_URL,      // e.g., "https://usw1-something.upstash.io"
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,    // e.g., "xxxxxxx"
 });
 
 export default async function handler(req, res) {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Convert `position` object to JSON string before storing
+    // Convert the position object to a JSON string before storing it in Redis
     await redis.set(`design-position:${fileUrl}`, JSON.stringify(position));
 
     return res.status(200).json({ message: "Position saved" });
