@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { Redis } from "@upstash/redis";
 
+// Instantiate the Upstash Redis client using environment variables
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -14,18 +15,24 @@ export default NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
+        // Uncomment and use if you need MFA token input:
+        // mfaToken: { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
         const users = [
           { id: "1", username: "admin", password: "password123", role: "admin" },
           { id: "2", username: "user", password: "userpass", role: "user" },
         ];
+
         const user = users.find(
           (u) =>
             u.username === credentials.username &&
             u.password === credentials.password
         );
+
         if (!user) return null;
+
+        // Check MFA/2FA only during authorization using Upstash Redis
         const userMfaEnabled = await redis.get(`mfa:${user.username}`);
         if (userMfaEnabled && !credentials.mfaToken) {
           throw new Error("MFA required");
@@ -52,7 +59,8 @@ export default NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      session.user = { ...session.user, role: token?.role || "user" };
+      // Safely destructure session.user (or default to an empty object)
+      session.user = { ...(session.user || {}), role: token?.role || "user" };
       return session;
     },
     async jwt({ token, user }) {
