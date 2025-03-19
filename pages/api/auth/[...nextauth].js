@@ -15,10 +15,11 @@ export default NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        // Uncomment if you want to use MFA tokens:
+        // Uncomment the following if you use MFA:
         // mfaToken: { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
+        // Hard-coded users; replace with your database as needed
         const users = [
           { id: "1", username: "admin", password: "password123", role: "admin" },
           { id: "2", username: "user", password: "userpass", role: "user" },
@@ -59,7 +60,7 @@ export default NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-      // Ensure session.user is defined before trying to assign role
+      // Ensure session.user exists before adding role
       session.user = { ...(session.user || {}), role: token?.role || "user" };
       return session;
     },
