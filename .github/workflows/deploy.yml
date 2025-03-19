@@ -20,19 +20,19 @@ jobs:
         with:
           node-version: 18
 
-      - name: 📥 Install Dependencies & Fix Missing Modules
+      - name: 📥 Install Dependencies
         run: |
-          npm install --package-lock-only
-          npm install --force
-          # Added "@upstash/redis" to the list:
+          # Clean install using package-lock.json
+          npm ci
+          # Install additional packages not yet in package.json (if needed)
           npm install @vercel/kv next-auth @vercel/blob speakeasy resend stripe react-zoom-pan-pinch @upstash/redis
 
       - name: 🔄 Commit Updated package-lock.json
-        run:
+        run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add package-lock.json package.json
-          git commit -m "🔄 Auto-generate package-lock.json"
+          git commit -m "🔄 Auto-generate package-lock.json" || echo "No changes to commit"
           git push origin main || echo "No changes to commit"
 
       - name: 🏗️ Build Project
