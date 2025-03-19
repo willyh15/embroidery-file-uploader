@@ -1,4 +1,3 @@
-// pages/api/upload-design.js (for example)
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
@@ -21,8 +20,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "File URL and price are required" });
   }
 
-  // Replace `kv.hset(...)` with `redis.hset(...)`
-  // Using a hash key `design:${fileUrl}`, setting the fields uploader & price
+  // Store the design details under the hash key "design:<fileUrl>"
+  // with the fields "uploader" and "price"
   await redis.hset(`design:${fileUrl}`, {
     uploader: session.user.username,
     price,
