@@ -20,8 +20,9 @@ import {
 } from "../components/Icons";
 
 function Home() {
-  const [isClient, setIsClient] = useState(false);
+  // Using the new syntax to destructure the session data from useSession
   const { data: session } = useSession();
+  const [isClient, setIsClient] = useState(false);
   const dropRef = useRef(null);
 
   // UI states
@@ -56,12 +57,12 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
-  // Notifications function
+  // Notification helper
   function addNotification(text, type = "success") {
     const id = Date.now();
-    setNotifications(prev => [...prev, { id, text, type }]);
+    setNotifications((prev) => [...prev, { id, text, type }]);
     setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     }, 3000);
   }
 
@@ -73,14 +74,14 @@ function Home() {
     setMessage("");
 
     const formData = new FormData();
-    selectedFiles.forEach(file => formData.append("files", file));
+    selectedFiles.forEach((file) => formData.append("files", file));
 
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
 
       const data = await res.json();
-      setUploadedFiles([...uploadedFiles, ...data.urls]);
+      setUploadedFiles((prev) => [...prev, ...data.urls]);
       setMessage("Upload successful!");
       setShowModal(true);
       addNotification("Files uploaded successfully!", "success");
@@ -126,7 +127,9 @@ function Home() {
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Menu</h2>
-          <Button onClick={toggleSidebar} className="close-sidebar-btn">X</Button>
+          <Button onClick={toggleSidebar} className="close-sidebar-btn">
+            X
+          </Button>
         </div>
         <ul>
           <li><a href="#"><ProfileIcon /> Profile</a></li>
@@ -185,10 +188,7 @@ function Home() {
           </Button>
           {uploading && (
             <div className="progress-container">
-              <div
-                className="progress-bar"
-                style={{ width: `${uploadProgress}%` }}
-              />
+              <div className="progress-bar" style={{ width: `${uploadProgress}%` }} />
             </div>
           )}
         </Card>
@@ -218,7 +218,7 @@ function Home() {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "0.5rem"
+              gap: "0.5rem",
             }}
           >
             <SearchIcon />
@@ -256,7 +256,9 @@ function Home() {
 
         {/* FLOATING ACTION BUTTON */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
-          <div className="fab"><PlusIcon /></div>
+          <div className="fab">
+            <PlusIcon />
+          </div>
           {fabOpen && (
             <div className="fab-options">
               <Button onClick={() => setShowModal(true)}>Upload</Button>
