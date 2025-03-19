@@ -9,7 +9,7 @@ export default function RoleManagement() {
 
   // Fetch storage analytics on component mount
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    async function fetchAnalytics() {
       try {
         const response = await fetch("/api/get-analytics");
         if (!response.ok) throw new Error("Failed to fetch analytics");
@@ -18,105 +18,119 @@ export default function RoleManagement() {
       } catch (error) {
         console.error("Error fetching analytics:", error);
       }
-    };
-
+    }
     fetchAnalytics();
   }, []);
 
-  // Function to create a role with a storage limit
+  // Create a new role
   const createRole = async () => {
-    if (!roleName || !storageLimit) {
+    if (!roleName.trim() || !storageLimit) {
       alert("Please provide both role name and storage limit.");
       return;
     }
-
     try {
       const response = await fetch("/api/create-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roleName, storageLimit }),
       });
-
       if (!response.ok) throw new Error("Failed to create role");
       alert(`Role "${roleName}" created with ${storageLimit}MB storage limit.`);
+      // Optionally reset input fields:
+      setRoleName("");
+      setStorageLimit("");
     } catch (error) {
       console.error("Error creating role:", error);
+      alert("Error creating role.");
     }
   };
 
-  // Function to assign a role to a user
+  // Assign a role to a user
   const assignRole = async () => {
-    if (!username || !userRole) {
+    if (!username.trim() || !userRole) {
       alert("Please enter a username and select a role.");
       return;
     }
-
     try {
       const response = await fetch("/api/assign-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, roleName: userRole }),
       });
-
       if (!response.ok) throw new Error("Failed to assign role");
       alert(`Assigned role "${userRole}" to user "${username}".`);
+      // Optionally reset fields:
+      setUsername("");
+      setUserRole("user");
     } catch (error) {
       console.error("Error assigning role:", error);
+      alert("Error assigning role.");
     }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="container fadeIn" style={{ maxWidth: "900px", margin: "2rem auto", textAlign: "center", padding: "0 1rem" }}>
       <h2>Role Management</h2>
 
       {/* Role Creation Section */}
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ marginBottom: "2rem" }}>
         <h3>Create Role</h3>
         <input
           type="text"
           placeholder="Role Name"
           value={roleName}
           onChange={(e) => setRoleName(e.target.value)}
+          style={{ marginRight: "0.5rem", padding: "0.5rem", width: "200px" }}
         />
         <input
           type="number"
           placeholder="Storage Limit (MB)"
           value={storageLimit}
           onChange={(e) => setStorageLimit(e.target.value)}
+          style={{ marginRight: "0.5rem", padding: "0.5rem", width: "150px" }}
         />
-        <button onClick={createRole}>Create Role</button>
+        <button onClick={createRole} style={{ padding: "0.5rem 1rem" }}>
+          Create Role
+        </button>
       </div>
 
       {/* Role Assignment Section */}
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ marginBottom: "2rem" }}>
         <h3>Assign Role</h3>
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          style={{ marginRight: "0.5rem", padding: "0.5rem", width: "200px" }}
         />
-        <select value={userRole} onChange={(e) => setUserRole(e.target.value)}>
+        <select
+          value={userRole}
+          onChange={(e) => setUserRole(e.target.value)}
+          style={{ marginRight: "0.5rem", padding: "0.5rem", width: "150px" }}
+        >
           <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
-        <button onClick={assignRole}>Assign Role</button>
+        <button onClick={assignRole} style={{ padding: "0.5rem 1rem" }}>
+          Assign Role
+        </button>
       </div>
 
       {/* Storage Analytics Section */}
       <div>
         <h3>Storage Usage Analytics</h3>
-        <ul>
-          {analytics.length > 0 ? (
-            analytics.map((entry, index) => (
-              <li key={index}>
-                {entry.user}: {entry.storageUsed} KB used
+        {analytics.length > 0 ? (
+          <ul style={{ listStyle: "none", padding: 0, textAlign: "center" }}>
+            {analytics.map((entry, index) => (
+              <li key={index} style={{ marginBottom: "0.5rem" }}>
+                <strong>{entry.user}</strong>: {entry.storageUsed} KB used
               </li>
-            ))
-          ) : (
-            <p>No analytics data available.</p>
-          )}
-        </ul>
+            ))}
+          </ul>
+        ) : (
+          <p>No analytics data available.</p>
+        )}
       </div>
     </div>
   );
