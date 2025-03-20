@@ -1,12 +1,16 @@
 import { Redis } from "@upstash/redis";
 
-// Create a Redis client instance using Upstash credentials from environment variables
+// Initialize Upstash Redis client using the correct environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,     // e.g. "https://usw1-fancy-12345.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,   // e.g. "************"
+  url: process.env.KV_REST_API_URL,     // Corrected environment variable name
+  token: process.env.KV_REST_API_TOKEN, // Corrected token reference
 });
 
 export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
   const { fileUrl } = req.query;
 
   if (!fileUrl) {
@@ -14,10 +18,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Retrieve the string value (JSON-encoded) from Upstash Redis
+    // Retrieve the stored edits from Redis (JSON-encoded)
     const editsString = await redis.get(`collab-edit:${fileUrl}`);
 
-    // Parse the string back into JSON; default to an empty array if it doesn't exist
+    // Parse the string back into JSON; default to an empty array if null
     const edits = editsString ? JSON.parse(editsString) : [];
 
     return res.status(200).json({ edits });
