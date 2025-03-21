@@ -1,10 +1,10 @@
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
-// Create a Redis client instance using Upstash credentials from environment variables
+// Initialize Redis client with updated environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,     // e.g., "https://usw1-fancy-12345.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,   // e.g., "*********************************"
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -15,10 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use redis.lrange to retrieve all audit log entries for the current user.
-    // Upstash returns an array of strings.
     const logs = await redis.lrange(`audit:${session.user.username}`, 0, -1);
-
     return res.status(200).json({ logs });
   } catch (error) {
     console.error("Error fetching logs from Redis:", error);
