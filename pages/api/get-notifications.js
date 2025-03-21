@@ -1,10 +1,10 @@
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// Create a Redis client using environment variables
+// Initialize Redis client with updated environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,      // e.g. "https://usw1-xxxx-12345.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,    // e.g. "************"
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -15,10 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use lrange to retrieve all notifications for the current user
     const notifications = await redis.lrange(`notifications:${session.user.username}`, 0, -1);
-
-    // Parse each notification from JSON
     const parsedNotifications = notifications.map((n) => JSON.parse(n));
 
     return res.status(200).json({ notifications: parsedNotifications });
