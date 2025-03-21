@@ -1,34 +1,42 @@
 import speakeasy from "speakeasy";
 import { Redis } from "@upstash/redis";
 
-// Instantiate the Upstash Redis client using your new environment variables
+// Initialize Upstash Redis client using standard environment variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,   // e.g. "https://usw1-xxxx.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN, // e.g. "your_token_here"
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
   const { username, token } = req.body;
 
   if (!username || !token) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
-  // Use the Upstash Redis client to get the secret
-  const secret = await redis.get(`mfa:${username}`);
-  if (!secret) {
-    return res.status(404).json({ error: "No MFA setup for this user" });
+  try {
+    const secret = await redis.get(`mfa:${username}`);
+    if (!secret) {
+      return res.status(404).json({ error: "No MFA setup for this user" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret,
+      encoding: "base32",
+      token,
+    });
+
+    if (!verified) {
+      return res.status(403).json({ error: "Invalid MFA code" });
+    }
+
+    return res.status(200).json({ message: "MFA verified" });
+  } catch (error) {
+    console.error("Error verifying MFA:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const verified = speakeasy.totp.verify({
-    secret,
-    encoding: "base32",
-    token,
-  });
-
-  if (!verified) {
-    return res.status(403).json({ error: "Invalid MFA code" });
-  }
-
-  return res.status(200).json({ message: "MFA verified" });
 }
