@@ -1,9 +1,9 @@
 import { Redis } from "@upstash/redis";
 
-// Instantiate your Upstash Redis client using your environment variables
+// Initialize Upstash Redis client using updated env vars
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,  // e.g., "https://usw1-your-instance.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN, // your token here
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -14,18 +14,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Retrieve the list of versions stored in Redis under the key "versions:<fileUrl>"
     const versions = await redis.lrange(`versions:${fileUrl}`, 0, -1);
-    
-    // Find the version that matches the provided version number
+
     const selectedVersion = versions.find((v) => {
       try {
         return JSON.parse(v).version === version;
-      } catch (e) {
+      } catch {
         return false;
       }
     });
-    
+
     if (!selectedVersion) {
       return res.status(404).json({ error: "Version not found" });
     }
