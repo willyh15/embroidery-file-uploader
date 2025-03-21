@@ -1,10 +1,10 @@
 import { Redis } from "@upstash/redis";
 import { getSession } from "next-auth/react";
 
-// Initialize Upstash Redis client with your environment variables
+// Initialize Upstash Redis client with correct env variables
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -19,7 +19,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Log the download by pushing a JSON string onto a Redis list keyed by the user's username.
     await redis.lpush(
       `downloads:${session.user.username}`,
       JSON.stringify({
