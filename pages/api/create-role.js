@@ -1,10 +1,10 @@
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// Initialize your Upstash Redis client using environment variables
+// Initialize Upstash Redis client with your unified env vars
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,     // e.g. "https://xxxx.upstash.io"
-  token: process.env.UPSTASH_REDIS_REST_TOKEN  // e.g. "your_token_here"
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -22,9 +22,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use Upstash Redis hset to store the role configuration
     await redis.hset(`roles:${roleName}`, { storageLimit });
-    return res.status(200).json({ message: `Role ${roleName} created successfully` });
+    return res.status(200).json({ message: `Role "${roleName}" created successfully` });
   } catch (error) {
     console.error("Error creating role:", error);
     return res.status(500).json({ error: "Internal server error" });
