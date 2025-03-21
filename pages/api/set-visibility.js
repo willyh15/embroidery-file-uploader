@@ -1,10 +1,10 @@
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// Initialize Upstash Redis client with your environment variables
+// Initialize Upstash Redis client using updated env vars
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
@@ -21,7 +21,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Update the file visibility using Upstash Redis hset method
     await redis.hset(`file:${fileUrl}`, { visibility });
     return res.status(200).json({ message: "File visibility updated" });
   } catch (error) {
