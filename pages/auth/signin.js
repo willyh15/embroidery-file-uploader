@@ -1,70 +1,121 @@
-// pages/auth/signin.js
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
+import Button from "../../components/Button";
 
-export default function SignInPage() {
-  const router = useRouter();
-  const { error } = router.query;
-
+export default function SignIn() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = async () => {
-    setSubmitted(true);
-    await signIn("credentials", {
+  const router = useRouter();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      redirect: false,
       username,
       password,
       mfaToken,
       callbackUrl: "/admin",
     });
+
+    if (result?.ok) {
+      router.push(result.url || "/admin");
+    } else {
+      setError("Sign in failed. Check the details you provided are correct.");
+    }
+
+    setIsSubmitting(false);
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "5rem auto", textAlign: "center" }}>
-      <h2>Sign In</h2>
+    <div className="signin-container">
+      <form onSubmit={handleLogin} className="signin-form">
+        <h2>Sign In</h2>
 
-      {submitted && error === "CredentialsSignin" && (
-        <div style={{ color: "white", backgroundColor: "#dc3545", padding: "10px", borderRadius: "4px", marginBottom: "1rem" }}>
-          Sign in failed. Check the details you provided are correct.
-        </div>
-      )}
+        {error && <div className="error-banner">{error}</div>}
 
-      <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        style={{ marginBottom: "0.5rem", width: "100%", padding: "0.5rem" }}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{ marginBottom: "0.5rem", width: "100%", padding: "0.5rem" }}
-      />
-      <input
-        type="text"
-        placeholder="MFA Token (optional)"
-        value={mfaToken}
-        onChange={(e) => setMfaToken(e.target.value)}
-        style={{ marginBottom: "1rem", width: "100%", padding: "0.5rem" }}
-      />
-      <button
-        onClick={handleLogin}
-        style={{
-          padding: "0.5rem 1rem",
-          backgroundColor: "#0070f3",
-          color: "#fff",
-          border: "none",
-          borderRadius: "4px",
-        }}
-      >
-        Sign in with Credentials
-      </button>
+        <label>
+          Username
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </label>
+
+        <label>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </label>
+
+        <label>
+          MFA Token (if enabled)
+          <input
+            type="text"
+            value={mfaToken}
+            onChange={(e) => setMfaToken(e.target.value)}
+          />
+        </label>
+
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign in with Credentials"}
+        </Button>
+      </form>
+
+      <style jsx>{`
+        .signin-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background: #111;
+          color: white;
+        }
+
+        .signin-form {
+          background: #1c1c1c;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+          width: 100%;
+          max-width: 400px;
+        }
+
+        label {
+          display: block;
+          margin: 1rem 0 0.5rem;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.5rem;
+          background: #2c2c2c;
+          color: white;
+          border: 1px solid #444;
+          border-radius: 4px;
+        }
+
+        .error-banner {
+          background: #ff4d4f;
+          color: white;
+          padding: 0.75rem;
+          margin-bottom: 1rem;
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   );
 }
