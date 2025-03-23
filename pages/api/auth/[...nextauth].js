@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { Redis } from "@upstash/redis";
 
-// Instantiate the Upstash Redis client using environment variables
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -15,60 +14,55 @@ export default NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
-        // Uncomment the following if you use MFA:
-        // mfaToken: { label: "MFA Token", type: "text" },
+        mfaToken: { label: "MFA Token", type: "text", optional: true },
       },
       async authorize(credentials) {
-        // Hard-coded users; replace with your database as needed
         const users = [
           { id: "1", username: "admin", password: "password123", role: "admin" },
           { id: "2", username: "user", password: "userpass", role: "user" },
         ];
 
         const user = users.find(
-          (u) =>
-            u.username === credentials.username &&
-            u.password === credentials.password
+          (u) => u.username === credentials.username && u.password === credentials.password
         );
 
         if (!user) return null;
 
-        // Check for MFA/2FA using Upstash Redis client
-        const userMfaEnabled = await redis.get(`mfa:${user.username}`);
-        if (userMfaEnabled && !credentials.mfaToken) {
-          throw new Error("MFA required");
-        }
-        if (userMfaEnabled) {
-          const verifyResponse = await fetch(
-            process.env.NEXTAUTH_URL + "/api/verify-mfa",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                username: user.username,
-                token: credentials.mfaToken,
-              }),
-            }
-          );
-          if (!verifyResponse.ok) {
-            throw new Error("MFA verification failed");
+        const mfaRequired = await redis.get(`mfa:${user.username}`);
+        if (mfaRequired) {
+          if (!credentials.mfaToken) {
+            throw new Error("MFA required");
+          }
+          const verify = await fetch(`${process.env.NEXTAUTH_URL}/api/verify-mfa`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: user.username,
+              token: credentials.mfaToken,
+            }),
+          });
+          if (!verify.ok) {
+            throw new Error("Invalid MFA code");
           }
         }
+
         return user;
       },
     }),
   ],
   callbacks: {
-    async session({ session, token }) {
-      // Ensure session.user exists before adding role
-      session.user = { ...(session.user || {}), role: token?.role || "user" };
-      return session;
-    },
     async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-      }
+      if (user) token.role = user.role;
       return token;
+    },
+    async session({ session = {}, token = {} }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          role: token.role || "user",
+        },
+      };
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
