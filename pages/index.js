@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 
 import Button from "../components/Button";
@@ -16,16 +17,15 @@ import {
   PlusIcon,
   MenuIcon,
   SettingsIcon,
-  ProfileIcon
+  ProfileIcon,
 } from "../components/Icons";
 
 function Home() {
-  // Using the new syntax to destructure the session data from useSession
   const { data: session } = useSession();
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const dropRef = useRef(null);
 
-  // UI states
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
@@ -33,14 +33,12 @@ function Home() {
   const [fabOpen, setFabOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // File management states
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Hoop selection states
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
 
@@ -57,7 +55,6 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
-  // Notification helper
   function addNotification(text, type = "success") {
     const id = Date.now();
     setNotifications((prev) => [...prev, { id, text, type }]);
@@ -66,7 +63,6 @@ function Home() {
     }, 3000);
   }
 
-  // Upload handler
   async function handleUpload(selectedFiles) {
     if (!selectedFiles.length) return;
     setUploading(true);
@@ -95,7 +91,6 @@ function Home() {
     }
   }
 
-  // Fetch alignment guide
   async function fetchAlignmentGuide() {
     try {
       const response = await fetch("/api/get-alignment-guide", {
@@ -114,7 +109,6 @@ function Home() {
     }
   }
 
-  // Sidebar toggle
   function toggleSidebar() {
     setSidebarOpen(!sidebarOpen);
   }
@@ -123,7 +117,6 @@ function Home() {
 
   return (
     <div>
-      {/* SIDEBAR */}
       <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>Menu</h2>
@@ -138,19 +131,15 @@ function Home() {
         </ul>
       </aside>
 
-      {/* SIDEBAR OVERLAY */}
       {sidebarOpen && (
         <div className="sidebar-overlay open" onClick={toggleSidebar} />
       )}
 
-      {/* MENU BUTTON */}
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
 
-      {/* MAIN CONTENT */}
       <div className="main-content container fadeIn">
-        {/* AUTH SECTION */}
         {session ? (
           <Card title={`Welcome, ${session.user?.name || "User"}!`}>
             <Button onClick={() => signOut()}>
@@ -159,7 +148,7 @@ function Home() {
           </Card>
         ) : (
           <Card title="Please log in to upload files.">
-            <Button onClick={() => signIn("credentials", { callbackUrl: "/admin" })}>
+            <Button onClick={() => router.push("/auth/signin")}>
               <LoginIcon /> Login
             </Button>
           </Card>
@@ -167,7 +156,6 @@ function Home() {
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        {/* UPLOAD SECTION */}
         <Card title="Upload Files">
           <div
             ref={dropRef}
@@ -176,7 +164,7 @@ function Home() {
             onDragLeave={() => setHovering(false)}
           >
             <UploadIcon />
-            Drag &amp; Drop files here or
+            Drag & Drop files here or
             <input
               type="file"
               multiple
@@ -193,7 +181,6 @@ function Home() {
           )}
         </Card>
 
-        {/* HOOP SELECTION */}
         <Card title="Hoop Selection">
           <select
             className="dropdown"
@@ -210,7 +197,6 @@ function Home() {
           </select>
         </Card>
 
-        {/* SEARCH FILES */}
         <Card title="Search Files">
           <div
             className="search-bar"
@@ -232,7 +218,6 @@ function Home() {
           </div>
         </Card>
 
-        {/* HOOP GUIDE */}
         <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
           <HoopIcon /> Show Hoop Guides
         </Button>
@@ -245,7 +230,6 @@ function Home() {
           />
         )}
 
-        {/* MODAL */}
         <Modal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
@@ -254,7 +238,6 @@ function Home() {
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
-        {/* FLOATING ACTION BUTTON */}
         <div className="fab-container" onClick={() => setFabOpen(!fabOpen)}>
           <div className="fab">
             <PlusIcon />
@@ -267,7 +250,6 @@ function Home() {
           )}
         </div>
 
-        {/* NOTIFICATIONS */}
         <div className="notification-container">
           {notifications.map((note) => (
             <div key={note.id} className={`notification ${note.type}`}>
