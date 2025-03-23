@@ -1,22 +1,23 @@
+// pages/api/create-role.js
 import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
 
-// Initialize Upstash Redis client with your unified env vars
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  // Only allow admin users to assign roles
+  const session = await getSession({ req });
   if (!session || session.user.role !== "admin") {
     return res.status(403).json({ error: "Forbidden" });
   }
 
   const { roleName, storageLimit } = req.body;
-
   if (!roleName || !storageLimit) {
     return res.status(400).json({ error: "Missing role parameters" });
   }
