@@ -13,7 +13,6 @@ import {
   SearchIcon,
   HoopIcon,
   LogoutIcon,
-  LoginIcon,
   PlusIcon,
   MenuIcon,
   SettingsIcon,
@@ -21,7 +20,7 @@ import {
 } from "../components/Icons";
 
 function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const dropRef = useRef(null);
@@ -48,12 +47,22 @@ function Home() {
 
   useEffect(() => {
     async function fetchHoopSizes() {
-      const res = await fetch("/api/get-hoop-sizes");
-      const data = await res.json();
-      setHoopSizes(data.hoopSizes);
+      try {
+        const res = await fetch("/api/get-hoop-sizes");
+        const data = await res.json();
+        setHoopSizes(data.hoopSizes || []);
+      } catch (error) {
+        console.error("Failed to load hoop sizes", error);
+      }
     }
     fetchHoopSizes();
   }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   function addNotification(text, type = "success") {
     const id = Date.now();
@@ -65,6 +74,7 @@ function Home() {
 
   async function handleUpload(selectedFiles) {
     if (!selectedFiles.length) return;
+
     setUploading(true);
     setUploadProgress(0);
     setMessage("");
@@ -73,7 +83,11 @@ function Home() {
     selectedFiles.forEach((file) => formData.append("files", file));
 
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
       if (!res.ok) throw new Error("Upload failed");
 
       const data = await res.json();
@@ -93,27 +107,30 @@ function Home() {
 
   async function fetchAlignmentGuide() {
     try {
-      const response = await fetch("/api/get-alignment-guide", {
+      const res = await fetch("/api/get-alignment-guide", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hoopSize }),
       });
-      if (!response.ok) throw new Error("Failed to fetch alignment guide");
 
-      const data = await response.json();
+      if (!res.ok) throw new Error("Failed to fetch alignment guide");
+
+      const data = await res.json();
       setAlignmentGuide(data.alignmentGuideUrl);
       addNotification("Hoop guide fetched!", "success");
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       addNotification("Failed to fetch hoop guide!", "error");
     }
   }
 
   function toggleSidebar() {
-    setSidebarOpen(!sidebarOpen);
+    setSidebarOpen((prev) => !prev);
   }
 
-  if (!isClient) return <Loader />;
+  if (!isClient || status === "loading") return <Loader />;
+
+  if (!session) return null; // Wait for redirect if not authenticated
 
   return (
     <div>
@@ -131,35 +148,25 @@ function Home() {
         </ul>
       </aside>
 
-      {sidebarOpen && (
-        <div className="sidebar-overlay open" onClick={toggleSidebar} />
-      )}
+      {sidebarOpen && <div className="sidebar-overlay open" onClick={toggleSidebar} />}
 
       <div className="menu-btn" onClick={toggleSidebar}>
         <MenuIcon />
       </div>
 
       <div className="main-content container fadeIn">
-        {session ? (
-          <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-            <Button onClick={() => signOut()}>
-              <LogoutIcon /> Logout
-            </Button>
-          </Card>
-        ) : (
-          <Card title="Please log in to upload files.">
-            <Button onClick={() => router.push("/auth/signin")}>
-              <LoginIcon /> Login
-            </Button>
-          </Card>
-        )}
+        <Card title={`Welcome, ${session.user?.name || "User"}!`}>
+          <Button onClick={() => signOut()}>
+            <LogoutIcon /> Logout
+          </Button>
+        </Card>
 
         <h1 className="title">Embroidery File Uploader</h1>
 
         <Card title="Upload Files">
           <div
             ref={dropRef}
-            className={`upload-box soft-shadow ${uploading ? "dragover" : ""}`}
+            className={`upload-box soft-shadow ${hovering ? "dragover" : ""}`}
             onDragEnter={() => setHovering(true)}
             onDragLeave={() => setHovering(false)}
           >
@@ -171,7 +178,7 @@ function Home() {
               onChange={(e) => handleUpload(Array.from(e.target.files))}
             />
           </div>
-          <Button style={{ marginTop: "1rem" }} onClick={handleUpload}>
+          <Button style={{ marginTop: "1rem" }} onClick={() => handleUpload([])}>
             Upload File
           </Button>
           {uploading && (
@@ -184,9 +191,7 @@ function Home() {
         <Card title="Hoop Selection">
           <select
             className="dropdown"
-            onChange={(e) =>
-              setHoopSize(hoopSizes.find((h) => h.name === e.target.value))
-            }
+            onChange={(e) => setHoopSize(hoopSizes.find((h) => h.name === e.target.value))}
           >
             <option value="">Select Hoop Size</option>
             {hoopSizes.map((size) => (
@@ -198,15 +203,7 @@ function Home() {
         </Card>
 
         <Card title="Search Files">
-          <div
-            className="search-bar"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-            }}
-          >
+          <div className="search-bar" style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
             <SearchIcon />
             <input
               className="search-input"
@@ -230,11 +227,7 @@ function Home() {
           />
         )}
 
-        <Modal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          title="Upload Successful"
-        >
+        <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Upload Successful">
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
