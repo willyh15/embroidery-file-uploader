@@ -1,6 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "./auth/[...nextauth]";
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
