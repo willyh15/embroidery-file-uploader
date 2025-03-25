@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
-import toast, { Toaster } from "react-hot-toast";
 import Button from "../../components/Button";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function SignIn() {
   const [username, setUsername] = useState("");
@@ -10,29 +10,39 @@ export default function SignIn() {
   const [mfaToken, setMfaToken] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [destination, setDestination] = useState("admin"); // uploader or admin
-
+  const [destination, setDestination] = useState("/"); // uploader by default
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("lastDestination");
+    if (saved) setDestination(saved);
+  }, []);
+
+  const handleDestinationChange = (target) => {
+    setDestination(target);
+    localStorage.setItem("lastDestination", target);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
 
-    const callbackUrl = destination === "uploader" ? "/" : "/admin";
-
     const result = await signIn("credentials", {
       redirect: false,
       username,
       password,
       mfaToken,
-      callbackUrl,
+      callbackUrl: destination,
     });
 
     if (result?.ok) {
-      router.push(result.url || callbackUrl);
+      toast.success("Signed in successfully!");
+      setTimeout(() => {
+        router.push(result.url || destination);
+      }, 1000); // Optional: delay for toast to show
     } else {
-      setError("Sign in failed. Check the details you provided are correct.");
+      setError("Sign in failed. Check the details you provided.");
     }
 
     setIsSubmitting(false);
@@ -75,20 +85,26 @@ export default function SignIn() {
           />
         </label>
 
-        <label>
-          After login go to:
-          <select
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            style={{ marginTop: "0.5rem", padding: "0.5rem", width: "100%" }}
+        <div className="destination-toggle">
+          <span>Go to:</span>
+          <button
+            type="button"
+            className={destination === "/" ? "active" : ""}
+            onClick={() => handleDestinationChange("/")}
           >
-            <option value="admin">Admin (Create/Assign Role)</option>
-            <option value="uploader">Uploader (Main Site)</option>
-          </select>
-        </label>
+            Uploader
+          </button>
+          <button
+            type="button"
+            className={destination === "/admin" ? "active" : ""}
+            onClick={() => handleDestinationChange("/admin")}
+          >
+            Admin
+          </button>
+        </div>
 
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign In"}
+          {isSubmitting ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 
@@ -116,14 +132,40 @@ export default function SignIn() {
           margin: 1rem 0 0.5rem;
         }
 
-        input,
-        select {
+        input {
           width: 100%;
           padding: 0.5rem;
           background: #2c2c2c;
           color: white;
           border: 1px solid #444;
           border-radius: 4px;
+        }
+
+        .destination-toggle {
+          margin: 1.5rem 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #222;
+          padding: 0.5rem;
+          border-radius: 6px;
+        }
+
+        .destination-toggle button {
+          flex: 1;
+          margin: 0 0.25rem;
+          padding: 0.5rem;
+          border: none;
+          border-radius: 4px;
+          background: #333;
+          color: #ccc;
+          cursor: pointer;
+        }
+
+        .destination-toggle button.active {
+          background: #0070f3;
+          color: white;
+          font-weight: bold;
         }
 
         .error-banner {
