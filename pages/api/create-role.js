@@ -17,17 +17,17 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const { username, roleName } = req.body;
+  const { roleName, storageLimit } = req.body;
 
-  if (!username || !roleName) {
-    return res.status(400).json({ error: "Missing parameters" });
+  if (!roleName || !storageLimit) {
+    return res.status(400).json({ error: "Missing role parameters" });
   }
 
   try {
-    await redis.hset(`user:${username}`, { role: roleName });
-    return res.status(200).json({ message: `Role "${roleName}" assigned to "${username}"` });
+    await redis.hset(`roles:${roleName}`, { storageLimit });
+    return res.status(200).json({ message: `Role "${roleName}" created successfully` });
   } catch (err) {
-    console.error("Error assigning role:", err);
+    console.error("Error creating role:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
