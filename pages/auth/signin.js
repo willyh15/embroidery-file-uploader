@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
+import toast, { Toaster } from "react-hot-toast";
 import Button from "../../components/Button";
 
 export default function SignIn() {
@@ -9,6 +10,7 @@ export default function SignIn() {
   const [mfaToken, setMfaToken] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [destination, setDestination] = useState("admin"); // uploader or admin
 
   const router = useRouter();
 
@@ -17,16 +19,18 @@ export default function SignIn() {
     setIsSubmitting(true);
     setError("");
 
+    const callbackUrl = destination === "uploader" ? "/" : "/admin";
+
     const result = await signIn("credentials", {
       redirect: false,
       username,
       password,
       mfaToken,
-      callbackUrl: "/admin",
+      callbackUrl,
     });
 
     if (result?.ok) {
-      router.push(result.url || "/admin");
+      router.push(result.url || callbackUrl);
     } else {
       setError("Sign in failed. Check the details you provided are correct.");
     }
@@ -36,6 +40,7 @@ export default function SignIn() {
 
   return (
     <div className="signin-container">
+      <Toaster position="top-right" />
       <form onSubmit={handleLogin} className="signin-form">
         <h2>Sign In</h2>
 
@@ -70,8 +75,20 @@ export default function SignIn() {
           />
         </label>
 
+        <label>
+          After login go to:
+          <select
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            style={{ marginTop: "0.5rem", padding: "0.5rem", width: "100%" }}
+          >
+            <option value="admin">Admin (Create/Assign Role)</option>
+            <option value="uploader">Uploader (Main Site)</option>
+          </select>
+        </label>
+
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in with Credentials"}
+          {isSubmitting ? "Signing in..." : "Sign In"}
         </Button>
       </form>
 
@@ -99,7 +116,8 @@ export default function SignIn() {
           margin: 1rem 0 0.5rem;
         }
 
-        input {
+        input,
+        select {
           width: 100%;
           padding: 0.5rem;
           background: #2c2c2c;
