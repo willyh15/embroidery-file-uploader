@@ -1,6 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "./auth/[...nextauth]";
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -17,17 +17,17 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
-  const { roleName, storageLimit } = req.body;
+  const { username, roleName } = req.body;
 
-  if (!roleName || !storageLimit) {
-    return res.status(400).json({ error: "Missing role parameters" });
+  if (!username || !roleName) {
+    return res.status(400).json({ error: "Missing parameters" });
   }
 
   try {
-    await redis.hset(`roles:${roleName}`, { storageLimit });
-    return res.status(200).json({ message: `Role "${roleName}" created successfully` });
+    await redis.hset(`user:${username}`, { role: roleName });
+    return res.status(200).json({ message: `Role "${roleName}" assigned to "${username}"` });
   } catch (err) {
-    console.error("Error creating role:", err);
+    console.error("Error assigning role:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
