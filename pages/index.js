@@ -15,20 +15,16 @@ import HoopSelector from "../components/HoopSelector";
 import SearchBar from "../components/SearchBar";
 import FloatingActions from "../components/FloatingActions";
 
-import {
-  LogoutIcon,
-  HoopIcon,
-} from "../components/Icons";
+import { LogoutIcon, HoopIcon } from "../components/Icons";
 
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const dropRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
-
+  const [showWelcome, setShowWelcome] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
   const [hovering, setHovering] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
@@ -38,7 +34,7 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
-  const [activityLog, setActivityLog] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => setIsClient(true), []);
 
@@ -48,8 +44,7 @@ function Home() {
         const res = await fetch("/api/get-hoop-sizes");
         const data = await res.json();
         setHoopSizes(data.hoopSizes || []);
-      } catch (err) {
-        console.error("Failed to load hoop sizes", err);
+      } catch {
         toast.error("Failed to load hoop sizes.");
       }
     }
@@ -61,51 +56,47 @@ function Home() {
   }, [status, router]);
 
   useEffect(() => {
-    // Show welcome modal if it's the first visit after login
-    const dontShowAgain = localStorage.getItem("hideWelcome");
-    if (!dontShowAgain) setShowWelcome(true);
+    if (router.query.setupComplete === "true") {
+      toast.success("Role setup complete! You're ready to upload.");
+      const url = new URL(window.location);
+      url.searchParams.delete("setupComplete");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [router.query]);
+
+  useEffect(() => {
+    const skipWelcome = localStorage.getItem("skipWelcome");
+    if (!skipWelcome) setShowWelcome(true);
   }, []);
 
   useEffect(() => {
-    if (router.query.setupComplete === "true") {
-      toast.success("Role setup complete! You're ready to upload.");
-      router.replace("/", undefined, { shallow: true });
-    }
-  }, [router]);
+    const activity = localStorage.getItem("recentActivity");
+    if (activity) setRecentActivity(JSON.parse(activity));
+  }, []);
 
-  const fetchActivity = async () => {
-    try {
-      const res = await fetch("/api/get-user-activity");
-      const data = await res.json();
-      setActivityLog(data.activities || []);
-    } catch (err) {
-      console.error("Failed to fetch activity log", err);
-    }
+  const logActivity = (message) => {
+    const activity = [
+      { message, timestamp: new Date().toLocaleString() },
+      ...recentActivity,
+    ].slice(0, 5);
+    setRecentActivity(activity);
+    localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
-
-  useEffect(() => {
-    if (session?.user) fetchActivity();
-  }, [session]);
 
   const handleUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
     setUploadProgress(0);
-
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
-
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed");
-
       const data = await res.json();
       setUploadedFiles((prev) => [...prev, ...data.urls]);
-      setShowModal(true);
       toast.success("Files uploaded successfully!");
-      fetchActivity(); // update log
-    } catch (err) {
-      console.error("Upload error:", err);
+      setShowModal(true);
+      logActivity("Uploaded file(s)");
+    } catch {
       toast.error("Upload failed.");
     } finally {
       setUploading(false);
@@ -120,14 +111,11 @@ function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hoopSize }),
       });
-
-      if (!res.ok) throw new Error("Failed to fetch alignment guide");
-
       const data = await res.json();
       setAlignmentGuide(data.alignmentGuideUrl);
       toast.success("Hoop guide fetched!");
-    } catch (err) {
-      console.error(err);
+      logActivity("Fetched hoop alignment guide");
+    } catch {
       toast.error("Failed to fetch hoop guide.");
     }
   };
@@ -140,35 +128,16 @@ function Home() {
       <Toaster position="top-right" />
       <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
       <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
-
       <div className="main-content container fadeIn">
         <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-          <Button onClick={() => signOut()}>
-            <LogoutIcon /> Logout
-          </Button>
+          <Button onClick={() => signOut()}><LogoutIcon /> Logout</Button>
         </Card>
 
         <h1 className="title">Embroidery File Uploader</h1>
 
-        <UploadSection
-          dropRef={dropRef}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-          hovering={hovering}
-          setHovering={setHovering}
-          handleUpload={handleUpload}
-        />
-
-        <HoopSelector
-          hoopSizes={hoopSizes}
-          hoopSize={hoopSize}
-          setHoopSize={setHoopSize}
-        />
-
-        <SearchBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
+        <UploadSection {...{ dropRef, uploading, uploadProgress, hovering, setHovering, handleUpload }} />
+        <HoopSelector {...{ hoopSizes, hoopSize, setHoopSize }} />
+        <SearchBar {...{ searchQuery, setSearchQuery }} />
 
         <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
           <HoopIcon /> Show Hoop Guides
@@ -183,22 +152,22 @@ function Home() {
           />
         )}
 
-        {/* Recent Activity */}
-        <div style={{ marginTop: "2rem" }}>
-          <h3>Recent Activity</h3>
-          {activityLog.length > 0 ? (
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              {activityLog.slice(0, 5).map((item, idx) => (
-                <li key={idx} style={{ marginBottom: "0.5rem" }}>
-                  <strong>{item.action}</strong> <br />
-                  <small>{new Date(item.timestamp).toLocaleString()}</small>
-                </li>
+        <FloatingActions
+          isOpen={fabOpen}
+          setIsOpen={setFabOpen}
+          onUploadClick={() => setShowModal(true)}
+          onGuideClick={fetchAlignmentGuide}
+        />
+
+        {recentActivity.length > 0 && (
+          <Card title="Recent Activity" style={{ marginTop: "2rem" }}>
+            <ul style={{ padding: 0 }}>
+              {recentActivity.map((a, i) => (
+                <li key={i}>{a.message} — <small>{a.timestamp}</small></li>
               ))}
             </ul>
-          ) : (
-            <p>No recent activity.</p>
-          )}
-        </div>
+          </Card>
+        )}
 
         <Modal
           isOpen={showModal}
@@ -208,38 +177,29 @@ function Home() {
           <p>Your file has been uploaded successfully!</p>
         </Modal>
 
-        {/* Welcome Modal */}
         <Modal
           isOpen={showWelcome}
-          onClose={() => setShowWelcome(false)}
+          onClose={() => {
+            setShowWelcome(false);
+            localStorage.setItem("skipWelcome", "true");
+          }}
           title="Welcome!"
         >
-          <p>Welcome to your embroidery uploader! Here are a few tips:</p>
-          <ul>
-            <li>Use the drag & drop area to upload PNG, SVG, or WEBP files</li>
-            <li>Select your hoop size before uploading</li>
-            <li>Click “Show Hoop Guides” to preview alignment</li>
-          </ul>
+          <p>Start by uploading a file, selecting hoop size, or viewing alignment guides.</p>
           <div style={{ marginTop: "1rem" }}>
             <Button onClick={() => router.push("/admin")}>Go to Admin</Button>
-            <Button
-              onClick={() => {
-                setShowWelcome(false);
-                localStorage.setItem("hideWelcome", "true");
-              }}
-              style={{ marginLeft: "1rem" }}
-            >
-              Don’t show again
-            </Button>
+            <Button onClick={() => window.open("/docs", "_blank")}>Help / Docs</Button>
           </div>
+          <Button
+            style={{ marginTop: "1rem" }}
+            onClick={() => {
+              setShowWelcome(false);
+              localStorage.setItem("skipWelcome", "true");
+            }}
+          >
+            Don’t show again
+          </Button>
         </Modal>
-
-        <FloatingActions
-          isOpen={fabOpen}
-          setIsOpen={setFabOpen}
-          onUploadClick={() => setShowModal(true)}
-          onGuideClick={fetchAlignmentGuide}
-        />
       </div>
     </div>
   );
