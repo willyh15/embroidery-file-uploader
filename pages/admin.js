@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function RoleManagement() {
   const [roleName, setRoleName] = useState("");
@@ -6,91 +8,92 @@ export default function RoleManagement() {
   const [userRole, setUserRole] = useState("user");
   const [username, setUsername] = useState("");
   const [analytics, setAnalytics] = useState([]);
+  const router = useRouter();
 
-  // Fetch storage analytics on component mount
-  useEffect(() => {
-    async function fetchAnalytics() {
-      try {
-        const response = await fetch("/api/get-analytics");
-        if (!response.ok) throw new Error("Failed to fetch analytics");
-        const data = await response.json();
-        setAnalytics(data.analytics);
-      } catch (error) {
-        console.error("Error fetching analytics:", error);
-      }
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch("/api/get-analytics");
+      if (!response.ok) throw new Error("Failed to fetch analytics");
+      const data = await response.json();
+      setAnalytics(data.analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      toast.error("Failed to load analytics.");
     }
+  };
+
+  useEffect(() => {
     fetchAnalytics();
   }, []);
 
   const createRole = async () => {
-  if (!roleName.trim() || !storageLimit) {
-    alert("Please provide both role name and storage limit.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/create-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roleName, storageLimit }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Failed to create role:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: data,
-      });
-      alert(`Error creating role: ${data?.error || response.statusText}`);
+    if (!roleName.trim() || !storageLimit) {
+      toast.error("Please provide both role name and storage limit.");
       return;
     }
 
-    alert(`Role "${roleName}" created with ${storageLimit}MB storage limit.`);
-    setRoleName("");
-    setStorageLimit("");
-  } catch (error) {
-    console.error("Network or server error during role creation:", error);
-    alert("Unexpected error creating role.");
-  }
-};
+    try {
+      const response = await fetch("/api/create-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roleName, storageLimit }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Failed to create role:", data);
+        toast.error(`Error: ${data?.error || "Unknown error"}`);
+        return;
+      }
+
+      toast.success(`Created role "${roleName}" with ${storageLimit}MB.`);
+      setRoleName("");
+      setStorageLimit("");
+      fetchAnalytics();
+    } catch (error) {
+      console.error("Error creating role:", error);
+      toast.error("Unexpected error creating role.");
+    }
+  };
+
   const assignRole = async () => {
-  if (!username.trim() || !userRole) {
-    alert("Please enter a username and select a role.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/assign-role", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, roleName: userRole }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Failed to assign role:", {
-        status: response.status,
-        statusText: response.statusText,
-        body: data,
-      });
-      alert(`Error assigning role: ${data?.error || response.statusText}`);
+    if (!username.trim() || !userRole) {
+      toast.error("Enter a username and select a role.");
       return;
     }
 
-    alert(`Assigned role "${userRole}" to user "${username}".`);
-    setUsername("");
-    setUserRole("user");
-  } catch (error) {
-    console.error("Network or server error during role assignment:", error);
-    alert("Unexpected error assigning role.");
-  }
-};
+    try {
+      const response = await fetch("/api/assign-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, roleName: userRole }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Failed to assign role:", data);
+        toast.error(`Error: ${data?.error || "Unknown error"}`);
+        return;
+      }
+
+      toast.success(`Assigned "${userRole}" to "${username}".`);
+      setUsername("");
+      setUserRole("user");
+
+      // Optional: redirect or refresh analytics
+      fetchAnalytics();
+      // router.push("/admin"); // Uncomment if you want to redirect after assignment
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      toast.error("Unexpected error assigning role.");
+    }
+  };
 
   return (
     <div className="container fadeIn" style={{ maxWidth: "900px", margin: "2rem auto", textAlign: "center", padding: "0 1rem" }}>
+      <Toaster position="top-right" />
       <h2>Role Management</h2>
 
       {/* Role Creation Section */}
