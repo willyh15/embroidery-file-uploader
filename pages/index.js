@@ -212,7 +212,122 @@ function Home() {
   if (!isClient || status === "loading") return <Loader />;
   if (!session) return null;
 
-  return <div>{/* UI rendering remains unchanged */}</div>;
+  return (
+  <div>
+    <Toaster position="top-right" />
+    <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
+    <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
+
+    <div className="main-content container fadeIn">
+      <Card title={`Welcome, ${session.user?.name || "User"}!`}>
+        <Button onClick={() => signOut()}>
+          <LogoutIcon /> Logout
+        </Button>
+      </Card>
+
+      <h1 className="title">Embroidery File Uploader</h1>
+
+      <AutoStitchToggle enabled={autoStitchEnabled} onChange={setAutoStitchEnabled} />
+
+      <UploadSection
+        dropRef={dropRef}
+        uploading={uploading}
+        uploadProgress={uploadProgress}
+        hovering={hovering}
+        setHovering={setHovering}
+        handleUpload={handleUpload}
+      />
+
+      <HoopSelector hoopSizes={hoopSizes} hoopSize={hoopSize} setHoopSize={setHoopSize} />
+
+      <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+      <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
+        <HoopIcon /> Show Hoop Guides
+      </Button>
+
+      {alignmentGuide && (
+        <img
+          className="hand-drawn"
+          src={alignmentGuide}
+          alt="Hoop Alignment Guide"
+          style={{ marginTop: "1rem" }}
+        />
+      )}
+
+      {uploadedFiles.length > 0 && (
+        <>
+          <ConvertAllButton onConvertAll={batchConvertAll} />
+          {uploadedFiles.map((file) => (
+            <FilePreviewCard
+              key={file.url}
+              file={file}
+              onConvert={() => handleConvert(file.url)}
+              onPreview={() => handlePreview(file.url)}
+              onAutoStitch={() => handleAutoStitch(file.url)}
+            />
+          ))}
+        </>
+      )}
+
+      {recentActivity.length > 0 && (
+        <Card title="Recent Activity" style={{ marginTop: "2rem" }}>
+          <ul style={{ padding: 0 }}>
+            {recentActivity.map((a, i) => (
+              <li key={i}>
+                {a.message} — <small>{a.timestamp}</small>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <FloatingActions
+        isOpen={fabOpen}
+        setIsOpen={setFabOpen}
+        onUploadClick={() => setShowModal(true)}
+        onGuideClick={fetchAlignmentGuide}
+      />
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Upload Successful"
+      >
+        <p>Your file has been uploaded successfully!</p>
+      </Modal>
+
+      <Modal
+        isOpen={showWelcome}
+        onClose={() => {
+          setShowWelcome(false);
+          localStorage.setItem("skipWelcome", "true");
+        }}
+        title="Welcome!"
+      >
+        <p>Start by uploading a file, selecting hoop size, or viewing alignment guides.</p>
+        <div style={{ marginTop: "1rem" }}>
+          <Button onClick={() => router.push("/admin")}>Go to Admin</Button>
+          <Button onClick={() => window.open("/docs", "_blank")}>Help / Docs</Button>
+        </div>
+        <Button
+          style={{ marginTop: "1rem" }}
+          onClick={() => {
+            setShowWelcome(false);
+            localStorage.setItem("skipWelcome", "true");
+          }}
+        >
+          Don’t show again
+        </Button>
+      </Modal>
+
+      <StitchPreviewModal
+        previewUrl={stitchPreviewUrl}
+        onClose={() => setStitchPreviewUrl(null)}
+      />
+    </div>
+  </div>
+);
 }
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
