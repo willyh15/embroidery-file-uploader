@@ -22,51 +22,72 @@ export default function RoleManagement() {
     fetchAnalytics();
   }, []);
 
-  // Create a new role
   const createRole = async () => {
-    if (!roleName.trim() || !storageLimit) {
-      alert("Please provide both role name and storage limit.");
-      return;
-    }
-    try {
-      const response = await fetch("/api/create-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleName, storageLimit }),
-      });
-      if (!response.ok) throw new Error("Failed to create role");
-      alert(`Role "${roleName}" created with ${storageLimit}MB storage limit.`);
-      // Optionally reset input fields:
-      setRoleName("");
-      setStorageLimit("");
-    } catch (error) {
-      console.error("Error creating role:", error);
-      alert("Error creating role.");
-    }
-  };
+  if (!roleName.trim() || !storageLimit) {
+    alert("Please provide both role name and storage limit.");
+    return;
+  }
 
-  // Assign a role to a user
-  const assignRole = async () => {
-    if (!username.trim() || !userRole) {
-      alert("Please enter a username and select a role.");
+  try {
+    const response = await fetch("/api/create-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roleName, storageLimit }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to create role:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: data,
+      });
+      alert(`Error creating role: ${data?.error || response.statusText}`);
       return;
     }
-    try {
-      const response = await fetch("/api/assign-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, roleName: userRole }),
+
+    alert(`Role "${roleName}" created with ${storageLimit}MB storage limit.`);
+    setRoleName("");
+    setStorageLimit("");
+  } catch (error) {
+    console.error("Network or server error during role creation:", error);
+    alert("Unexpected error creating role.");
+  }
+};
+  const assignRole = async () => {
+  if (!username.trim() || !userRole) {
+    alert("Please enter a username and select a role.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/assign-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, roleName: userRole }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to assign role:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: data,
       });
-      if (!response.ok) throw new Error("Failed to assign role");
-      alert(`Assigned role "${userRole}" to user "${username}".`);
-      // Optionally reset fields:
-      setUsername("");
-      setUserRole("user");
-    } catch (error) {
-      console.error("Error assigning role:", error);
-      alert("Error assigning role.");
+      alert(`Error assigning role: ${data?.error || response.statusText}`);
+      return;
     }
-  };
+
+    alert(`Assigned role "${userRole}" to user "${username}".`);
+    setUsername("");
+    setUserRole("user");
+  } catch (error) {
+    console.error("Network or server error during role assignment:", error);
+    alert("Unexpected error assigning role.");
+  }
+};
 
   return (
     <div className="container fadeIn" style={{ maxWidth: "900px", margin: "2rem auto", textAlign: "center", padding: "0 1rem" }}>
