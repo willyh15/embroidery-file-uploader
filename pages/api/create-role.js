@@ -1,6 +1,6 @@
-// pages/api/create-role.js
-import { getSession } from "next-auth/react";
 import { Redis } from "@upstash/redis";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -12,12 +12,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
   if (!session || session.user.role !== "admin") {
     return res.status(403).json({ error: "Forbidden" });
   }
 
   const { roleName, storageLimit } = req.body;
+
   if (!roleName || !storageLimit) {
     return res.status(400).json({ error: "Missing role parameters" });
   }
@@ -25,8 +26,8 @@ export default async function handler(req, res) {
   try {
     await redis.hset(`roles:${roleName}`, { storageLimit });
     return res.status(200).json({ message: `Role "${roleName}" created successfully` });
-  } catch (error) {
-    console.error("Error creating role:", error);
+  } catch (err) {
+    console.error("Error creating role:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
