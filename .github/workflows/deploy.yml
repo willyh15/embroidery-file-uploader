@@ -37,7 +37,8 @@ jobs:
             stripe \
             react-zoom-pan-pinch \
             @upstash/redis \
-            node-fetch
+            node-fetch \
+            react-hot-toast
 
       - name: 🏗️ Build Project
         run: npm run build
