@@ -17,6 +17,7 @@ import FloatingActions from "../components/FloatingActions";
 
 import {
   LogoutIcon,
+  HoopIcon, // <-- Add this
 } from "../components/Icons";
 
 function Home() {
