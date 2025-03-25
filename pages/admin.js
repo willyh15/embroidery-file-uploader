@@ -10,21 +10,21 @@ export default function RoleManagement() {
   const [analytics, setAnalytics] = useState([]);
   const router = useRouter();
 
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
   const fetchAnalytics = async () => {
     try {
       const response = await fetch("/api/get-analytics");
-      if (!response.ok) throw new Error("Failed to fetch analytics");
       const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Error loading analytics");
       setAnalytics(data.analytics);
     } catch (error) {
       console.error("Error fetching analytics:", error);
       toast.error("Failed to load analytics.");
     }
   };
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
 
   const createRole = async () => {
     if (!roleName.trim() || !storageLimit) {
@@ -33,26 +33,25 @@ export default function RoleManagement() {
     }
 
     try {
-      const response = await fetch("/api/create-role", {
+      const res = await fetch("/api/create-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ roleName, storageLimit }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      const data = await res.json();
+      if (!res.ok) {
         console.error("Failed to create role:", data);
         toast.error(`Error: ${data?.error || "Unknown error"}`);
         return;
       }
 
-      toast.success(`Created role "${roleName}" with ${storageLimit}MB.`);
+      toast.success(`Created role "${roleName}"`);
       setRoleName("");
       setStorageLimit("");
       fetchAnalytics();
-    } catch (error) {
-      console.error("Error creating role:", error);
+    } catch (err) {
+      console.error("Error creating role:", err);
       toast.error("Unexpected error creating role.");
     }
   };
@@ -64,29 +63,27 @@ export default function RoleManagement() {
     }
 
     try {
-      const response = await fetch("/api/assign-role", {
+      const res = await fetch("/api/assign-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, roleName: userRole }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      const data = await res.json();
+      if (!res.ok) {
         console.error("Failed to assign role:", data);
         toast.error(`Error: ${data?.error || "Unknown error"}`);
         return;
       }
 
-      toast.success(`Assigned "${userRole}" to "${username}".`);
+      toast.success(`Assigned "${userRole}" to "${username}"`);
       setUsername("");
       setUserRole("user");
 
-      // Optional: redirect or refresh analytics
-      fetchAnalytics();
-      // router.push("/admin"); // Uncomment if you want to redirect after assignment
-    } catch (error) {
-      console.error("Error assigning role:", error);
+      // Redirect with flag
+      router.push("/?setupComplete=true");
+    } catch (err) {
+      console.error("Error assigning role:", err);
       toast.error("Unexpected error assigning role.");
     }
   };
@@ -96,7 +93,6 @@ export default function RoleManagement() {
       <Toaster position="top-right" />
       <h2>Role Management</h2>
 
-      {/* Role Creation Section */}
       <div style={{ marginBottom: "2rem" }}>
         <h3>Create Role</h3>
         <input
@@ -118,7 +114,6 @@ export default function RoleManagement() {
         </button>
       </div>
 
-      {/* Role Assignment Section */}
       <div style={{ marginBottom: "2rem" }}>
         <h3>Assign Role</h3>
         <input
@@ -141,11 +136,10 @@ export default function RoleManagement() {
         </button>
       </div>
 
-      {/* Storage Analytics Section */}
       <div>
         <h3>Storage Usage Analytics</h3>
         {analytics.length > 0 ? (
-          <ul style={{ listStyle: "none", padding: 0, textAlign: "center" }}>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {analytics.map((entry, index) => (
               <li key={index} style={{ marginBottom: "0.5rem" }}>
                 <strong>{entry.user}</strong>: {entry.storageUsed} KB used
