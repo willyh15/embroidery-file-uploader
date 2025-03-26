@@ -1,70 +1,37 @@
-// /pages/api/convert-file.js
-import { getSession } from "next-auth/react";
-import { writeFile, unlink } from "fs/promises";
+// pages/api/convert-file.js
+import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
-import path from "path";
-import { exec } from "child_process";
-import { put } from "@vercel/blob";
 
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
+export const config = { runtime: "edge" };
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+    });
   }
 
-  const session = await getSession({ req });
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const { fileUrl } = req.body;
-  if (!fileUrl) {
-    return res.status(400).json({ error: "Missing file URL" });
-  }
+  const token = await getToken({ req });
+  const username = token?.username || "guest";
 
   try {
-    const response = await fetch(fileUrl);
-    const buffer = await response.arrayBuffer();
-    const inputBuffer = Buffer.from(buffer);
+    const { fileUrl, format = "pes" } = await req.json();
 
-    const tempDir = "/tmp";
-    const inputName = uuidv4() + path.extname(fileUrl).toLowerCase();
-    const outputName = inputName.replace(path.extname(inputName), ".pes");
+    // Simulate conversion output (replace with CLI later)
+    const uuid = uuidv4();
+    const blobKey = `${username}/embroidery/converted-${uuid}.${format}`;
+    const convertedUrl = `https://blob.vercel-storage.com/${blobKey}`;
+    const expiryDate = new Date(Date.now() + 30 * 86400000).toISOString();
 
-    const inputPath = path.join(tempDir, inputName);
-    const outputPath = path.join(tempDir, outputName);
+    console.log(`Simulated conversion for ${fileUrl} -> ${convertedUrl}`);
 
-    await writeFile(inputPath, inputBuffer);
-
-    // Simulate Ink/Stitch conversion
-    const cmd = `inkstitch "${inputPath}" -o "${outputPath}"`;
-
-    await new Promise((resolve, reject) => {
-      exec(cmd, (err, stdout, stderr) => {
-        if (err) {
-          console.error("Ink/Stitch Error:", stderr);
-          return reject(new Error("Ink/Stitch CLI failed"));
-        }
-        resolve(stdout);
-      });
+    return new Response(JSON.stringify({ convertedUrl, expiryDate }), {
+      status: 200,
     });
-
-    const outBuffer = await readFile(outputPath);
-    const blob = await put(`converted/${session.user.username}/${outputName}`, outBuffer, {
-      access: "public",
+  } catch (err) {
+    console.error("Conversion error:", err);
+    return new Response(JSON.stringify({ error: "Conversion failed" }), {
+      status: 500,
     });
-
-    await unlink(inputPath);
-    await unlink(outputPath);
-
-    return res.status(200).json({ convertedUrl: blob.url });
-  } catch (error) {
-    console.error("Conversion failed:", error);
-    return res.status(500).json({ error: "Conversion failed", details: error.message });
   }
 }
