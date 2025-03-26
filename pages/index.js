@@ -158,22 +158,35 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
-    try {
-      const res = await fetch("/api/convert-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
-      if (!res.ok) throw new Error("Conversion failed");
-      toast.success("File converted!");
-      updateFileStatus(fileUrl, "Converted");
-      logActivity("Manually converted a file");
-    } catch (error) {
-      console.error("Conversion failed:", error);
-      toast.error("Conversion failed");
-      updateFileStatus(fileUrl, "Error");
+  try {
+    const res = await fetch("/api/convert-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Conversion failed");
+
+    updateFileStatus(fileUrl, "Converted");
+    toast.success("File converted!");
+
+    // Optional: show link or preview
+    if (data.convertedUrl) {
+      logActivity(`Converted to PES: ${data.convertedUrl}`);
     }
-  };
+
+    // Log version
+    await fetch("/api/upload-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl: data.convertedUrl }),
+    });
+  } catch (error) {
+    console.error("Conversion failed:", error);
+    toast.error("Conversion failed");
+    updateFileStatus(fileUrl, "Error");
+  }
+};
 
   const handlePreview = async (fileUrl) => {
     try {
