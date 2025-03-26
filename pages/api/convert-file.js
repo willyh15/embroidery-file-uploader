@@ -1,33 +1,43 @@
-const AWS_LAMBDA_URL = "https://your-api-gateway.amazonaws.com/convert";
+// pages/api/convert-file.js
+import { getToken } from "next-auth/jwt";
 
-export default async function handler(req, res) {
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(req) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), { status: 405 });
   }
 
-  const { fileUrl, format } = req.body;
-
-  // Ensure required parameters are provided
-  if (!fileUrl || !format) {
-    return res.status(400).json({ error: "File URL and format are required" });
+  const token = await getToken({ req });
+  if (!token) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   try {
-    const response = await fetch(AWS_LAMBDA_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl, format }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`AWS Lambda error: ${errorText}`);
+    const { fileUrl } = await req.json();
+    if (!fileUrl) {
+      return new Response(JSON.stringify({ error: "fileUrl is required" }), { status: 400 });
     }
 
-    const data = await response.json();
-    return res.status(200).json({ convertedFile: data.converted_file });
-  } catch (error) {
-    console.error("Error converting file:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    // Simulate conversion
+    const filename = fileUrl.split("/").pop().split(".")[0];
+    const fakePesUrl = `https://vercel-blob.fake/converted/${filename}.pes`;
+
+    // Optional: simulate logging the version (you can POST to /api/upload-file here)
+    // await fetch("/api/upload-file", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({ fileUrl: fakePesUrl }),
+    // });
+
+    return new Response(JSON.stringify({ convertedUrl: fakePesUrl }), { status: 200 });
+  } catch (err) {
+    console.error("Conversion error:", err);
+    return new Response(
+      JSON.stringify({ error: "Conversion failed", details: err.message }),
+      { status: 500 }
+    );
   }
 }
