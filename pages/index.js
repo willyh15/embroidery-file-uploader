@@ -206,11 +206,15 @@ function Home() {
     }
   };
 
-  const updateFileStatus = (fileUrl, status) => {
-    setUploadedFiles((prev) =>
-      prev.map((file) => (file.url === fileUrl ? { ...file, status } : file))
-    );
-  };
+  const updateFileStatus = (fileUrl, status, convertedUrl = null) => {
+  setUploadedFiles((prev) =>
+    prev.map((file) =>
+      file.url === fileUrl
+        ? { ...file, status, convertedUrl: convertedUrl || file.convertedUrl }
+        : file
+    )
+  );
+};
 
   const batchConvertAll = async () => {
     for (const file of uploadedFiles) {
