@@ -1,46 +1,72 @@
+// /pages/api/upload.js
 import { put } from "@vercel/blob";
-import { getSession } from "next-auth/react";
+import { getToken } from "next-auth/jwt";
+import { v4 as uuidv4 } from "uuid";
 
-export default async function handler(req, res) {
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(req) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+    });
   }
 
-  const session = await getSession({ req });
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  const token = await getToken({ req });
+  const username = token?.username || "guest";
+  const expiryDays = 30;
+  const allowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pes", ".dst"];
 
-  const files = req.body.files;
+  const formData = await req.formData();
+  const files = formData.getAll("files");
+
   if (!files || files.length === 0) {
-    return res.status(400).json({ error: "No files provided" });
+    return new Response(JSON.stringify({ error: "No files uploaded" }), {
+      status: 400,
+    });
   }
 
   const uploadedFiles = [];
-  const allowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pes", ".dst"];
-  const userFolder = `users/${session.user.username}/`; // User-specific folder
-  const expiryDays = 30;
 
   try {
     for (const file of files) {
-      const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-      if (!allowedExtensions.includes(fileExtension)) {
-        return res.status(400).json({ error: `File type ${fileExtension} is not allowed.` });
+      const originalName = file.name || "file";
+      const ext = originalName.slice(originalName.lastIndexOf(".")).toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        return new Response(
+          JSON.stringify({ error: `File type ${ext} not allowed` }),
+          { status: 400 }
+        );
       }
 
-      const folder = fileExtension === ".pes" || fileExtension === ".dst" ? "embroidery" : "images";
-      const filePath = `${userFolder}${folder}/${file.name}`;
+      const isEmbroidery = ext === ".pes" || ext === ".dst";
+      const folder = isEmbroidery ? "embroidery" : "images";
 
-      const { url } = await put(filePath, file, { access: "public" });
+      const uuid = uuidv4();
+      const blobName = `${username}/${folder}/${uuid}${ext}`;
+
+      const blob = await put(blobName, file, { access: "public" });
 
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-      uploadedFiles.push({ url, expiryDate });
+      uploadedFiles.push({ url: blob.url, expiryDate });
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("Uploaded:", blobName);
+      }
     }
 
-    return res.status(200).json({ urls: uploadedFiles });
-  } catch (error) {
-    return res.status(500).json({ error: "Upload failed", details: error.message });
+    return new Response(JSON.stringify({ urls: uploadedFiles }), {
+      status: 200,
+    });
+  } catch (err) {
+    console.error("Upload error:", err);
+    return new Response(
+      JSON.stringify({ error: "Upload failed", details: err.message }),
+      { status: 500 }
+    );
   }
 }
