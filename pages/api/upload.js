@@ -1,4 +1,3 @@
-// /pages/api/upload.js
 import { put } from "@vercel/blob";
 import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
@@ -6,6 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 export const config = {
   runtime: "edge",
 };
+
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
 export default async function handler(req) {
   try {
@@ -28,16 +29,13 @@ export default async function handler(req) {
       });
     }
 
-    console.log(`User: ${username}, Files received: ${files.length}`);
-
     const uploadedFiles = [];
 
     for (const file of files) {
       const originalName = file.name || "file";
       const ext = originalName.slice(originalName.lastIndexOf(".")).toLowerCase();
-      console.log("Processing file:", originalName, "ext:", ext);
-
       const allowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pes", ".dst"];
+
       if (!allowedExtensions.includes(ext)) {
         return new Response(
           JSON.stringify({ error: `File type ${ext} not allowed` }),
@@ -49,11 +47,16 @@ export default async function handler(req) {
       const uuid = uuidv4();
       const blobName = `${username}/${folder}/${uuid}${ext}`;
 
-      const blob = await put(blobName, file, { access: "public" });
+      const blob = await put(blobName, file, {
+        access: "public",
+        token: BLOB_TOKEN, // Required for Edge runtime
+      });
 
       uploadedFiles.push({ url: blob.url });
 
-      console.log("Uploaded to Vercel Blob:", blobName);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Uploaded to Vercel Blob:", blobName);
+      }
     }
 
     return new Response(JSON.stringify({ urls: uploadedFiles }), { status: 200 });
