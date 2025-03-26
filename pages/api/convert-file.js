@@ -1,43 +1,70 @@
-// pages/api/convert-file.js
-import { getToken } from "next-auth/jwt";
+// /pages/api/convert-file.js
+import { getSession } from "next-auth/react";
+import { writeFile, unlink } from "fs/promises";
+import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import { exec } from "child_process";
+import { put } from "@vercel/blob";
 
 export const config = {
-  runtime: "edge",
+  api: {
+    bodyParser: true,
+  },
 };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), { status: 405 });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const token = await getToken({ req });
-  if (!token) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  const session = await getSession({ req });
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { fileUrl } = req.body;
+  if (!fileUrl) {
+    return res.status(400).json({ error: "Missing file URL" });
   }
 
   try {
-    const { fileUrl } = await req.json();
-    if (!fileUrl) {
-      return new Response(JSON.stringify({ error: "fileUrl is required" }), { status: 400 });
-    }
+    const response = await fetch(fileUrl);
+    const buffer = await response.arrayBuffer();
+    const inputBuffer = Buffer.from(buffer);
 
-    // Simulate conversion
-    const filename = fileUrl.split("/").pop().split(".")[0];
-    const fakePesUrl = `https://vercel-blob.fake/converted/${filename}.pes`;
+    const tempDir = "/tmp";
+    const inputName = uuidv4() + path.extname(fileUrl).toLowerCase();
+    const outputName = inputName.replace(path.extname(inputName), ".pes");
 
-    // Optional: simulate logging the version (you can POST to /api/upload-file here)
-    // await fetch("/api/upload-file", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ fileUrl: fakePesUrl }),
-    // });
+    const inputPath = path.join(tempDir, inputName);
+    const outputPath = path.join(tempDir, outputName);
 
-    return new Response(JSON.stringify({ convertedUrl: fakePesUrl }), { status: 200 });
-  } catch (err) {
-    console.error("Conversion error:", err);
-    return new Response(
-      JSON.stringify({ error: "Conversion failed", details: err.message }),
-      { status: 500 }
-    );
+    await writeFile(inputPath, inputBuffer);
+
+    // Simulate Ink/Stitch conversion
+    const cmd = `inkstitch "${inputPath}" -o "${outputPath}"`;
+
+    await new Promise((resolve, reject) => {
+      exec(cmd, (err, stdout, stderr) => {
+        if (err) {
+          console.error("Ink/Stitch Error:", stderr);
+          return reject(new Error("Ink/Stitch CLI failed"));
+        }
+        resolve(stdout);
+      });
+    });
+
+    const outBuffer = await readFile(outputPath);
+    const blob = await put(`converted/${session.user.username}/${outputName}`, outBuffer, {
+      access: "public",
+    });
+
+    await unlink(inputPath);
+    await unlink(outputPath);
+
+    return res.status(200).json({ convertedUrl: blob.url });
+  } catch (error) {
+    console.error("Conversion failed:", error);
+    return res.status(500).json({ error: "Conversion failed", details: error.message });
   }
 }
