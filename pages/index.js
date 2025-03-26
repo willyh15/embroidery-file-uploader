@@ -94,37 +94,50 @@ function Home() {
   };
 
   const handleUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
-    setUploadProgress(0);
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      const newFiles = data.urls.map((url) => ({
-        url,
-        status: "Uploaded",
-        name: url.split("/").pop(),
-      }));
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-      toast.success("Files uploaded successfully!");
-      setShowModal(true);
-      logActivity("Uploaded file(s)");
+  if (!files.length) return;
+  setUploading(true);
+  setUploadProgress(0);
+  const formData = new FormData();
+  files.forEach((file) => {
+    console.log("Appending file:", file.name); // Add this
+    formData.append("files", file);
+  });
 
-      if (autoStitchEnabled) {
-        for (const file of newFiles) {
-          await handleAutoStitch(file.url);
-        }
+  try {
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    console.log("Upload response:", data); // Add this
+
+    if (!res.ok) throw new Error(data?.error || "Unknown error");
+
+    const newFiles = data.urls.map((entry) => ({
+      url: entry.url,
+      status: "Uploaded",
+      name: entry.url.split("/").pop(),
+    }));
+
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+    toast.success("Files uploaded successfully!");
+    setShowModal(true);
+    logActivity("Uploaded file(s)");
+
+    if (autoStitchEnabled) {
+      for (const file of newFiles) {
+        await handleAutoStitch(file.url);
       }
-    } catch (error) {
-      console.error("Upload failed:", error);
-      toast.error("Upload failed.");
-    } finally {
-      setUploading(false);
-      setUploadProgress(100);
     }
-  };
+  } catch (error) {
+    console.error("Upload failed:", error); // Already exists — make sure this logs
+    toast.error("Upload failed.");
+  } finally {
+    setUploading(false);
+    setUploadProgress(100);
+  }
+};
 
   const handleAutoStitch = async (fileUrl) => {
     try {
