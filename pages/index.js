@@ -289,16 +289,15 @@ function Home() {
         <>
           <ConvertAllButton onConvertAll={batchConvertAll} />
           {uploadedFiles.map((file) => (
-            <FilePreviewCard
-              key={file.url}
-              file={file}
-              onConvert={() => handleConvert(file.url)}
-              onPreview={() => handlePreview(file.url)}
-              onAutoStitch={() => handleAutoStitch(file.url)}
-            />
-          ))}
-        </>
-      )}
+  <FilePreviewCard
+    key={file.url}
+    file={file}
+    onConvert={() => handleConvert(file.url)}
+    onPreview={() => handlePreview(file.url)}
+    onAutoStitch={() => handleAutoStitch(file.url)}
+    downloadUrl={file.convertedUrl || null}
+  />
+))}
 
       {recentActivity.length > 0 && (
         <Card title="Recent Activity" style={{ marginTop: "2rem" }}>
