@@ -289,15 +289,16 @@ function Home() {
         <>
           <ConvertAllButton onConvertAll={batchConvertAll} />
           {uploadedFiles.map((file) => (
-  <FilePreviewCard
-    key={file.url}
-    file={file}
-    onConvert={() => handleConvert(file.url)}
-    onPreview={() => handlePreview(file.url)}
-    onAutoStitch={() => handleAutoStitch(file.url)}
-    downloadUrl={file.convertedUrl || null}
-  />
-))}
+            <FilePreviewCard
+              key={file.url}
+              file={file}
+              onConvert={() => handleConvert(file.url)}
+              onPreview={() => handlePreview(file.url)}
+              onAutoStitch={() => handleAutoStitch(file.url)}
+            />
+          ))}
+        </>
+      )}
 
       {recentActivity.length > 0 && (
         <Card title="Recent Activity" style={{ marginTop: "2rem" }}>
@@ -357,6 +358,5 @@ function Home() {
     </div>
   </div>
 );
-}
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
