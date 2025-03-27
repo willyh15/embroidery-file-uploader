@@ -13,15 +13,25 @@ export default function FilePreviewCard({
         <strong>{file.name}</strong>
         <div className="badges">
           {file.status && <span className="badge">{file.status}</span>}
-          {file.status === "Converted" && <span className="badge success">DST/PES Ready</span>}
+          {file.status === "Converted" && (
+            <span className="badge success">DST/PES Ready</span>
+          )}
+          {file.status === "Error" && (
+            <span className="badge error">Failed</span>
+          )}
         </div>
       </div>
 
       {file.progress !== undefined && (
         <div className="progress-bar">
           <div
-            className="progress-fill"
-            style={{ width: `${file.progress}%` }}
+            style={{
+              height: "6px",
+              width: `${file.progress}%`,
+              backgroundColor: "#4caf50",
+              borderRadius: "4px",
+              marginTop: "4px",
+            }}
           />
         </div>
       )}
@@ -30,10 +40,20 @@ export default function FilePreviewCard({
         <Button onClick={onAutoStitch}>Auto-Stitch</Button>
         <Button onClick={onConvert}>Convert</Button>
         <Button onClick={onPreview}>Preview</Button>
-        {file.downloadUrl && (
-          <a href={file.downloadUrl} target="_blank" rel="noopener noreferrer" download>
-            <Button>Download</Button>
+
+        {file.convertedDst && (
+          <a href={file.convertedDst} target="_blank" rel="noopener noreferrer" download>
+            <Button>Download .DST</Button>
           </a>
+        )}
+        {file.convertedPes && (
+          <a href={file.convertedPes} target="_blank" rel="noopener noreferrer" download>
+            <Button>Download .PES</Button>
+          </a>
+        )}
+
+        {file.status === "Error" && (
+          <Button onClick={onRetry}>Retry</Button>
         )}
       </div>
     </div>
