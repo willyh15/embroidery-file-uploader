@@ -1,10 +1,14 @@
 // /pages/api/convert-file.js
 import { Redis } from "@upstash/redis";
+import { put } from "@vercel/blob";
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
+
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://YOUR_VPS_IP:5000/convert";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -18,15 +22,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Mark status as "converting"
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Starting conversion",
       stage: "converting",
       timestamp: new Date().toISOString()
     }));
 
-    // Step 2: Call your VPS conversion endpoint
-    const response = await fetch("http://YOUR_VPS_IP:5000/convert", {
+    const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
 
     const result = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || (!result.dst && !result.pes)) {
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
@@ -43,32 +45,47 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: result.error || "Conversion failed" });
     }
 
-    // Step 3: Simulated URLs (replace with real Blob upload URLs later)
-    const dstUrl = result.dst ? `${fileUrl}.dst.mock` : null;
-    const pesUrl = result.pes ? `${fileUrl}.pes.mock` : null;
+    let uploadedDstUrl = null;
+    let uploadedPesUrl = null;
 
-    // Step 4: Save preview URLs to Redis
-    await redis.set(`preview:${fileUrl}`, JSON.stringify({
-      dstUrl,
-      pesUrl,
-      timestamp: new Date().toISOString(),
-    }));
+    if (result.dst) {
+      const dstBuffer = Buffer.from(result.dst, "hex");
+      const dstBlob = await put(`converted/${Date.now()}.dst`, dstBuffer, {
+        access: "public",
+        token: BLOB_TOKEN,
+      });
+      uploadedDstUrl = dstBlob.url;
+    }
 
-    // Step 5: Update status to "done"
+    if (result.pes) {
+      const pesBuffer = Buffer.from(result.pes, "hex");
+      const pesBlob = await put(`converted/${Date.now()}.pes`, pesBuffer, {
+        access: "public",
+        token: BLOB_TOKEN,
+      });
+      uploadedPesUrl = pesBlob.url;
+    }
+
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Conversion complete",
       stage: "done",
       timestamp: new Date().toISOString()
     }));
 
-    // Step 6: Return preview and converted data
+    await redis.set(`preview:${fileUrl}`, JSON.stringify({
+      dstUrl: uploadedDstUrl,
+      pesUrl: uploadedPesUrl,
+      timestamp: new Date().toISOString()
+    }));
+
     return res.status(200).json({
-      convertedDst: dstUrl,
-      convertedPes: pesUrl,
-      convertedUrl: fileUrl,
+      convertedDst: uploadedDstUrl,
+      convertedPes: uploadedPesUrl,
+      convertedUrl: fileUrl
     });
+
   } catch (err) {
-    console.error("Conversion failed:", err);
+    console.error("Conversion error:", err);
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Internal error",
       stage: "error",
