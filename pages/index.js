@@ -97,12 +97,27 @@ function Home() {
       const data = await res.json();
       if (res.ok) {
         updateFileProgress(file.url, data.progress);
-        updateFileStatus(file.url, data.status);
+        updateFileStatus(file.url, data.status, null, data.stage);
       }
     } catch (err) {
       console.error("Polling error:", err);
     }
   }
+};
+
+const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
+  setUploadedFiles((prev) =>
+    prev.map((file) =>
+      file.url === fileUrl
+        ? {
+            ...file,
+            status,
+            stage: stage || file.stage,
+            convertedUrl: convertedUrl || file.convertedUrl,
+          }
+        : file
+    )
+  );
 };
 
   const updateFileProgress = (fileUrl, progress) => {
@@ -202,16 +217,6 @@ function Home() {
       toast.error("Conversion failed");
       updateFileStatus(fileUrl, "Error");
     }
-  };
-
-  const updateFileStatus = (fileUrl, status, convertedUrl = null) => {
-    setUploadedFiles((prev) =>
-      prev.map((file) =>
-        file.url === fileUrl
-          ? { ...file, status, convertedUrl: convertedUrl || file.convertedUrl }
-          : file
-      )
-    );
   };
 
   const fetchAlignmentGuide = async () => {
