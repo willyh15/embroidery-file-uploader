@@ -304,13 +304,15 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
               uploadedFiles.forEach((file) => handleConvert(file.url))
             } />
             {uploadedFiles.map((file) => (
-              <FilePreviewCard
-                key={file.url}
-                file={file}
-                onConvert={() => handleConvert(file.url)}
-                onPreview={() => {}}
-                onAutoStitch={() => handleAutoStitch(file.url)}
-              />
+  <FilePreviewCard
+    key={file.url}
+    file={file}
+    onConvert={() => handleConvert(file.url)}
+    onPreview={() => handlePreview(file.url)}
+    onAutoStitch={() => handleAutoStitch(file.url)}
+    onRetry={() => handleRetry(file.url)}
+  />
+))}
             ))}
           </>
         )}
