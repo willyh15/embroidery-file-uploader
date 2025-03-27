@@ -1,11 +1,5 @@
-// pages/api/convert-file.js
-import { getToken } from "next-auth/jwt";
-import { v4 as uuidv4 } from "uuid";
-
-// pages/api/convert-file.js
-
 export const config = {
-  runtime: 'edge', // Optional: Use if deploying on Vercel Edge Functions
+  runtime: 'edge',
 };
 
 export default async function handler(req) {
@@ -15,10 +9,7 @@ export default async function handler(req) {
 
   try {
     const { fileUrl } = await req.json();
-
-    if (!fileUrl) {
-      return new Response(JSON.stringify({ error: "Missing fileUrl" }), { status: 400 });
-    }
+    if (!fileUrl) return new Response(JSON.stringify({ error: "Missing fileUrl" }), { status: 400 });
 
     const flaskRes = await fetch("http://23.94.202.56:5000/convert", {
       method: "POST",
@@ -27,22 +18,17 @@ export default async function handler(req) {
     });
 
     const data = await flaskRes.json();
-
     if (!flaskRes.ok) {
       return new Response(JSON.stringify({ error: data?.error || "Conversion failed" }), {
         status: 500,
       });
     }
 
-    // OPTIONAL: Later upload these hex bytes to Vercel Blob or S3/CDN
-    return new Response(
-      JSON.stringify({
-        convertedDst: data.dst,
-        convertedPes: data.pes,
-        convertedUrl: fileUrl, // You can replace with actual download URL if you store it
-      }),
-      { status: 200 }
-    );
+    return new Response(JSON.stringify({
+      convertedUrl: data.convertedDstUrl || data.convertedPesUrl,
+      convertedDst: data.convertedDstUrl,
+      convertedPes: data.convertedPesUrl,
+    }), { status: 200 });
   } catch (err) {
     console.error("Conversion error:", err);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
