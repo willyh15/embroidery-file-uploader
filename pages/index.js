@@ -43,7 +43,8 @@ function Home() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [stitchPreviewUrl, setStitchPreviewUrl] = useState(null);
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
-
+  const [previewFileUrl, setPreviewFileUrl] = useState(null);
+  
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
     async function fetchHoopSizes() {
