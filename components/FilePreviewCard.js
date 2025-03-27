@@ -5,6 +5,7 @@ export default function FilePreviewCard({
   onConvert,
   onPreview,
   onAutoStitch,
+  onRetry,
 }) {
   return (
     <div className="file-card">
@@ -15,6 +16,9 @@ export default function FilePreviewCard({
           {file.status === "Converted" && (
             <span className="badge success">DST/PES Ready</span>
           )}
+          {file.status === "Error" && (
+            <span className="badge error">Failed</span>
+          )}
         </div>
       </div>
 
@@ -22,16 +26,20 @@ export default function FilePreviewCard({
         <Button onClick={onAutoStitch}>Auto-Stitch</Button>
         <Button onClick={onConvert}>Convert</Button>
         <Button onClick={onPreview}>Preview</Button>
-        {file.convertedUrl && (
-          <a
-            href={file.convertedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            style={{ marginLeft: "1rem" }}
-          >
-            <Button>Download</Button>
+
+        {file.convertedDst && (
+          <a href={file.convertedDst} target="_blank" rel="noopener noreferrer" download>
+            <Button>Download .DST</Button>
           </a>
+        )}
+        {file.convertedPes && (
+          <a href={file.convertedPes} target="_blank" rel="noopener noreferrer" download>
+            <Button>Download .PES</Button>
+          </a>
+        )}
+
+        {file.status === "Error" && (
+          <Button onClick={onRetry}>Retry</Button>
         )}
       </div>
     </div>
