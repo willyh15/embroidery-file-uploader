@@ -1,12 +1,10 @@
-// pages/index.js
-// Full updated version with detailed error logging
-
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
+import axios from "axios";
 
 import Button from "../components/Button";
 import Card from "../components/Card";
@@ -47,7 +45,6 @@ function Home() {
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
 
   useEffect(() => setIsClient(true), []);
-
   useEffect(() => {
     async function fetchHoopSizes() {
       try {
@@ -85,6 +82,36 @@ function Home() {
     if (activity) setRecentActivity(JSON.parse(activity));
   }, []);
 
+  useEffect(() => {
+    let interval;
+    if (uploadedFiles.length > 0) {
+      interval = setInterval(() => pollRedisProgress(), 2000);
+    }
+    return () => clearInterval(interval);
+  }, [uploadedFiles]);
+
+  const pollRedisProgress = async () => {
+    for (const file of uploadedFiles) {
+      try {
+        const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
+        const data = await res.json();
+        if (res.ok && typeof data.progress === "number") {
+          updateFileProgress(file.url, data.progress);
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    }
+  };
+
+  const updateFileProgress = (fileUrl, progress) => {
+    setUploadedFiles((prev) =>
+      prev.map((file) =>
+        file.url === fileUrl ? { ...file, progress } : file
+      )
+    );
+  };
+
   const logActivity = (message) => {
     const activity = [
       { message, timestamp: new Date().toLocaleString() },
@@ -95,49 +122,42 @@ function Home() {
   };
 
   const handleUpload = async (files) => {
-  if (!files.length) return;
-  setUploading(true);
-  setUploadProgress(0);
+    if (!files.length) return;
+    setUploading(true);
+    setUploadProgress(0);
 
-  uploadFilesWithProgress({
-    files,
-    onProgress: (percent) => setUploadProgress(percent),
-    onComplete: (uploaded) => {
-      const newFiles = uploaded.map((entry) => ({
-        url: entry.url,
-        status: "Uploaded",
-        name: entry.url.split("/").pop(),
-      }));
+    uploadFilesWithProgress({
+      files,
+      onProgress: (percent) => setUploadProgress(percent),
+      onComplete: (uploaded) => {
+        const newFiles = uploaded.map((entry) => ({
+          url: entry.url,
+          status: "Uploaded",
+          name: entry.url.split("/").pop(),
+          progress: 100,
+        }));
 
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-      toast.success("Files uploaded successfully!");
-      setShowModal(true);
-      logActivity("Uploaded file(s)");
+        setUploadedFiles((prev) => [...prev, ...newFiles]);
+        toast.success("Files uploaded successfully!");
+        setShowModal(true);
+        logActivity("Uploaded file(s)");
 
-      if (autoStitchEnabled) {
-        for (const file of newFiles) {
-          handleAutoStitch(file.url);
+        if (autoStitchEnabled) {
+          for (const file of newFiles) {
+            handleAutoStitch(file.url);
+          }
         }
-      }
 
-      setUploading(false);
-      setUploadProgress(100);
-    },
-    onError: (err) => {
-      toast.error("Upload failed");
-      setUploading(false);
-      setUploadProgress(0);
-    },
-  });
-};
-  
-  const updateFileProgress = (fileUrl, progress) => {
-  setUploadedFiles((prev) =>
-    prev.map((file) =>
-      file.url === fileUrl ? { ...file, progress } : file
-    )
-  );
-};
+        setUploading(false);
+        setUploadProgress(100);
+      },
+      onError: (err) => {
+        toast.error("Upload failed");
+        setUploading(false);
+        setUploadProgress(0);
+      },
+    });
+  };
 
   const handleAutoStitch = async (fileUrl) => {
     try {
@@ -158,68 +178,39 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
-  try {
-    const res = await fetch("/api/convert-file", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "Conversion failed");
-
-    updateFileStatus(fileUrl, "Converted");
-    toast.success("File converted!");
-
-    // Optional: show link or preview
-    if (data.convertedUrl) {
-      logActivity(`Converted to PES: ${data.convertedUrl}`);
-    }
-
-    // Log version
-    await fetch("/api/upload-file", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl: data.convertedUrl }),
-    });
-  } catch (error) {
-    console.error("Conversion failed:", error);
-    toast.error("Conversion failed");
-    updateFileStatus(fileUrl, "Error");
-  }
-};
-
-  const handlePreview = async (fileUrl) => {
     try {
-      const res = await fetch("/api/stitch-preview", {
+      const res = await fetch("/api/convert-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
       const data = await res.json();
-      if (!data.previewUrl) throw new Error("Preview missing");
-      setStitchPreviewUrl(data.previewUrl);
-      updateFileStatus(fileUrl, "Preview Ready");
-      logActivity("Previewed a stitch file");
+      if (!res.ok) throw new Error(data?.error || "Conversion failed");
+
+      updateFileStatus(fileUrl, "Converted");
+      toast.success("File converted!");
+
+      // Log version
+      await fetch("/api/upload-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl: data.convertedUrl }),
+      });
     } catch (error) {
-      console.error("Stitch preview failed:", error);
-      toast.error("Stitch preview failed");
+      console.error("Conversion failed:", error);
+      toast.error("Conversion failed");
+      updateFileStatus(fileUrl, "Error");
     }
   };
 
   const updateFileStatus = (fileUrl, status, convertedUrl = null) => {
-  setUploadedFiles((prev) =>
-    prev.map((file) =>
-      file.url === fileUrl
-        ? { ...file, status, convertedUrl: convertedUrl || file.convertedUrl }
-        : file
-    )
-  );
-};
-
-  const batchConvertAll = async () => {
-    for (const file of uploadedFiles) {
-      await handleConvert(file.url);
-    }
+    setUploadedFiles((prev) =>
+      prev.map((file) =>
+        file.url === fileUrl
+          ? { ...file, status, convertedUrl: convertedUrl || file.convertedUrl }
+          : file
+      )
+    );
   };
 
   const fetchAlignmentGuide = async () => {
@@ -243,120 +234,67 @@ function Home() {
   if (!session) return null;
 
   return (
-  <div>
-    <Toaster position="top-right" />
-    <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
-    <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
+    <div>
+      <Toaster position="top-right" />
+      <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
+      <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
 
-    <div className="main-content container fadeIn">
-      <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-        <Button onClick={() => signOut()}>
-          <LogoutIcon /> Logout
-        </Button>
-      </Card>
-
-      <h1 className="title">Embroidery File Uploader</h1>
-
-      <AutoStitchToggle enabled={autoStitchEnabled} onChange={setAutoStitchEnabled} />
-
-      <UploadSection
-        dropRef={dropRef}
-        uploading={uploading}
-        uploadProgress={uploadProgress}
-        hovering={hovering}
-        setHovering={setHovering}
-        handleUpload={handleUpload}
-      />
-
-      <HoopSelector hoopSizes={hoopSizes} hoopSize={hoopSize} setHoopSize={setHoopSize} />
-
-      <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-      <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
-        <HoopIcon /> Show Hoop Guides
-      </Button>
-
-      {alignmentGuide && (
-        <img
-          className="hand-drawn"
-          src={alignmentGuide}
-          alt="Hoop Alignment Guide"
-          style={{ marginTop: "1rem" }}
-        />
-      )}
-
-      {uploadedFiles.length > 0 && (
-        <>
-          <ConvertAllButton onConvertAll={batchConvertAll} />
-          {uploadedFiles.map((file) => (
-            <FilePreviewCard
-              key={file.url}
-              file={file}
-              onConvert={() => handleConvert(file.url)}
-              onPreview={() => handlePreview(file.url)}
-              onAutoStitch={() => handleAutoStitch(file.url)}
-            />
-          ))}
-        </>
-      )}
-
-      {recentActivity.length > 0 && (
-        <Card title="Recent Activity" style={{ marginTop: "2rem" }}>
-          <ul style={{ padding: 0 }}>
-            {recentActivity.map((a, i) => (
-              <li key={i}>
-                {a.message} — <small>{a.timestamp}</small>
-              </li>
-            ))}
-          </ul>
+      <div className="main-content container fadeIn">
+        <Card title={`Welcome, ${session.user?.name || "User"}!`}>
+          <Button onClick={() => signOut()}>
+            <LogoutIcon /> Logout
+          </Button>
         </Card>
-      )}
 
-      <FloatingActions
-        isOpen={fabOpen}
-        setIsOpen={setFabOpen}
-        onUploadClick={() => setShowModal(true)}
-        onGuideClick={fetchAlignmentGuide}
-      />
+        <h1 className="title">Embroidery File Uploader</h1>
 
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title="Upload Successful"
-      >
-        <p>Your file has been uploaded successfully!</p>
-      </Modal>
+        <AutoStitchToggle enabled={autoStitchEnabled} onChange={setAutoStitchEnabled} />
 
-      <Modal
-        isOpen={showWelcome}
-        onClose={() => {
-          setShowWelcome(false);
-          localStorage.setItem("skipWelcome", "true");
-        }}
-        title="Welcome!"
-      >
-        <p>Start by uploading a file, selecting hoop size, or viewing alignment guides.</p>
-        <div style={{ marginTop: "1rem" }}>
-          <Button onClick={() => router.push("/admin")}>Go to Admin</Button>
-          <Button onClick={() => window.open("/docs", "_blank")}>Help / Docs</Button>
-        </div>
-        <Button
-          style={{ marginTop: "1rem" }}
-          onClick={() => {
-            setShowWelcome(false);
-            localStorage.setItem("skipWelcome", "true");
-          }}
-        >
-          Don’t show again
+        <UploadSection
+          dropRef={dropRef}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+          hovering={hovering}
+          setHovering={setHovering}
+          handleUpload={handleUpload}
+        />
+
+        <HoopSelector hoopSizes={hoopSizes} hoopSize={hoopSize} setHoopSize={setHoopSize} />
+
+        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+        <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
+          <HoopIcon /> Show Hoop Guides
         </Button>
-      </Modal>
 
-      <StitchPreviewModal
-        previewUrl={stitchPreviewUrl}
-        onClose={() => setStitchPreviewUrl(null)}
-      />
+        {alignmentGuide && (
+          <img
+            className="hand-drawn"
+            src={alignmentGuide}
+            alt="Hoop Alignment Guide"
+            style={{ marginTop: "1rem" }}
+          />
+        )}
+
+        {uploadedFiles.length > 0 && (
+          <>
+            <ConvertAllButton onConvertAll={() =>
+              uploadedFiles.forEach((file) => handleConvert(file.url))
+            } />
+            {uploadedFiles.map((file) => (
+              <FilePreviewCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onPreview={() => {}}
+                onAutoStitch={() => handleAutoStitch(file.url)}
+              />
+            ))}
+          </>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
