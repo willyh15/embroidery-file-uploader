@@ -13,24 +13,20 @@ export default function FilePreviewCard({
         <strong>{file.name}</strong>
         <div className="badges">
           {file.status && <span className="badge">{file.status}</span>}
-          {file.status === "Converted" && (
-            <span className="badge success">DST/PES Ready</span>
-          )}
-          {file.status === "Error" && (
-            <span className="badge error">Failed</span>
-          )}
+          {file.status === "Converted" && <span className="badge success">DST/PES Ready</span>}
+          {file.status === "Error" && <span className="badge error">Failed</span>}
         </div>
       </div>
 
       {file.progress !== undefined && (
-        <div className="progress-bar">
+        <div className="progress-bar" style={{ marginTop: "4px" }}>
           <div
+            className="progress-fill"
             style={{
               height: "6px",
               width: `${file.progress}%`,
               backgroundColor: "#4caf50",
               borderRadius: "4px",
-              marginTop: "4px",
             }}
           />
         </div>
@@ -52,7 +48,7 @@ export default function FilePreviewCard({
           </a>
         )}
 
-        {file.status === "Error" && (
+        {file.status === "Error" && onRetry && (
           <Button onClick={onRetry}>Retry</Button>
         )}
       </div>
