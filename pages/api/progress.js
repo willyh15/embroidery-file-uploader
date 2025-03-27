@@ -12,20 +12,27 @@ export default async function handler(req, res) {
   }
 
   const { fileUrl } = req.query;
-
-  if (!fileUrl) {
-    return res.status(400).json({ error: "Missing fileUrl" });
-  }
+  if (!fileUrl) return res.status(400).json({ error: "Missing fileUrl" });
 
   try {
-    const [progress, status] = await Promise.all([
+    const [progress, rawStatus] = await Promise.all([
       redis.get(`progress:${fileUrl}`),
       redis.get(`status:${fileUrl}`),
     ]);
 
+    let parsedStatus = { status: "Pending", stage: "pending" };
+    if (typeof rawStatus === "string") {
+      try {
+        parsedStatus = JSON.parse(rawStatus);
+      } catch (err) {
+        parsedStatus = { status: rawStatus, stage: "unknown" };
+      }
+    }
+
     return res.status(200).json({
       progress: progress !== null ? Number(progress) : 0,
-      status: status || "Pending",
+      status: parsedStatus.status,
+      stage: parsedStatus.stage,
     });
   } catch (err) {
     console.error("Redis polling error:", err);
