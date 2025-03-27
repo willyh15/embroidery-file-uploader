@@ -1,3 +1,4 @@
+// /pages/api/convert-file.js
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -17,13 +18,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Update Redis status: starting conversion
+    // Step 1: Mark status as "converting"
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Starting conversion",
       stage: "converting",
       timestamp: new Date().toISOString()
     }));
 
+    // Step 2: Call your VPS conversion endpoint
     const response = await fetch("http://YOUR_VPS_IP:5000/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,16 +43,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: result.error || "Conversion failed" });
     }
 
-    // Simulated URLs for downloaded files (update later with Blob/S3 upload)
+    // Step 3: Simulated URLs (replace with real Blob upload URLs later)
     const dstUrl = result.dst ? `${fileUrl}.dst.mock` : null;
     const pesUrl = result.pes ? `${fileUrl}.pes.mock` : null;
 
+    // Step 4: Save preview URLs to Redis
+    await redis.set(`preview:${fileUrl}`, JSON.stringify({
+      dstUrl,
+      pesUrl,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // Step 5: Update status to "done"
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Conversion complete",
       stage: "done",
       timestamp: new Date().toISOString()
     }));
 
+    // Step 6: Return preview and converted data
     return res.status(200).json({
       convertedDst: dstUrl,
       convertedPes: pesUrl,
