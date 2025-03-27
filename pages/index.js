@@ -231,6 +231,10 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
   }
 };
 
+  const handlePreview = (fileUrl) => {
+  setPreviewFileUrl(fileUrl);
+};
+
   const fetchAlignmentGuide = async () => {
     try {
       const res = await fetch("/api/get-alignment-guide", {
