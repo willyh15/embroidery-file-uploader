@@ -91,18 +91,19 @@ function Home() {
   }, [uploadedFiles]);
 
   const pollRedisProgress = async () => {
-    for (const file of uploadedFiles) {
-      try {
-        const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
-        const data = await res.json();
-        if (res.ok && typeof data.progress === "number") {
-          updateFileProgress(file.url, data.progress);
-        }
-      } catch (err) {
-        console.error("Polling error:", err);
+  for (const file of uploadedFiles) {
+    try {
+      const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
+      const data = await res.json();
+      if (res.ok) {
+        updateFileProgress(file.url, data.progress);
+        updateFileStatus(file.url, data.status);
       }
+    } catch (err) {
+      console.error("Polling error:", err);
     }
-  };
+  }
+};
 
   const updateFileProgress = (fileUrl, progress) => {
     setUploadedFiles((prev) =>
