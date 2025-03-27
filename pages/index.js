@@ -98,46 +98,37 @@ function Home() {
   if (!files.length) return;
   setUploading(true);
   setUploadProgress(0);
-  const formData = new FormData();
-  files.forEach((file) => {
-    console.log("Appending file:", file.name); // Add this
-    formData.append("files", file);
-  });
 
-  try {
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
+  uploadFilesWithProgress({
+    files,
+    onProgress: (percent) => setUploadProgress(percent),
+    onComplete: (uploaded) => {
+      const newFiles = uploaded.map((entry) => ({
+        url: entry.url,
+        status: "Uploaded",
+        name: entry.url.split("/").pop(),
+      }));
 
-    const data = await res.json();
-    console.log("Upload response:", data); // Add this
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
+      toast.success("Files uploaded successfully!");
+      setShowModal(true);
+      logActivity("Uploaded file(s)");
 
-    if (!res.ok) throw new Error(data?.error || "Unknown error");
-
-    const newFiles = data.urls.map((entry) => ({
-      url: entry.url,
-      status: "Uploaded",
-      name: entry.url.split("/").pop(),
-    }));
-
-    setUploadedFiles((prev) => [...prev, ...newFiles]);
-    toast.success("Files uploaded successfully!");
-    setShowModal(true);
-    logActivity("Uploaded file(s)");
-
-    if (autoStitchEnabled) {
-      for (const file of newFiles) {
-        await handleAutoStitch(file.url);
+      if (autoStitchEnabled) {
+        for (const file of newFiles) {
+          handleAutoStitch(file.url);
+        }
       }
-    }
-  } catch (error) {
-    console.error("Upload failed:", error); // Already exists — make sure this logs
-    toast.error("Upload failed.");
-  } finally {
-    setUploading(false);
-    setUploadProgress(100);
-  }
+
+      setUploading(false);
+      setUploadProgress(100);
+    },
+    onError: (err) => {
+      toast.error("Upload failed");
+      setUploading(false);
+      setUploadProgress(0);
+    },
+  });
 };
   
   const updateFileProgress = (fileUrl, progress) => {
