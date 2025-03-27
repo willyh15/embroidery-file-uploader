@@ -1,3 +1,4 @@
+// /pages/api/progress.js
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -22,12 +23,12 @@ export default async function handler(req, res) {
       redis.get(`status:${fileUrl}`),
     ]);
 
-    res.status(200).json({
-      progress: Number(progress) || 0,
+    return res.status(200).json({
+      progress: progress !== null ? Number(progress) : 0,
       status: status || "Pending",
     });
   } catch (err) {
     console.error("Redis polling error:", err);
-    res.status(500).json({ error: "Failed to fetch progress or status" });
+    return res.status(500).json({ error: "Redis polling failed" });
   }
 }
