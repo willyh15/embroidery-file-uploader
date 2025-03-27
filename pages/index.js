@@ -4,36 +4,29 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
-import axios from "axios";
 
-import Button from "../components/Button";
-import Card from "../components/Card";
-import Modal from "../components/Modal";
-import Loader from "../components/Loader";
 import Sidebar from "../components/Sidebar";
+import Loader from "../components/Loader";
+import AutoStitchToggle from "../components/AutoStitchToggle";
 import UploadSection from "../components/UploadSection";
 import HoopSelector from "../components/HoopSelector";
 import SearchBar from "../components/SearchBar";
-import FloatingActions from "../components/FloatingActions";
-
+import ConvertAllButton from "../components/ConvertAllButton";
 import FilePreviewCard from "../components/FilePreviewCard";
 import StitchPreviewModal from "../components/StitchPreviewModal";
-import AutoStitchToggle from "../components/AutoStitchToggle";
-import ConvertAllButton from "../components/ConvertAllButton";
-
-import { LogoutIcon, HoopIcon } from "../components/Icons";
+import WelcomeCard from "../components/WelcomeCard";
+import AlignmentGuide from "../components/AlignmentGuide";
+import UploaderDashboard from "../components/UploaderDashboard";
 
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const dropRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
   const [hovering, setHovering] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -41,28 +34,26 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [stitchPreviewUrl, setStitchPreviewUrl] = useState(null);
-  const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
-  
+  const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
+
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
-    async function fetchHoopSizes() {
+    const fetchHoopSizes = async () => {
       try {
         const res = await fetch("/api/get-hoop-sizes");
         const data = await res.json();
         setHoopSizes(data.hoopSizes || []);
-      } catch (error) {
-        console.error("Error fetching hoop sizes:", error);
+      } catch {
         toast.error("Failed to load hoop sizes.");
       }
-    }
+    };
     fetchHoopSizes();
   }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
-  }, [status, router]);
+  }, [status]);
 
   useEffect(() => {
     if (router.query.setupComplete === "true") {
@@ -72,11 +63,6 @@ function Home() {
       window.history.replaceState({}, "", url.toString());
     }
   }, [router.query]);
-
-  useEffect(() => {
-    const skipWelcome = localStorage.getItem("skipWelcome");
-    if (!skipWelcome) setShowWelcome(true);
-  }, []);
 
   useEffect(() => {
     const activity = localStorage.getItem("recentActivity");
@@ -92,34 +78,29 @@ function Home() {
   }, [uploadedFiles]);
 
   const pollRedisProgress = async () => {
-  for (const file of uploadedFiles) {
-    try {
-      const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
-      const data = await res.json();
-      if (res.ok) {
-        updateFileProgress(file.url, data.progress);
-        updateFileStatus(file.url, data.status, null, data.stage);
+    for (const file of uploadedFiles) {
+      try {
+        const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
+        const data = await res.json();
+        if (res.ok) {
+          updateFileProgress(file.url, data.progress);
+          updateFileStatus(file.url, data.status, null, data.stage);
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
       }
-    } catch (err) {
-      console.error("Polling error:", err);
     }
-  }
-};
+  };
 
-const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
-  setUploadedFiles((prev) =>
-    prev.map((file) =>
-      file.url === fileUrl
-        ? {
-            ...file,
-            status,
-            stage: stage || file.stage,
-            convertedUrl: convertedUrl || file.convertedUrl,
-          }
-        : file
-    )
-  );
-};
+  const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
+    setUploadedFiles((prev) =>
+      prev.map((file) =>
+        file.url === fileUrl
+          ? { ...file, status, stage: stage || file.stage, convertedUrl: convertedUrl || file.convertedUrl }
+          : file
+      )
+    );
+  };
 
   const updateFileProgress = (fileUrl, progress) => {
     setUploadedFiles((prev) =>
@@ -168,7 +149,7 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
         setUploading(false);
         setUploadProgress(100);
       },
-      onError: (err) => {
+      onError: () => {
         toast.error("Upload failed");
         setUploading(false);
         setUploadProgress(0);
@@ -187,8 +168,7 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
       toast.success("Auto-stitched file!");
       updateFileStatus(fileUrl, "Auto-stitched");
       logActivity("Auto-stitched a file");
-    } catch (error) {
-      console.error("Auto-stitch failed:", error);
+    } catch {
       toast.error("Auto-stitch failed");
       updateFileStatus(fileUrl, "Error");
     }
@@ -207,136 +187,102 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
       updateFileStatus(fileUrl, "Converted");
       toast.success("File converted!");
 
-      // Log version
       await fetch("/api/upload-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl: data.convertedUrl }),
       });
-    } catch (error) {
-      console.error("Conversion failed:", error);
+    } catch {
       toast.error("Conversion failed");
       updateFileStatus(fileUrl, "Error");
     }
   };
-  
-  const handleRetry = async (fileUrl) => {
-  const file = uploadedFiles.find((f) => f.url === fileUrl);
-  if (!file) return;
 
-  if (file.status === "Error" && file.stage === "converting") {
-    await handleConvert(fileUrl);
-  } else if (file.status === "Error") {
-    await handleAutoStitch(fileUrl);
-  }
-};
+  const handleRetry = async (fileUrl) => {
+    const file = uploadedFiles.find((f) => f.url === fileUrl);
+    if (!file) return;
+
+    if (file.status === "Error" && file.stage === "converting") {
+      await handleConvert(fileUrl);
+    } else {
+      await handleAutoStitch(fileUrl);
+    }
+  };
 
   const handlePreview = (fileUrl) => {
-  setPreviewFileUrl(fileUrl);
-};
-
-  const fetchAlignmentGuide = async () => {
-    try {
-      const res = await fetch("/api/get-alignment-guide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hoopSize }),
-      });
-      const data = await res.json();
-      setAlignmentGuide(data.alignmentGuideUrl);
-      toast.success("Hoop guide fetched!");
-      logActivity("Fetched hoop alignment guide");
-    } catch (error) {
-      console.error("Fetch alignment guide failed:", error);
-      toast.error("Failed to fetch hoop guide.");
-    }
+    setPreviewFileUrl(fileUrl);
   };
 
   if (!isClient || status === "loading") return <Loader />;
   if (!session) return null;
 
   return (
-  <div>
-    <Toaster position="top-right" />
-    <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
-    <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
+    <div>
+      <Toaster position="top-right" />
+      <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
+      <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
 
-    <div className="main-content container fadeIn">
-      <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-        <Button onClick={() => signOut()}>
-          <LogoutIcon /> Logout
-        </Button>
-      </Card>
+      <div className="main-content container fadeIn">
+        <WelcomeCard user={session.user} onLogout={signOut} />
+        <UploaderDashboard
+          dropRef={dropRef}
+          hovering={hovering}
+          setHovering={setHovering}
+          handleUpload={handleUpload}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+          autoStitchEnabled={autoStitchEnabled}
+          setAutoStitchEnabled={setAutoStitchEnabled}
+          hoopSizes={hoopSizes}
+          hoopSize={hoopSize}
+          setHoopSize={setHoopSize}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
 
-      <h1 className="title">Embroidery File Uploader</h1>
+        <AlignmentGuide
+          alignmentGuide={alignmentGuide}
+          fetchGuide={async () => {
+            const res = await fetch("/api/get-alignment-guide", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ hoopSize }),
+            });
+            const data = await res.json();
+            setAlignmentGuide(data.alignmentGuideUrl);
+            toast.success("Hoop guide fetched!");
+          }}
+        />
 
-      <AutoStitchToggle
-        enabled={autoStitchEnabled}
-        onChange={setAutoStitchEnabled}
-      />
+        {uploadedFiles.length > 0 && (
+          <>
+            <ConvertAllButton
+              onConvertAll={() =>
+                uploadedFiles.forEach((file) => handleConvert(file.url))
+              }
+            />
+            {uploadedFiles.map((file) => (
+              <FilePreviewCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onPreview={() => handlePreview(file.url)}
+                onAutoStitch={() => handleAutoStitch(file.url)}
+                onRetry={() => handleRetry(file.url)}
+              />
+            ))}
+          </>
+        )}
+      </div>
 
-      <UploadSection
-        dropRef={dropRef}
-        uploading={uploading}
-        uploadProgress={uploadProgress}
-        hovering={hovering}
-        setHovering={setHovering}
-        handleUpload={handleUpload}
-      />
-
-      <HoopSelector
-        hoopSizes={hoopSizes}
-        hoopSize={hoopSize}
-        setHoopSize={setHoopSize}
-      />
-
-      <SearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
-
-      <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
-        <HoopIcon /> Show Hoop Guides
-      </Button>
-
-      {alignmentGuide && (
-        <img
-          className="hand-drawn"
-          src={alignmentGuide}
-          alt="Hoop Alignment Guide"
-          style={{ marginTop: "1rem" }}
+      {previewFileUrl && (
+        <StitchPreviewModal
+          fileUrl={previewFileUrl}
+          onClose={() => setPreviewFileUrl(null)}
         />
       )}
-
-      {uploadedFiles.length > 0 && (
-        <>
-          <ConvertAllButton
-            onConvertAll={() =>
-              uploadedFiles.forEach((file) => handleConvert(file.url))
-            }
-          />
-          {uploadedFiles.map((file) => (
-            <FilePreviewCard
-              key={file.url}
-              file={file}
-              onConvert={() => handleConvert(file.url)}
-              onPreview={() => handlePreview(file.url)}
-              onAutoStitch={() => handleAutoStitch(file.url)}
-              onRetry={() => handleRetry(file.url)}
-            />
-          ))}
-        </>
-      )}
     </div>
-
-    {previewFileUrl && (
-      <StitchPreviewModal
-        fileUrl={previewFileUrl}
-        onClose={() => setPreviewFileUrl(null)}
-      />
-    )}
-  </div>
-);
+  );
 }
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
