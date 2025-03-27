@@ -256,69 +256,87 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
   if (!session) return null;
 
   return (
-    <div>
-      <Toaster position="top-right" />
-      <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
-      <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
+  <div>
+    <Toaster position="top-right" />
+    <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
+    <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="main-content container fadeIn">
-        <Card title={`Welcome, ${session.user?.name || "User"}!`}>
-          <Button onClick={() => signOut()}>
-            <LogoutIcon /> Logout
-          </Button>
-        </Card>
-
-        <h1 className="title">Embroidery File Uploader</h1>
-
-        <AutoStitchToggle enabled={autoStitchEnabled} onChange={setAutoStitchEnabled} />
-
-        <UploadSection
-          dropRef={dropRef}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-          hovering={hovering}
-          setHovering={setHovering}
-          handleUpload={handleUpload}
-        />
-
-        <HoopSelector hoopSizes={hoopSizes} hoopSize={hoopSize} setHoopSize={setHoopSize} />
-
-        <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-        <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
-          <HoopIcon /> Show Hoop Guides
+    <div className="main-content container fadeIn">
+      <Card title={`Welcome, ${session.user?.name || "User"}!`}>
+        <Button onClick={() => signOut()}>
+          <LogoutIcon /> Logout
         </Button>
+      </Card>
 
-        {alignmentGuide && (
-          <img
-            className="hand-drawn"
-            src={alignmentGuide}
-            alt="Hoop Alignment Guide"
-            style={{ marginTop: "1rem" }}
-          />
-        )}
+      <h1 className="title">Embroidery File Uploader</h1>
 
-        {uploadedFiles.length > 0 && (
-          <>
-            <ConvertAllButton onConvertAll={() =>
+      <AutoStitchToggle
+        enabled={autoStitchEnabled}
+        onChange={setAutoStitchEnabled}
+      />
+
+      <UploadSection
+        dropRef={dropRef}
+        uploading={uploading}
+        uploadProgress={uploadProgress}
+        hovering={hovering}
+        setHovering={setHovering}
+        handleUpload={handleUpload}
+      />
+
+      <HoopSelector
+        hoopSizes={hoopSizes}
+        hoopSize={hoopSize}
+        setHoopSize={setHoopSize}
+      />
+
+      <SearchBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
+
+      <Button style={{ marginTop: "1.5rem" }} onClick={fetchAlignmentGuide}>
+        <HoopIcon /> Show Hoop Guides
+      </Button>
+
+      {alignmentGuide && (
+        <img
+          className="hand-drawn"
+          src={alignmentGuide}
+          alt="Hoop Alignment Guide"
+          style={{ marginTop: "1rem" }}
+        />
+      )}
+
+      {uploadedFiles.length > 0 && (
+        <>
+          <ConvertAllButton
+            onConvertAll={() =>
               uploadedFiles.forEach((file) => handleConvert(file.url))
-            } />
-            {uploadedFiles.map((file) => (
-  <FilePreviewCard
-    key={file.url}
-    file={file}
-    onConvert={() => handleConvert(file.url)}
-    onPreview={() => handlePreview(file.url)}
-    onAutoStitch={() => handleAutoStitch(file.url)}
-    onRetry={() => handleRetry(file.url)}
-  />
-))}
-            ))}
-          </>
-        )}
-      </div>
+            }
+          />
+          {uploadedFiles.map((file) => (
+            <FilePreviewCard
+              key={file.url}
+              file={file}
+              onConvert={() => handleConvert(file.url)}
+              onPreview={() => handlePreview(file.url)}
+              onAutoStitch={() => handleAutoStitch(file.url)}
+              onRetry={() => handleRetry(file.url)}
+            />
+          ))}
+        </>
+      )}
     </div>
-  );
+
+    {previewFileUrl && (
+      <StitchPreviewModal
+        fileUrl={previewFileUrl}
+        onClose={() => setPreviewFileUrl(null)}
+      />
+    )}
+  </div>
+);
 }
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
