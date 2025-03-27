@@ -12,11 +12,15 @@ export default function FilePreviewCard({
       <div className="file-card-header">
         <strong>{file.name}</strong>
         <div className="badges">
-          {file.status && <span className="badge">{file.status}</span>}
-          {file.status === "Converted" && <span className="badge success">DST/PES Ready</span>}
-          {file.status === "Error" && <span className="badge error">Failed</span>}
-        </div>
-      </div>
+  {file.status && <span className="badge">{file.status}</span>}
+  {file.stage && file.stage !== "done" && file.stage !== "pending" && (
+    <span className="badge info">{file.stage}</span>
+  )}
+  {file.status === "Converted" && (
+    <span className="badge success">DST/PES Ready</span>
+  )}
+  {file.status === "Error" && <span className="badge error">Failed</span>}
+</div>
 
       {file.progress !== undefined && (
         <div className="progress-bar" style={{ marginTop: "4px" }}>
