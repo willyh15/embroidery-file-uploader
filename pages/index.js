@@ -218,6 +218,17 @@ const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) =>
       updateFileStatus(fileUrl, "Error");
     }
   };
+  
+  const handleRetry = async (fileUrl) => {
+  const file = uploadedFiles.find((f) => f.url === fileUrl);
+  if (!file) return;
+
+  if (file.status === "Error" && file.stage === "converting") {
+    await handleConvert(fileUrl);
+  } else if (file.status === "Error") {
+    await handleAutoStitch(fileUrl);
+  }
+};
 
   const fetchAlignmentGuide = async () => {
     try {
