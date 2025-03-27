@@ -1,5 +1,3 @@
-// components/FilePreviewCard.js
-
 import Button from "./Button";
 
 export default function FilePreviewCard({
@@ -7,7 +5,6 @@ export default function FilePreviewCard({
   onConvert,
   onPreview,
   onAutoStitch,
-  downloadUrl
 }) {
   return (
     <div className="file-card">
