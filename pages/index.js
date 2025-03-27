@@ -138,6 +138,14 @@ function Home() {
     setUploadProgress(100);
   }
 };
+  
+  const updateFileProgress = (fileUrl, progress) => {
+  setUploadedFiles((prev) =>
+    prev.map((file) =>
+      file.url === fileUrl ? { ...file, progress } : file
+    )
+  );
+};
 
   const handleAutoStitch = async (fileUrl) => {
     try {
