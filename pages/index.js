@@ -186,6 +186,33 @@ function Home() {
       updateFileStatus(fileUrl, "Error");
     }
   };
+  
+  const handleToggleVisibility = async (fileUrl) => {
+  const file = uploadedFiles.find((f) => f.url === fileUrl);
+  if (!file) return;
+
+  const newVisibility = file.visibility === "public" ? "private" : "public";
+
+  try {
+    const res = await fetch("/api/set-visibility", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl, visibility: newVisibility }),
+    });
+
+    if (!res.ok) throw new Error("Failed to update visibility");
+
+    setUploadedFiles((prev) =>
+      prev.map((f) =>
+        f.url === fileUrl ? { ...f, visibility: newVisibility } : f
+      )
+    );
+    toast.success(`File is now ${newVisibility}`);
+  } catch (err) {
+    console.error("Visibility toggle error:", err);
+    toast.error("Could not update file access");
+  }
+};
 
   const handleConvert = async (fileUrl) => {
     try {
