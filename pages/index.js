@@ -217,22 +217,48 @@ function Home() {
 
   // CONVERT
   const handleConvert = async (fileUrl) => {
-    try {
-      const res = await fetch("/api/convert-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Conversion failed");
+  try {
+    console.log("Starting conversion for:", fileUrl); // optional debug
 
-      updateFileStatus(fileUrl, "Converted");
-      toast.success("File converted!");
-    } catch {
-      toast.error("Conversion failed");
-      updateFileStatus(fileUrl, "Error");
+    const res = await fetch("/api/convert-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+
+    // We attempt to parse the JSON response
+    let data;
+    try {
+      data = await res.json();
+    } catch (parseErr) {
+      // If JSON parse fails, log the raw response
+      console.error("Failed to parse JSON from /api/convert-file:", parseErr);
+      throw new Error("Invalid JSON response from server");
     }
-  };
+
+    if (!res.ok) {
+      // More descriptive error
+      const msg = data?.error ? `Server error: ${data.error}` : "Conversion failed (no detail)";
+      console.error("Conversion request failed:", msg, "HTTP status:", res.status);
+      throw new Error(msg);
+    }
+
+    if (!data.convertedDst && !data.convertedPes) {
+      console.error("No .dst or .pes from server:", data);
+      throw new Error("Conversion returned no .dst or .pes files");
+    }
+
+    // If we get here, success
+    updateFileStatus(fileUrl, "Converted");
+    toast.success("File converted!");
+    console.log("Conversion success for:", fileUrl, "Response data:", data);
+
+  } catch (err) {
+    console.error("Conversion error detail:", err);
+    toast.error("Conversion failed"); // user-facing toast
+    updateFileStatus(fileUrl, "Error");
+  }
+};
 
   // PREVIEW
   const handlePreview = (fileUrl) => {
