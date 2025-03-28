@@ -1,3 +1,5 @@
+// pages/api/stitch-preview.js
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -9,17 +11,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://your-render-api.com/stitch-preview", {
+    // Forward to Flask
+    const flaskResponse = await fetch("http://23.94.202.56:5000/stitch-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch stitch preview");
+    if (!flaskResponse.ok) {
+      const errData = await flaskResponse.json().catch(() => null);
+      throw new Error(errData?.error || "Flask preview error");
     }
 
-    const data = await response.json();
+    const data = await flaskResponse.json();
     return res.status(200).json({ previewFile: data.preview_file });
   } catch (error) {
     console.error("Error in stitch-preview handler:", error);
