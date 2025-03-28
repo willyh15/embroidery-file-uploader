@@ -46,7 +46,8 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [jumpPage, setJumpPage] = useState("");
-
+  const [vectorPreviewUrl, setVectorPreviewUrl] = useState(null);
+  
   useEffect(() => setIsClient(true), []);
 
   // Fetch Hoop Sizes
@@ -109,6 +110,33 @@ function Home() {
       }
     }
   };
+  
+// New handler to request the vectorized (SVG) version only
+const handleVectorPreview = async (fileUrl) => {
+  try {
+    console.log("Requesting vector preview for:", fileUrl);
+    const res = await fetch("/api/vector-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error || "Vector preview failed (no detail)";
+      console.error("Vector preview error:", msg, "HTTP status:", res.status);
+      throw new Error(msg);
+    }
+    if (!data.vectorSvgUrl && !data.vectorSvgData) {
+      throw new Error("Vector preview returned no data");
+    }
+    // Assume the API returns either a URL or raw SVG data
+    setVectorPreviewUrl(data.vectorSvgUrl || data.vectorSvgData);
+    toast.success("Vector preview loaded!");
+  } catch (err) {
+    console.error("Error during vector preview:", err);
+    toast.error("Vector preview failed");
+  }
+};
 
   const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
     setUploadedFiles((prev) =>
