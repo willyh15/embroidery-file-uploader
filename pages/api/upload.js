@@ -23,7 +23,7 @@ export default async function handler(req) {
     }
 
     const token = await getToken({ req });
-    const username = token?.username || 'guest';
+    const username = token?.username || token?.email || 'guest';
 
     const formData = await req.formData();
     const files = formData.getAll('files');
@@ -63,22 +63,21 @@ export default async function handler(req) {
       // Manually track progress
       const buffer = await file.arrayBuffer();
       const total = buffer.byteLength;
-      const CHUNK_SIZE = 256 * 1024; // 256KB chunks
+      const CHUNK_SIZE = 256 * 1024;
       const blobChunks = [];
       for (let offset = 0; offset < total; offset += CHUNK_SIZE) {
         blobChunks.push(buffer.slice(offset, offset + CHUNK_SIZE));
       }
 
-      let uploaded = 0;
       const uploadBlob = new Blob(blobChunks);
-
       const blob = await put(blobName, uploadBlob, {
         access: 'public',
         token: BLOB_TOKEN,
       });
 
-      uploaded = total;
-      const percent = Math.round((uploaded / total) * 100);
+      // Save visibility + ownership
+      await redis.set(`visibility:${blob.url}`, 'private');
+      await redis.set(`owner:${blob.url}`, username);
 
       // Send status update: Uploading completed
       await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/update-status`, {
@@ -102,12 +101,11 @@ export default async function handler(req) {
   } catch (err) {
     console.error('Edge Upload Error:', err);
 
-    // Send status update: Uploading error
     await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/update-status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        fileUrl: 'unknown', // Adjust as needed
+        fileUrl: 'unknown',
         status: 'Uploading failed',
         stage: 'error',
       }),
