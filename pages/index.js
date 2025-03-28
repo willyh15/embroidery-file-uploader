@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
+
+import SVGPreviewModal from "../components/SVGPreviewModal";
 import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
 import Loader from "../components/Loader";
