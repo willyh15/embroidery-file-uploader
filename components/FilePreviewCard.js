@@ -1,3 +1,4 @@
+// components/FilePreviewCard.js
 import Button from "./Button";
 
 export default function FilePreviewCard({
@@ -6,21 +7,23 @@ export default function FilePreviewCard({
   onPreview,
   onAutoStitch,
   onRetry,
+  onDownload,
 }) {
   return (
     <div className="file-card">
       <div className="file-card-header">
         <strong>{file.name}</strong>
         <div className="badges">
-  {file.status && <span className="badge">{file.status}</span>}
-  {file.stage && file.stage !== "done" && file.stage !== "pending" && (
-    <span className="badge info">{file.stage}</span>
-  )}
-  {file.status === "Converted" && (
-    <span className="badge success">DST/PES Ready</span>
-  )}
-  {file.status === "Error" && <span className="badge error">Failed</span>}
-</div>
+          {file.status && <span className="badge">{file.status}</span>}
+          {file.stage && file.stage !== "done" && file.stage !== "pending" && (
+            <span className="badge info">{file.stage}</span>
+          )}
+          {file.status === "Converted" && (
+            <span className="badge success">DST/PES Ready</span>
+          )}
+          {file.status === "Error" && <span className="badge error">Failed</span>}
+        </div>
+      </div>
 
       {file.progress !== undefined && (
         <div className="progress-bar" style={{ marginTop: "4px" }}>
@@ -42,12 +45,24 @@ export default function FilePreviewCard({
         <Button onClick={onPreview}>Preview</Button>
 
         {file.convertedDst && (
-          <a href={file.convertedDst} target="_blank" rel="noopener noreferrer" download>
+          <a
+            href={file.convertedDst}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onDownload(file.url, "dst")}
+            download
+          >
             <Button>Download .DST</Button>
           </a>
         )}
         {file.convertedPes && (
-          <a href={file.convertedPes} target="_blank" rel="noopener noreferrer" download>
+          <a
+            href={file.convertedPes}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onDownload(file.url, "pes")}
+            download
+          >
             <Button>Download .PES</Button>
           </a>
         )}
