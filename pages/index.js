@@ -6,13 +6,12 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
-
-import SVGPreviewModal from "../components/SVGPreviewModal";
+import SVGPreviewModal from "../components/SVGPreviewModal"; // NEW import for vector preview modal
 import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
 import Loader from "../components/Loader";
 import AutoStitchToggle from "../components/AutoStitchToggle";
-import UploadSection from "../components/UploadSection";  // <--- make sure you actually use it
+import UploadSection from "../components/UploadSection";
 import HoopSelector from "../components/HoopSelector";
 import ConvertAllButton from "../components/ConvertAllButton";
 import FilePreviewCard from "../components/FilePreviewCard";
@@ -20,7 +19,7 @@ import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditorModal from "../components/StitchEditorModal";
 import WelcomeCard from "../components/WelcomeCard";
 import AlignmentGuide from "../components/AlignmentGuide";
-import UploaderDashboard from "../components/UploaderDashboard"; // <--- also used
+import UploaderDashboard from "../components/UploaderDashboard";
 
 function Home() {
   const { data: session, status } = useSession();
@@ -46,9 +45,10 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [jumpPage, setJumpPage] = useState("");
-  const [vectorPreviewUrl, setVectorPreviewUrl] = useState(null);
+
+  // NEW: State for vector preview (SVG)
   const [vectorPreviewData, setVectorPreviewData] = useState(null);
-  
+
   useEffect(() => setIsClient(true), []);
 
   // Fetch Hoop Sizes
@@ -111,33 +111,6 @@ function Home() {
       }
     }
   };
-  
-// New handler to request the vectorized (SVG) version only
-const handleVectorPreview = async (fileUrl) => {
-  try {
-    console.log("Requesting vector preview for:", fileUrl);
-    const res = await fetch("/api/vector-preview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data?.error || "Vector preview failed (no detail)";
-      console.error("Vector preview error:", msg, "HTTP status:", res.status);
-      throw new Error(msg);
-    }
-    if (!data.vectorSvgUrl && !data.vectorSvgData) {
-      throw new Error("Vector preview returned no data");
-    }
-    // Assume the API returns either a URL or raw SVG data
-    setVectorPreviewUrl(data.vectorSvgUrl || data.vectorSvgData);
-    toast.success("Vector preview loaded!");
-  } catch (err) {
-    console.error("Error during vector preview:", err);
-    toast.error("Vector preview failed");
-  }
-};
 
   const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
     setUploadedFiles((prev) =>
@@ -167,6 +140,33 @@ const handleVectorPreview = async (fileUrl) => {
     ].slice(0, 5);
     setRecentActivity(activity);
     localStorage.setItem("recentActivity", JSON.stringify(activity));
+  };
+
+  // NEW: Handler for vector preview
+  const handleVectorPreview = async (fileUrl) => {
+    try {
+      console.log("Requesting vector preview for:", fileUrl);
+      const res = await fetch("/api/vector-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.error || "Vector preview failed (no detail)";
+        console.error("Vector preview error:", msg, "HTTP status:", res.status);
+        throw new Error(msg);
+      }
+      if (!data.vectorSvgUrl && !data.vectorSvgData) {
+        throw new Error("Vector preview returned no data");
+      }
+      // Set the preview data (it could be a URL or raw SVG string)
+      setVectorPreviewData(data.vectorSvgUrl || data.vectorSvgData);
+      toast.success("Vector preview loaded!");
+    } catch (err) {
+      console.error("Error during vector preview:", err);
+      toast.error("Vector preview failed");
+    }
   };
 
   // Filtering & pagination
@@ -246,48 +246,38 @@ const handleVectorPreview = async (fileUrl) => {
 
   // CONVERT
   const handleConvert = async (fileUrl) => {
-  try {
-    console.log("Starting conversion for:", fileUrl); // optional debug
-
-    const res = await fetch("/api/convert-file", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl }),
-    });
-
-    // We attempt to parse the JSON response
-    let data;
     try {
-      data = await res.json();
-    } catch (parseErr) {
-      // If JSON parse fails, log the raw response
-      console.error("Failed to parse JSON from /api/convert-file:", parseErr);
-      throw new Error("Invalid JSON response from server");
+      console.log("Starting conversion for:", fileUrl); // debug
+      const res = await fetch("/api/convert-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        console.error("Failed to parse JSON from /api/convert-file:", parseErr);
+        throw new Error("Invalid JSON response from server");
+      }
+      if (!res.ok) {
+        const msg = data?.error ? `Server error: ${data.error}` : "Conversion failed (no detail)";
+        console.error("Conversion request failed:", msg, "HTTP status:", res.status);
+        throw new Error(msg);
+      }
+      if (!data.convertedDst && !data.convertedPes) {
+        console.error("No .dst or .pes from server:", data);
+        throw new Error("Conversion returned no .dst or .pes files");
+      }
+      updateFileStatus(fileUrl, "Converted");
+      toast.success("File converted!");
+      console.log("Conversion success for:", fileUrl, "Response data:", data);
+    } catch (err) {
+      console.error("Conversion error detail:", err);
+      toast.error("Conversion failed");
+      updateFileStatus(fileUrl, "Error");
     }
-
-    if (!res.ok) {
-      // More descriptive error
-      const msg = data?.error ? `Server error: ${data.error}` : "Conversion failed (no detail)";
-      console.error("Conversion request failed:", msg, "HTTP status:", res.status);
-      throw new Error(msg);
-    }
-
-    if (!data.convertedDst && !data.convertedPes) {
-      console.error("No .dst or .pes from server:", data);
-      throw new Error("Conversion returned no .dst or .pes files");
-    }
-
-    // If we get here, success
-    updateFileStatus(fileUrl, "Converted");
-    toast.success("File converted!");
-    console.log("Conversion success for:", fileUrl, "Response data:", data);
-
-  } catch (err) {
-    console.error("Conversion error detail:", err);
-    toast.error("Conversion failed"); // user-facing toast
-    updateFileStatus(fileUrl, "Error");
-  }
-};
+  };
 
   // PREVIEW
   const handlePreview = (fileUrl) => {
@@ -310,30 +300,21 @@ const handleVectorPreview = async (fileUrl) => {
     setEditorFileUrl(fileUrl);
   };
 
-  // If not client or still loading session, show loader
   if (!isClient || status === "loading") return <Loader />;
   if (!session) return null;
 
   return (
     <div>
       <Toaster position="top-right" />
-
-      {/* SIDEBAR */}
       <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
-
       <div className="main-content container fadeIn">
-        {/* WELCOME / LOGOUT */}
         <WelcomeCard user={session.user} onLogout={signOut} />
-
-        {/* SIMPLE UPLOAD SECTION (IF YOU WANT) */}
         <UploadSection
-  onUpload={handleUpload}   // must match the child prop name
-  uploading={uploading}
-  uploadProgress={uploadProgress}
-  setHovering={setHovering} // only if you want the dragover state
-/>
-
-        {/* Or use UploaderDashboard if you prefer drag-and-drop + more controls */}
+          onUpload={handleUpload}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+          setHovering={setHovering}
+        />
         <UploaderDashboard
           dropRef={dropRef}
           hovering={hovering}
@@ -349,8 +330,6 @@ const handleVectorPreview = async (fileUrl) => {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
-
-        {/* (Optional) Hoop alignment guide */}
         <AlignmentGuide
           alignmentGuide={alignmentGuide}
           fetchGuide={async () => {
@@ -364,8 +343,6 @@ const handleVectorPreview = async (fileUrl) => {
             toast.success("Hoop guide fetched!");
           }}
         />
-
-        {/* FILE FILTERS */}
         <FileFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -374,8 +351,6 @@ const handleVectorPreview = async (fileUrl) => {
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
         />
-
-        {/* Items-per-page dropdown */}
         <div style={{ margin: "1rem 0" }}>
           <label>Items per page: </label>
           <select
@@ -389,8 +364,6 @@ const handleVectorPreview = async (fileUrl) => {
             ))}
           </select>
         </div>
-
-        {/* LIST OF FILES */}
         {currentFiles.length > 0 && (
           <>
             <ConvertAllButton
@@ -398,21 +371,18 @@ const handleVectorPreview = async (fileUrl) => {
                 currentFiles.forEach((file) => handleConvert(file.url));
               }}
             />
-
             {currentFiles.map((file) => (
-  <FilePreviewCard
-    key={file.url}
-    file={file}
-    onConvert={() => handleConvert(file.url)}
-    onPreview={() => handlePreview(file.url)}
-    onAutoStitch={() => handleAutoStitch(file.url)}
-    onRetry={() => handleRetry(file.url)}
-    onEdit={() => handleEdit(file.url)} // pass handleEdit
-    onVectorPreview={() => handleVectorPreview(file.url)}  // NEW: pass new handler
-  />
-))}
-
-            {/* PAGINATION */}
+              <FilePreviewCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onPreview={() => handlePreview(file.url)}
+                onAutoStitch={() => handleAutoStitch(file.url)}
+                onRetry={() => handleRetry(file.url)}
+                onEdit={() => handleEdit(file.url)}
+                onVectorPreview={() => handleVectorPreview(file.url)} // NEW: vector preview handler
+              />
+            ))}
             <div
               className="pagination-controls"
               style={{
@@ -448,20 +418,23 @@ const handleVectorPreview = async (fileUrl) => {
             </div>
           </>
         )}
-
-        {/* STITCH EDITOR MODAL */}
         {editorFileUrl && (
           <StitchEditorModal
             fileUrl={editorFileUrl}
             onClose={() => setEditorFileUrl(null)}
           />
         )}
-
-        {/* STITCH PREVIEW MODAL */}
         {previewFileUrl && (
           <StitchPreviewModal
             fileUrl={previewFileUrl}
             onClose={() => setPreviewFileUrl(null)}
+          />
+        )}
+        {/* NEW: Render the SVG preview modal if vector preview data exists */}
+        {vectorPreviewData && (
+          <SVGPreviewModal
+            svgData={vectorPreviewData}
+            onClose={() => setVectorPreviewData(null)}
           />
         )}
       </div>
@@ -469,5 +442,4 @@ const handleVectorPreview = async (fileUrl) => {
   );
 }
 
-// By default, Next.js tries SSR, but we disable for certain client-based code
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
