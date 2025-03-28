@@ -10,6 +10,16 @@
   --radius: 12px;
 }
 
+.filters-container {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
 /* global.css or component css */
 .progress-bar {
   width: 100%;
