@@ -272,10 +272,11 @@ function Home() {
 
         {/* SIMPLE UPLOAD SECTION (IF YOU WANT) */}
         <UploadSection
-          onUpload={handleUpload}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-        />
+  onUpload={handleUpload}   // must match the child prop name
+  uploading={uploading}
+  uploadProgress={uploadProgress}
+  setHovering={setHovering} // only if you want the dragover state
+/>
 
         {/* Or use UploaderDashboard if you prefer drag-and-drop + more controls */}
         <UploaderDashboard
