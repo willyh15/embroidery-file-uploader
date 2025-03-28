@@ -32,6 +32,9 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     }));
 
+    // Log the request we are about to send to Flask
+    console.log("Sending to Flask:", CONVERT_ENDPOINT, { fileUrl });
+
     // Send request to your Flask server
     const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",
@@ -39,10 +42,26 @@ export default async function handler(req, res) {
       body: JSON.stringify({ fileUrl }),
     });
 
-    const result = await response.json();
+    // Attempt to parse the JSON
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseErr) {
+      console.error("Failed to parse JSON from Flask response:", parseErr);
+      throw new Error("Invalid JSON from Flask");
+    }
+
+    // Log the entire response from Flask
+    console.log("Flask conversion response:", {
+      status: response.status,
+      ok: response.ok,
+      result
+    });
 
     // If Flask didn't return .dst or .pes, treat as an error
     if (!response.ok || (!result.dst && !result.pes)) {
+      console.error("Flask conversion error details:", result);
+
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
