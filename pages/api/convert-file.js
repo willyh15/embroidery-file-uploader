@@ -8,7 +8,11 @@ const redis = new Redis({
 });
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://YOUR_VPS_IP:5000/convert";
+
+// If CONVERT_URL is not set, fallback to a direct IP + port
+const CONVERT_ENDPOINT = (
+  process.env.CONVERT_URL || "http://23.94.202.56:5000"
+) + "/convert";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -16,18 +20,19 @@ export default async function handler(req, res) {
   }
 
   const { fileUrl } = req.body;
-
   if (!fileUrl) {
     return res.status(400).json({ error: "Missing fileUrl" });
   }
 
   try {
+    // Mark status as "starting conversion"
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Starting conversion",
       stage: "converting",
       timestamp: new Date().toISOString()
     }));
 
+    // Send request to your Flask server
     const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,6 +41,7 @@ export default async function handler(req, res) {
 
     const result = await response.json();
 
+    // If Flask didn't return .dst or .pes, treat as an error
     if (!response.ok || (!result.dst && !result.pes)) {
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
@@ -45,6 +51,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: result.error || "Conversion failed" });
     }
 
+    // Upload the DST and PES files to Vercel Blob
     let uploadedDstUrl = null;
     let uploadedPesUrl = null;
 
@@ -66,18 +73,21 @@ export default async function handler(req, res) {
       uploadedPesUrl = pesBlob.url;
     }
 
+    // Mark conversion complete in Redis
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Conversion complete",
       stage: "done",
       timestamp: new Date().toISOString()
     }));
 
+    // Save preview info if needed
     await redis.set(`preview:${fileUrl}`, JSON.stringify({
       dstUrl: uploadedDstUrl,
       pesUrl: uploadedPesUrl,
       timestamp: new Date().toISOString()
     }));
 
+    // Return success
     return res.status(200).json({
       convertedDst: uploadedDstUrl,
       convertedPes: uploadedPesUrl,
@@ -86,11 +96,14 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error("Conversion error:", err);
+
+    // Mark as error
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Internal error",
       stage: "error",
       timestamp: new Date().toISOString()
     }));
+
     return res.status(500).json({ error: "Internal server error" });
   }
 }
