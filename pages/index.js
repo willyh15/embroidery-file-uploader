@@ -14,6 +14,7 @@ import HoopSelector from "../components/HoopSelector";
 import ConvertAllButton from "../components/ConvertAllButton";
 import FilePreviewCard from "../components/FilePreviewCard";
 import StitchPreviewModal from "../components/StitchPreviewModal";
+import StitchEditorModal from "../components/StitchEditorModal"; // NEW IMPORT
 import WelcomeCard from "../components/WelcomeCard";
 import AlignmentGuide from "../components/AlignmentGuide";
 import UploaderDashboard from "../components/UploaderDashboard";
@@ -21,6 +22,7 @@ import UploaderDashboard from "../components/UploaderDashboard";
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   const dropRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,7 +35,10 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
+  const [editorFileUrl, setEditorFileUrl] = useState(null); // NEW STATE for StitchEditorModal
+
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -42,6 +47,7 @@ function Home() {
   const [jumpPage, setJumpPage] = useState("");
 
   useEffect(() => setIsClient(true), []);
+
   useEffect(() => {
     const fetchHoopSizes = async () => {
       try {
@@ -56,8 +62,10 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/signin");
-  }, [status]);
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (router.query.setupComplete === "true") {
@@ -84,7 +92,7 @@ function Home() {
   const pollRedisProgress = async () => {
     for (const file of uploadedFiles) {
       try {
-        const res = await fetch(\`/api/progress?fileUrl=\${encodeURIComponent(file.url)}\`);
+        const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
         const data = await res.json();
         if (res.ok) {
           updateFileProgress(file.url, data.progress);
@@ -100,7 +108,12 @@ function Home() {
     setUploadedFiles((prev) =>
       prev.map((file) =>
         file.url === fileUrl
-          ? { ...file, status, stage: stage || file.stage, convertedUrl: convertedUrl || file.convertedUrl }
+          ? {
+              ...file,
+              status,
+              stage: stage || file.stage,
+              convertedUrl: convertedUrl || file.convertedUrl,
+            }
           : file
       )
     );
@@ -229,8 +242,14 @@ function Home() {
     }
   };
 
+  // NEW: handle opening the StitchEditorModal
+  const handleEdit = (fileUrl) => {
+    setEditorFileUrl(fileUrl);
+  };
+
+  // If not client or still loading session, show loader
   if (!isClient || status === "loading") return <Loader />;
-  if (!session) return null;
+  if (!session) return null; // If no session, don't render the page
 
   return (
     <div>
@@ -279,19 +298,27 @@ function Home() {
         />
 
         <div style={{ margin: "1rem 0" }}>
-          <label>Items per page:</label>
-          <select value={itemsPerPage} onChange={(e) => setItemsPerPage(parseInt(e.target.value))}>
+          <label>Items per page: </label>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+          >
             {[6, 10, 15, 20].map((num) => (
-              <option key={num} value={num}>{num}</option>
+              <option key={num} value={num}>
+                {num}
+              </option>
             ))}
           </select>
         </div>
 
+        {/* FILE LISTING */}
         {currentFiles.length > 0 && (
           <>
-            <ConvertAllButton onConvertAll={() =>
-              currentFiles.forEach((file) => handleConvert(file.url))
-            } />
+            <ConvertAllButton
+              onConvertAll={() =>
+                currentFiles.forEach((file) => handleConvert(file.url))
+              }
+            />
             {currentFiles.map((file) => (
               <FilePreviewCard
                 key={file.url}
@@ -300,15 +327,33 @@ function Home() {
                 onPreview={() => handlePreview(file.url)}
                 onAutoStitch={() => handleAutoStitch(file.url)}
                 onRetry={() => handleRetry(file.url)}
+                onEdit={() => handleEdit(file.url)} // NEW: pass handleEdit
               />
             ))}
 
-            <div className="pagination-controls" style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
-              <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+            {/* PAGINATION */}
+            <div
+              className="pagination-controls"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                marginTop: "1rem",
+              }}
+            >
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+              >
                 Prev
               </button>
-              <span>Page {currentPage} of {totalPages}</span>
-              <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
                 Next
               </button>
               <input
@@ -323,6 +368,15 @@ function Home() {
           </>
         )}
 
+        {/* STITCH EDITOR MODAL */}
+        {editorFileUrl && (
+          <StitchEditorModal
+            fileUrl={editorFileUrl}
+            onClose={() => setEditorFileUrl(null)}
+          />
+        )}
+
+        {/* STITCH PREVIEW MODAL */}
         {previewFileUrl && (
           <StitchPreviewModal
             fileUrl={previewFileUrl}
