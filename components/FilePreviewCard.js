@@ -1,5 +1,4 @@
-// components/FilePreviewCard.js
-import Button from "./Button";
+import VisibilityToggle from "./VisibilityToggle";
 
 export default function FilePreviewCard({
   file,
@@ -8,6 +7,7 @@ export default function FilePreviewCard({
   onAutoStitch,
   onRetry,
   onDownload,
+  onToggleVisibility,
 }) {
   return (
     <div className="file-card">
@@ -23,6 +23,13 @@ export default function FilePreviewCard({
           )}
           {file.status === "Error" && <span className="badge error">Failed</span>}
         </div>
+        {onToggleVisibility && (
+          <VisibilityToggle
+            visibility={file.visibility}
+            onToggle={() => onToggleVisibility(file.url)}
+          />
+        )}
+      </div>
       </div>
 
       {file.progress !== undefined && (
