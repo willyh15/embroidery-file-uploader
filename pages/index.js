@@ -156,6 +156,19 @@ function Home() {
       },
     });
   };
+  
+  const handleDownload = async (fileUrl, type) => {
+  try {
+    await fetch("/api/log-download", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl, fileType: type }),
+    });
+    logActivity(`Downloaded ${type.toUpperCase()} for a file`);
+  } catch (error) {
+    console.error("Download tracking failed:", error);
+  }
+};
 
   const handleAutoStitch = async (fileUrl) => {
     try {
