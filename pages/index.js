@@ -120,6 +120,32 @@ function Home() {
     localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
 
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const filesPerPage = 6;
+
+  const filteredFiles = uploadedFiles.filter((file) => {
+    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter ? file.status === statusFilter : true;
+    const matchesType = typeFilter ? file.name.toLowerCase().endsWith(typeFilter) : true;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const indexOfLastFile = currentPage * filesPerPage;
+  const indexOfFirstFile = indexOfLastFile - filesPerPage;
+  const currentFiles = filteredFiles.slice(indexOfFirstFile, indexOfLastFile);
+
+  const totalPages = Math.ceil(filteredFiles.length / filesPerPage);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
+  };
+
+
   const handleUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
@@ -296,6 +322,21 @@ function Home() {
                 onToggleVisibility={handleToggleVisibility}
               />
             ))}
+          
+            {totalPages > 1 && (
+              <div className="pagination-controls">
+                <button onClick={handlePrevPage} disabled={currentPage === 1}>
+                  Previous
+                </button>
+                <span style={{ margin: "0 10px" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button onClick={handleNextPage} disabled={currentPage === totalPages}>
+                  Next
+                </button>
+              </div>
+            )}
+
           </>
         )}
       </div>
