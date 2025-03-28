@@ -33,19 +33,30 @@ export default async function handler(req) {
       });
     }
 
+    const allowed = ['.png', '.jpg', '.jpeg', '.webp', '.pes', '.dst', '.svg'];
     const uploadedFiles = [];
 
     for (const file of files) {
       const originalName = file.name || 'file';
       const ext = originalName.slice(originalName.lastIndexOf('.')).toLowerCase();
-      const allowed = ['.png', '.jpg', '.jpeg', '.webp', '.pes', '.dst'];
+
       if (!allowed.includes(ext)) {
-        return new Response(JSON.stringify({ error: `File type ${ext} not allowed` }), {
-          status: 400,
-        });
+        return new Response(
+          JSON.stringify({ error: `File type ${ext} not allowed` }),
+          { status: 400 }
+        );
       }
 
-      const folder = ext === '.pes' || ext === '.dst' ? 'embroidery' : 'images';
+      // Decide folder based on extension
+      let folder;
+      if (ext === '.pes' || ext === '.dst') {
+        folder = 'embroidery';
+      } else if (ext === '.svg') {
+        folder = 'svgs';
+      } else {
+        folder = 'images';
+      }
+
       const uuid = uuidv4();
       const blobName = `${username}/${folder}/${uuid}${ext}`;
 
@@ -91,7 +102,6 @@ export default async function handler(req) {
       });
 
       uploadedFiles.push({ url: blob.url });
-
       if (process.env.NODE_ENV === 'development') {
         console.log('Uploaded to Vercel Blob:', blobName);
       }
