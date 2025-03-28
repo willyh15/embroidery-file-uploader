@@ -303,14 +303,15 @@ function Home() {
             />
             {uploadedFiles.map((file) => (
   <FilePreviewCard
-    key={file.url}
-    file={file}
-    onConvert={() => handleConvert(file.url)}
-    onPreview={() => handlePreview(file.url)}
-    onAutoStitch={() => handleAutoStitch(file.url)}
-    onRetry={() => handleRetry(file.url)}
-    onDownload={handleDownload} // <-- This line is the missing piece
-  />
+  key={file.url}
+  file={file}
+  onConvert={() => handleConvert(file.url)}
+  onPreview={() => handlePreview(file.url)}
+  onAutoStitch={() => handleAutoStitch(file.url)}
+  onRetry={() => handleRetry(file.url)}
+  onDownload={handleDownload}
+  onToggleVisibility={handleToggleVisibility}
+/>
 ))}
           </>
         )}
