@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -9,15 +10,15 @@ import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
 import Loader from "../components/Loader";
 import AutoStitchToggle from "../components/AutoStitchToggle";
-import UploadSection from "../components/UploadSection";
+import UploadSection from "../components/UploadSection";  // <--- make sure you actually use it
 import HoopSelector from "../components/HoopSelector";
 import ConvertAllButton from "../components/ConvertAllButton";
 import FilePreviewCard from "../components/FilePreviewCard";
 import StitchPreviewModal from "../components/StitchPreviewModal";
-import StitchEditorModal from "../components/StitchEditorModal"; // NEW IMPORT
+import StitchEditorModal from "../components/StitchEditorModal";
 import WelcomeCard from "../components/WelcomeCard";
 import AlignmentGuide from "../components/AlignmentGuide";
-import UploaderDashboard from "../components/UploaderDashboard";
+import UploaderDashboard from "../components/UploaderDashboard"; // <--- also used
 
 function Home() {
   const { data: session, status } = useSession();
@@ -37,7 +38,7 @@ function Home() {
   const [recentActivity, setRecentActivity] = useState([]);
 
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
-  const [editorFileUrl, setEditorFileUrl] = useState(null); // NEW STATE for StitchEditorModal
+  const [editorFileUrl, setEditorFileUrl] = useState(null);
 
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
@@ -48,6 +49,7 @@ function Home() {
 
   useEffect(() => setIsClient(true), []);
 
+  // Fetch Hoop Sizes
   useEffect(() => {
     const fetchHoopSizes = async () => {
       try {
@@ -61,12 +63,14 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
+  // If not logged in, redirect
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
     }
   }, [status, router]);
 
+  // Show success if "setupComplete" query param
   useEffect(() => {
     if (router.query.setupComplete === "true") {
       toast.success("Role setup complete! You're ready to upload.");
@@ -76,11 +80,13 @@ function Home() {
     }
   }, [router.query]);
 
+  // Load recent activity from localStorage
   useEffect(() => {
     const activity = localStorage.getItem("recentActivity");
     if (activity) setRecentActivity(JSON.parse(activity));
   }, []);
 
+  // Poll progress every 2s if we have files
   useEffect(() => {
     let interval;
     if (uploadedFiles.length > 0) {
@@ -121,9 +127,7 @@ function Home() {
 
   const updateFileProgress = (fileUrl, progress) => {
     setUploadedFiles((prev) =>
-      prev.map((file) =>
-        file.url === fileUrl ? { ...file, progress } : file
-      )
+      prev.map((file) => (file.url === fileUrl ? { ...file, progress } : file))
     );
   };
 
@@ -136,13 +140,13 @@ function Home() {
     localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
 
+  // Filtering & pagination
   const filteredFiles = uploadedFiles.filter((file) => {
     const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter ? file.status === statusFilter : true;
     const matchesType = typeFilter ? file.name?.toLowerCase().endsWith(typeFilter) : true;
     return matchesSearch && matchesStatus && matchesType;
   });
-
   const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
   const indexOfLastFile = currentPage * itemsPerPage;
   const indexOfFirstFile = indexOfLastFile - itemsPerPage;
@@ -155,6 +159,7 @@ function Home() {
     }
   };
 
+  // UPLOAD
   const handleUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
@@ -170,11 +175,11 @@ function Home() {
           name: entry.url.split("/").pop(),
           progress: 100,
         }));
-
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         toast.success("Files uploaded successfully!");
         logActivity("Uploaded file(s)");
 
+        // If autoStitch is on, do it automatically
         if (autoStitchEnabled) {
           for (const file of newFiles) {
             handleAutoStitch(file.url);
@@ -192,6 +197,7 @@ function Home() {
     });
   };
 
+  // AUTO-STITCH
   const handleAutoStitch = async (fileUrl) => {
     try {
       const res = await fetch("/api/auto-stitch", {
@@ -209,6 +215,7 @@ function Home() {
     }
   };
 
+  // CONVERT
   const handleConvert = async (fileUrl) => {
     try {
       const res = await fetch("/api/convert-file", {
@@ -227,14 +234,15 @@ function Home() {
     }
   };
 
+  // PREVIEW
   const handlePreview = (fileUrl) => {
     setPreviewFileUrl(fileUrl);
   };
 
+  // RETRY
   const handleRetry = async (fileUrl) => {
     const file = uploadedFiles.find((f) => f.url === fileUrl);
     if (!file) return;
-
     if (file.status === "Error" && file.stage === "converting") {
       await handleConvert(fileUrl);
     } else {
@@ -242,22 +250,34 @@ function Home() {
     }
   };
 
-  // NEW: handle opening the StitchEditorModal
+  // EDIT
   const handleEdit = (fileUrl) => {
     setEditorFileUrl(fileUrl);
   };
 
   // If not client or still loading session, show loader
   if (!isClient || status === "loading") return <Loader />;
-  if (!session) return null; // If no session, don't render the page
+  if (!session) return null;
 
   return (
     <div>
       <Toaster position="top-right" />
+
+      {/* SIDEBAR */}
       <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
+
       <div className="main-content container fadeIn">
+        {/* WELCOME / LOGOUT */}
         <WelcomeCard user={session.user} onLogout={signOut} />
 
+        {/* SIMPLE UPLOAD SECTION (IF YOU WANT) */}
+        <UploadSection
+          onUpload={handleUpload}
+          uploading={uploading}
+          uploadProgress={uploadProgress}
+        />
+
+        {/* Or use UploaderDashboard if you prefer drag-and-drop + more controls */}
         <UploaderDashboard
           dropRef={dropRef}
           hovering={hovering}
@@ -274,6 +294,7 @@ function Home() {
           setSearchQuery={setSearchQuery}
         />
 
+        {/* (Optional) Hoop alignment guide */}
         <AlignmentGuide
           alignmentGuide={alignmentGuide}
           fetchGuide={async () => {
@@ -288,6 +309,7 @@ function Home() {
           }}
         />
 
+        {/* FILE FILTERS */}
         <FileFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -297,6 +319,7 @@ function Home() {
           setTypeFilter={setTypeFilter}
         />
 
+        {/* Items-per-page dropdown */}
         <div style={{ margin: "1rem 0" }}>
           <label>Items per page: </label>
           <select
@@ -311,14 +334,15 @@ function Home() {
           </select>
         </div>
 
-        {/* FILE LISTING */}
+        {/* LIST OF FILES */}
         {currentFiles.length > 0 && (
           <>
             <ConvertAllButton
-              onConvertAll={() =>
-                currentFiles.forEach((file) => handleConvert(file.url))
-              }
+              onConvertAll={() => {
+                currentFiles.forEach((file) => handleConvert(file.url));
+              }}
             />
+
             {currentFiles.map((file) => (
               <FilePreviewCard
                 key={file.url}
@@ -327,7 +351,7 @@ function Home() {
                 onPreview={() => handlePreview(file.url)}
                 onAutoStitch={() => handleAutoStitch(file.url)}
                 onRetry={() => handleRetry(file.url)}
-                onEdit={() => handleEdit(file.url)} // NEW: pass handleEdit
+                onEdit={() => handleEdit(file.url)} // pass handleEdit
               />
             ))}
 
@@ -388,4 +412,5 @@ function Home() {
   );
 }
 
+// By default, Next.js tries SSR, but we disable for certain client-based code
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
