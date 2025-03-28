@@ -11,7 +11,6 @@ import Loader from "../components/Loader";
 import AutoStitchToggle from "../components/AutoStitchToggle";
 import UploadSection from "../components/UploadSection";
 import HoopSelector from "../components/HoopSelector";
-import SearchBar from "../components/SearchBar";
 import ConvertAllButton from "../components/ConvertAllButton";
 import FilePreviewCard from "../components/FilePreviewCard";
 import StitchPreviewModal from "../components/StitchPreviewModal";
@@ -25,7 +24,6 @@ function Home() {
   const dropRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
   const [hovering, setHovering] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -39,8 +37,7 @@ function Home() {
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  
-  
+
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
     const fetchHoopSizes = async () => {
@@ -141,7 +138,6 @@ function Home() {
 
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         toast.success("Files uploaded successfully!");
-        setShowModal(true);
         logActivity("Uploaded file(s)");
 
         if (autoStitchEnabled) {
@@ -160,19 +156,19 @@ function Home() {
       },
     });
   };
-  
+
   const handleDownload = async (fileUrl, type) => {
-  try {
-    await fetch("/api/log-download", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl, fileType: type }),
-    });
-    logActivity(`Downloaded ${type.toUpperCase()} for a file`);
-  } catch (error) {
-    console.error("Download tracking failed:", error);
-  }
-};
+    try {
+      await fetch("/api/log-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, fileType: type }),
+      });
+      logActivity(\`Downloaded \${type.toUpperCase()} for a file\`);
+    } catch (error) {
+      console.error("Download tracking failed:", error);
+    }
+  };
 
   const handleAutoStitch = async (fileUrl) => {
     try {
@@ -190,33 +186,6 @@ function Home() {
       updateFileStatus(fileUrl, "Error");
     }
   };
-  
-  const handleToggleVisibility = async (fileUrl) => {
-  const file = uploadedFiles.find((f) => f.url === fileUrl);
-  if (!file) return;
-
-  const newVisibility = file.visibility === "public" ? "private" : "public";
-
-  try {
-    const res = await fetch("/api/set-visibility", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl, visibility: newVisibility }),
-    });
-
-    if (!res.ok) throw new Error("Failed to update visibility");
-
-    setUploadedFiles((prev) =>
-      prev.map((f) =>
-        f.url === fileUrl ? { ...f, visibility: newVisibility } : f
-      )
-    );
-    toast.success(`File is now ${newVisibility}`);
-  } catch (err) {
-    console.error("Visibility toggle error:", err);
-    toast.error("Could not update file access");
-  }
-};
 
   const handleConvert = async (fileUrl) => {
     try {
@@ -230,12 +199,6 @@ function Home() {
 
       updateFileStatus(fileUrl, "Converted");
       toast.success("File converted!");
-
-      await fetch("/api/upload-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl: data.convertedUrl }),
-      });
     } catch {
       toast.error("Conversion failed");
       updateFileStatus(fileUrl, "Error");
@@ -257,6 +220,16 @@ function Home() {
     setPreviewFileUrl(fileUrl);
   };
 
+  const handleToggleVisibility = () => {}; // Placeholder if needed
+
+  const filteredFiles = uploadedFiles.filter((file) => {
+    const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter ? file.status === statusFilter : true;
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+    const matchesType = typeFilter ? file.name?.endsWith(typeFilter) : true;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   if (!isClient || status === "loading") return <Loader />;
   if (!session) return null;
 
@@ -264,10 +237,9 @@ function Home() {
     <div>
       <Toaster position="top-right" />
       <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
-      <div className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)} />
-
       <div className="main-content container fadeIn">
         <WelcomeCard user={session.user} onLogout={signOut} />
+
         <UploaderDashboard
           dropRef={dropRef}
           hovering={hovering}
@@ -298,33 +270,32 @@ function Home() {
           }}
         />
 
-        {uploadedFiles.length > 0 && (
+        <FileFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+        />
+
+        {filteredFiles.length > 0 && (
           <>
-            <ConvertAllButton
-              onConvertAll={() =>
-                uploadedFiles.forEach((file) => handleConvert(file.url))
-              }
-            />
-            <FileFilters
-  searchQuery={searchQuery}
-  setSearchQuery={setSearchQuery}
-  statusFilter={statusFilter}
-  setStatusFilter={setStatusFilter}
-  typeFilter={typeFilter}
-  setTypeFilter={setTypeFilter}
-/>
-            {uploadedFiles.map((file) => (
-  <FilePreviewCard
-  key={file.url}
-  file={file}
-  onConvert={() => handleConvert(file.url)}
-  onPreview={() => handlePreview(file.url)}
-  onAutoStitch={() => handleAutoStitch(file.url)}
-  onRetry={() => handleRetry(file.url)}
-  onDownload={handleDownload}
-  onToggleVisibility={handleToggleVisibility}
-/>
-))}
+            <ConvertAllButton onConvertAll={() =>
+              filteredFiles.forEach((file) => handleConvert(file.url))
+            } />
+            {filteredFiles.map((file) => (
+              <FilePreviewCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onPreview={() => handlePreview(file.url)}
+                onAutoStitch={() => handleAutoStitch(file.url)}
+                onRetry={() => handleRetry(file.url)}
+                onDownload={handleDownload}
+                onToggleVisibility={handleToggleVisibility}
+              />
+            ))}
           </>
         )}
       </div>
