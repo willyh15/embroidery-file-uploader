@@ -38,10 +38,8 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [editorFileUrl, setEditorFileUrl] = useState(null);
-
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -49,6 +47,7 @@ function Home() {
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [jumpPage, setJumpPage] = useState("");
   const [vectorPreviewUrl, setVectorPreviewUrl] = useState(null);
+  const [vectorPreviewData, setVectorPreviewData] = useState(null);
   
   useEffect(() => setIsClient(true), []);
 
