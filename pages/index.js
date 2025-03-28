@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
+import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
 import Loader from "../components/Loader";
 import AutoStitchToggle from "../components/AutoStitchToggle";
@@ -36,7 +37,10 @@ function Home() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
-
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  
+  
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
     const fetchHoopSizes = async () => {
@@ -301,6 +305,14 @@ function Home() {
                 uploadedFiles.forEach((file) => handleConvert(file.url))
               }
             />
+            <FileFilters
+  searchQuery={searchQuery}
+  setSearchQuery={setSearchQuery}
+  statusFilter={statusFilter}
+  setStatusFilter={setStatusFilter}
+  typeFilter={typeFilter}
+  setTypeFilter={setTypeFilter}
+/>
             {uploadedFiles.map((file) => (
   <FilePreviewCard
   key={file.url}
