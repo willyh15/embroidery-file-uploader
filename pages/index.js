@@ -399,16 +399,17 @@ const handleVectorPreview = async (fileUrl) => {
             />
 
             {currentFiles.map((file) => (
-              <FilePreviewCard
-                key={file.url}
-                file={file}
-                onConvert={() => handleConvert(file.url)}
-                onPreview={() => handlePreview(file.url)}
-                onAutoStitch={() => handleAutoStitch(file.url)}
-                onRetry={() => handleRetry(file.url)}
-                onEdit={() => handleEdit(file.url)} // pass handleEdit
-              />
-            ))}
+  <FilePreviewCard
+    key={file.url}
+    file={file}
+    onConvert={() => handleConvert(file.url)}
+    onPreview={() => handlePreview(file.url)}
+    onAutoStitch={() => handleAutoStitch(file.url)}
+    onRetry={() => handleRetry(file.url)}
+    onEdit={() => handleEdit(file.url)} // pass handleEdit
+    onVectorPreview={() => handleVectorPreview(file.url)}  // NEW: pass new handler
+  />
+))}
 
             {/* PAGINATION */}
             <div
