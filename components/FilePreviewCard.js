@@ -1,3 +1,4 @@
+import Button from "./Button";
 import VisibilityToggle from "./VisibilityToggle";
 
 export default function FilePreviewCard({
@@ -30,7 +31,6 @@ export default function FilePreviewCard({
           />
         )}
       </div>
-      </div>
 
       {file.progress !== undefined && (
         <div className="progress-bar" style={{ marginTop: "4px" }}>
@@ -53,22 +53,21 @@ export default function FilePreviewCard({
 
         {file.convertedDst && (
           <a
-            href={file.convertedDst}
+            href={`/api/serve-file?fileUrl=${encodeURIComponent(file.convertedDst)}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => onDownload(file.url, "dst")}
-            download
           >
             <Button>Download .DST</Button>
           </a>
         )}
+
         {file.convertedPes && (
           <a
-            href={file.convertedPes}
+            href={`/api/serve-file?fileUrl=${encodeURIComponent(file.convertedPes)}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => onDownload(file.url, "pes")}
-            download
           >
             <Button>Download .PES</Button>
           </a>
