@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
-import SVGPreviewModal from "../components/SVGPreviewModal"; // NEW import for vector preview modal
+// Import components (including the new SVG preview modal)
+import SVGPreviewModal from "../components/SVGPreviewModal";
 import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
 import Loader from "../components/Loader";
@@ -37,8 +38,13 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [editorFileUrl, setEditorFileUrl] = useState(null);
+
+  // NEW: State for vector preview (SVG)
+  const [vectorPreviewData, setVectorPreviewData] = useState(null);
+
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -46,12 +52,9 @@ function Home() {
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [jumpPage, setJumpPage] = useState("");
 
-  // NEW: State for vector preview (SVG)
-  const [vectorPreviewData, setVectorPreviewData] = useState(null);
-
   useEffect(() => setIsClient(true), []);
 
-  // Fetch Hoop Sizes
+  // Fetch hoop sizes from API
   useEffect(() => {
     const fetchHoopSizes = async () => {
       try {
@@ -65,14 +68,14 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
-  // If not logged in, redirect
+  // Redirect to sign-in if unauthenticated
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
     }
   }, [status, router]);
 
-  // Show success if "setupComplete" query param
+  // Process setupComplete query param
   useEffect(() => {
     if (router.query.setupComplete === "true") {
       toast.success("Role setup complete! You're ready to upload.");
@@ -88,7 +91,7 @@ function Home() {
     if (activity) setRecentActivity(JSON.parse(activity));
   }, []);
 
-  // Poll progress every 2s if we have files
+  // Poll progress every 2 seconds if there are uploaded files
   useEffect(() => {
     let interval;
     if (uploadedFiles.length > 0) {
@@ -142,7 +145,7 @@ function Home() {
     localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
 
-  // NEW: Handler for vector preview
+  // NEW: Handler to request a vectorized (SVG) preview from the backend
   const handleVectorPreview = async (fileUrl) => {
     try {
       console.log("Requesting vector preview for:", fileUrl);
@@ -160,7 +163,7 @@ function Home() {
       if (!data.vectorSvgUrl && !data.vectorSvgData) {
         throw new Error("Vector preview returned no data");
       }
-      // Set the preview data (it could be a URL or raw SVG string)
+      // Set the preview data (either a URL or raw SVG string)
       setVectorPreviewData(data.vectorSvgUrl || data.vectorSvgData);
       toast.success("Vector preview loaded!");
     } catch (err) {
@@ -193,7 +196,6 @@ function Home() {
     if (!files.length) return;
     setUploading(true);
     setUploadProgress(0);
-
     uploadFilesWithProgress({
       files,
       onProgress: (percent) => setUploadProgress(percent),
@@ -207,14 +209,12 @@ function Home() {
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         toast.success("Files uploaded successfully!");
         logActivity("Uploaded file(s)");
-
-        // If autoStitch is on, do it automatically
+        // If auto-stitch is enabled, process them immediately
         if (autoStitchEnabled) {
           for (const file of newFiles) {
             handleAutoStitch(file.url);
           }
         }
-
         setUploading(false);
         setUploadProgress(100);
       },
@@ -247,7 +247,7 @@ function Home() {
   // CONVERT
   const handleConvert = async (fileUrl) => {
     try {
-      console.log("Starting conversion for:", fileUrl); // debug
+      console.log("Starting conversion for:", fileUrl);
       const res = await fetch("/api/convert-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -380,7 +380,7 @@ function Home() {
                 onAutoStitch={() => handleAutoStitch(file.url)}
                 onRetry={() => handleRetry(file.url)}
                 onEdit={() => handleEdit(file.url)}
-                onVectorPreview={() => handleVectorPreview(file.url)} // NEW: vector preview handler
+                onVectorPreview={() => handleVectorPreview(file.url)} // NEW vector preview handler
               />
             ))}
             <div
@@ -430,7 +430,7 @@ function Home() {
             onClose={() => setPreviewFileUrl(null)}
           />
         )}
-        {/* NEW: Render the SVG preview modal if vector preview data exists */}
+        {/* Render SVG preview modal if vector preview data is available */}
         {vectorPreviewData && (
           <SVGPreviewModal
             svgData={vectorPreviewData}
