@@ -37,6 +37,9 @@ function Home() {
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [jumpPage, setJumpPage] = useState("");
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -81,7 +84,7 @@ function Home() {
   const pollRedisProgress = async () => {
     for (const file of uploadedFiles) {
       try {
-        const res = await fetch(`/api/progress?fileUrl=${encodeURIComponent(file.url)}`);
+        const res = await fetch(\`/api/progress?fileUrl=\${encodeURIComponent(file.url)}\`);
         const data = await res.json();
         if (res.ok) {
           updateFileProgress(file.url, data.progress);
@@ -120,31 +123,24 @@ function Home() {
     localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
 
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const filesPerPage = 6;
-
   const filteredFiles = uploadedFiles.filter((file) => {
-    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter ? file.status === statusFilter : true;
-    const matchesType = typeFilter ? file.name.toLowerCase().endsWith(typeFilter) : true;
+    const matchesType = typeFilter ? file.name?.toLowerCase().endsWith(typeFilter) : true;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const indexOfLastFile = currentPage * filesPerPage;
-  const indexOfFirstFile = indexOfLastFile - filesPerPage;
+  const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+  const indexOfLastFile = currentPage * itemsPerPage;
+  const indexOfFirstFile = indexOfLastFile - itemsPerPage;
   const currentFiles = filteredFiles.slice(indexOfFirstFile, indexOfLastFile);
 
-  const totalPages = Math.ceil(filteredFiles.length / filesPerPage);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
+  const handleJumpToPage = () => {
+    const num = parseInt(jumpPage);
+    if (!isNaN(num) && num >= 1 && num <= totalPages) {
+      setCurrentPage(num);
+    }
   };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) setCurrentPage((prev) => prev - 1);
-  };
-
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -183,19 +179,6 @@ function Home() {
     });
   };
 
-  const handleDownload = async (fileUrl, type) => {
-    try {
-      await fetch("/api/log-download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl, fileType: type }),
-      });
-      logActivity(\`Downloaded \${type.toUpperCase()} for a file\`);
-    } catch (error) {
-      console.error("Download tracking failed:", error);
-    }
-  };
-
   const handleAutoStitch = async (fileUrl) => {
     try {
       const res = await fetch("/api/auto-stitch", {
@@ -231,6 +214,10 @@ function Home() {
     }
   };
 
+  const handlePreview = (fileUrl) => {
+    setPreviewFileUrl(fileUrl);
+  };
+
   const handleRetry = async (fileUrl) => {
     const file = uploadedFiles.find((f) => f.url === fileUrl);
     if (!file) return;
@@ -241,20 +228,6 @@ function Home() {
       await handleAutoStitch(fileUrl);
     }
   };
-
-  const handlePreview = (fileUrl) => {
-    setPreviewFileUrl(fileUrl);
-  };
-
-  const handleToggleVisibility = () => {}; // Placeholder if needed
-
-  const filteredFiles = uploadedFiles.filter((file) => {
-    const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter ? file.status === statusFilter : true;
-    const ext = file.name?.split('.').pop()?.toLowerCase();
-    const matchesType = typeFilter ? file.name?.endsWith(typeFilter) : true;
-    return matchesSearch && matchesStatus && matchesType;
-  });
 
   if (!isClient || status === "loading") return <Loader />;
   if (!session) return null;
@@ -305,12 +278,21 @@ function Home() {
           setTypeFilter={setTypeFilter}
         />
 
-        {filteredFiles.length > 0 && (
+        <div style={{ margin: "1rem 0" }}>
+          <label>Items per page:</label>
+          <select value={itemsPerPage} onChange={(e) => setItemsPerPage(parseInt(e.target.value))}>
+            {[6, 10, 15, 20].map((num) => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+        </div>
+
+        {currentFiles.length > 0 && (
           <>
             <ConvertAllButton onConvertAll={() =>
-              filteredFiles.forEach((file) => handleConvert(file.url))
+              currentFiles.forEach((file) => handleConvert(file.url))
             } />
-            {filteredFiles.map((file) => (
+            {currentFiles.map((file) => (
               <FilePreviewCard
                 key={file.url}
                 file={file}
@@ -318,35 +300,36 @@ function Home() {
                 onPreview={() => handlePreview(file.url)}
                 onAutoStitch={() => handleAutoStitch(file.url)}
                 onRetry={() => handleRetry(file.url)}
-                onDownload={handleDownload}
-                onToggleVisibility={handleToggleVisibility}
               />
             ))}
-          
-            {totalPages > 1 && (
-              <div className="pagination-controls">
-                <button onClick={handlePrevPage} disabled={currentPage === 1}>
-                  Previous
-                </button>
-                <span style={{ margin: "0 10px" }}>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button onClick={handleNextPage} disabled={currentPage === totalPages}>
-                  Next
-                </button>
-              </div>
-            )}
 
+            <div className="pagination-controls" style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
+              <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1}>
+                Prev
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>
+                Next
+              </button>
+              <input
+                type="number"
+                placeholder="Jump to page"
+                value={jumpPage}
+                onChange={(e) => setJumpPage(e.target.value)}
+                style={{ width: "100px" }}
+              />
+              <button onClick={handleJumpToPage}>Go</button>
+            </div>
           </>
         )}
-      </div>
 
-      {previewFileUrl && (
-        <StitchPreviewModal
-          fileUrl={previewFileUrl}
-          onClose={() => setPreviewFileUrl(null)}
-        />
-      )}
+        {previewFileUrl && (
+          <StitchPreviewModal
+            fileUrl={previewFileUrl}
+            onClose={() => setPreviewFileUrl(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }
