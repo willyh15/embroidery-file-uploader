@@ -1,6 +1,7 @@
 // /pages/api/serve-file.js
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+// IMPORTANT: update the import to "./auth/[...nextauth]" 
+import { authOptions } from "./auth/[...nextauth]";
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -15,6 +16,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing fileUrl" });
   }
 
+  // Get the current session using authOptions from ./auth/[...nextauth]
   const session = await getServerSession(req, res, authOptions);
   const visibilityKey = `visibility:${fileUrl}`;
 
