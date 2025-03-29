@@ -9,7 +9,6 @@ const redis = new Redis({
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
-// If CONVERT_URL is not set, fallback to a direct IP + port
 const CONVERT_ENDPOINT = (
   process.env.CONVERT_URL || "http://23.94.202.56:5000"
 ) + "/convert";
@@ -25,43 +24,43 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Mark status as "starting conversion"
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Starting conversion",
       stage: "converting",
       timestamp: new Date().toISOString()
     }));
 
-    // Log the request we are about to send to Flask
     console.log("Sending to Flask:", CONVERT_ENDPOINT, { fileUrl });
 
-    // Send request to your Flask server
     const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     });
 
-    // Attempt to parse the JSON
+    // More robust JSON parsing with debug logging
     let result;
+    let responseText = await response.text();
     try {
-      result = await response.json();
+      result = JSON.parse(responseText);
     } catch (parseErr) {
-      console.error("Failed to parse JSON from Flask response:", parseErr);
-      throw new Error("Invalid JSON from Flask");
+      console.error("Failed to parse JSON from Flask response:", parseErr, "Raw response:", responseText);
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "Invalid JSON response",
+        stage: "error",
+        timestamp: new Date().toISOString()
+      }));
+      return res.status(500).json({ error: "Invalid JSON from Flask", details: responseText });
     }
 
-    // Log the entire response from Flask
     console.log("Flask conversion response:", {
       status: response.status,
       ok: response.ok,
       result
     });
 
-    // If Flask didn't return .dst or .pes, treat as an error
     if (!response.ok || (!result.dst && !result.pes)) {
       console.error("Flask conversion error details:", result);
-
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
@@ -70,7 +69,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: result.error || "Conversion failed" });
     }
 
-    // Upload the DST and PES files to Vercel Blob
     let uploadedDstUrl = null;
     let uploadedPesUrl = null;
 
@@ -92,21 +90,18 @@ export default async function handler(req, res) {
       uploadedPesUrl = pesBlob.url;
     }
 
-    // Mark conversion complete in Redis
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Conversion complete",
       stage: "done",
       timestamp: new Date().toISOString()
     }));
 
-    // Save preview info if needed
     await redis.set(`preview:${fileUrl}`, JSON.stringify({
       dstUrl: uploadedDstUrl,
       pesUrl: uploadedPesUrl,
       timestamp: new Date().toISOString()
     }));
 
-    // Return success
     return res.status(200).json({
       convertedDst: uploadedDstUrl,
       convertedPes: uploadedPesUrl,
@@ -115,14 +110,11 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error("Conversion error:", err);
-
-    // Mark as error
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Internal error",
       stage: "error",
       timestamp: new Date().toISOString()
     }));
-
     return res.status(500).json({ error: "Internal server error" });
   }
 }
