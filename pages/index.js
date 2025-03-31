@@ -3,6 +3,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
+import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
 import SVGPreviewModal from "../components/SVGPreviewModal";
 import FileFilters from "../components/FileFilters";
