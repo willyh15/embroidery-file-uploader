@@ -20,12 +20,12 @@ export default async function handler(req, res) {
       redis.get(`status:${fileUrl}`),
     ]);
 
-    let parsedStatus = { status: "Pending", stage: "pending" };
+    let parsedStatus = { status: "Pending", stage: "pending", timestamp: null };
     if (typeof rawStatus === "string") {
       try {
         parsedStatus = JSON.parse(rawStatus);
       } catch (err) {
-        parsedStatus = { status: rawStatus, stage: "unknown" };
+        parsedStatus = { status: rawStatus, stage: "unknown", timestamp: null };
       }
     }
 
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       progress: progress !== null ? Number(progress) : 0,
       status: parsedStatus.status,
       stage: parsedStatus.stage,
+      timestamp: parsedStatus.timestamp,
     });
   } catch (err) {
     console.error("Redis polling error:", err);
