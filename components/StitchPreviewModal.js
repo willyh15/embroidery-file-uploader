@@ -9,7 +9,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [pesPreviewUrl, setPesPreviewUrl] = useState(null);
   const [error, setError] = useState(null);
 
-  // Optional: parse a human-friendly file name from the URL
   const fileName = fileUrl?.split("/").pop() || "unknown";
 
   const fetchPreviews = useCallback(async () => {
@@ -41,7 +40,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     fetchPreviews();
   }, [fetchPreviews]);
 
-  // Optional: If both DST and PES are available, let user download them all.
   const handleDownloadAll = () => {
     if (dstPreviewUrl) {
       window.open(dstPreviewUrl, "_blank");
@@ -69,7 +67,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
 
       {!loading && !error && (
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", marginTop: "1rem" }}>
-          {/* DST Preview */}
           {dstPreviewUrl && (
             <div>
               <h4>.DST Preview</h4>
@@ -90,7 +87,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             </div>
           )}
 
-          {/* PES Preview */}
           {pesPreviewUrl && (
             <div>
               <h4>.PES Preview</h4>
@@ -111,14 +107,12 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             </div>
           )}
 
-          {/* If neither DST nor PES was fetched successfully */}
           {!dstPreviewUrl && !pesPreviewUrl && (
             <p style={{ fontStyle: "italic" }}>No previews available.</p>
           )}
         </div>
       )}
 
-      {/* “Download All” button if both exist */}
       {!loading && !error && dstPreviewUrl && pesPreviewUrl && (
         <div style={{ marginTop: "1.5rem" }}>
           <button onClick={handleDownloadAll}>Download All</button>
