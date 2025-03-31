@@ -12,7 +12,7 @@ export default function FilePreviewCard({
   onToggleVisibility,
   onEdit,
   onDownloadAll,
-  onVectorPreview
+  onVectorPreview,
 }) {
   const fileName = file.name || file.url?.split("/").pop() || "Untitled";
 
@@ -55,12 +55,12 @@ export default function FilePreviewCard({
       <FileActions
         file={file}
         onConvert={onConvert}
-        onPreview={onPreview}
         onAutoStitch={onAutoStitch}
+        onPreview={onPreview}
+        onEdit={onEdit}
         onRetry={onRetry}
         onDownload={onDownload}
         onDownloadAll={onDownloadAll}
-        onEdit={onEdit}
         onVectorPreview={onVectorPreview}
       />
     </div>
