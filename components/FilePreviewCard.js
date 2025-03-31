@@ -1,6 +1,6 @@
 // /components/FilePreviewCard.js
-import Button from "./Button";
 import VisibilityToggle from "./VisibilityToggle";
+import FileActions from "./FileActions";
 
 export default function FilePreviewCard({
   file,
@@ -12,18 +12,9 @@ export default function FilePreviewCard({
   onToggleVisibility,
   onEdit,
   onDownloadAll,
+  onVectorPreview
 }) {
   const fileName = file.name || file.url?.split("/").pop() || "Untitled";
-
-  // Example: check for missing props or log the file
-  const handleConvertClick = () => {
-    if (!onConvert) {
-      console.error("No onConvert prop provided to FilePreviewCard.");
-      return;
-    }
-    console.log("Convert button clicked for file:", file);
-    onConvert(); // call the passed-in function
-  };
 
   return (
     <div className="file-card">
@@ -61,46 +52,17 @@ export default function FilePreviewCard({
         </div>
       )}
 
-      <div className="file-card-actions">
-        <Button onClick={onAutoStitch}>Auto-Stitch</Button>
-        {/* We wrap onConvert in handleConvertClick to add logs */}
-        <Button onClick={handleConvertClick}>Convert</Button>
-        <Button onClick={onPreview}>Preview</Button>
-
-        {onEdit && (
-          <Button onClick={() => onEdit(file.url)}>Edit/Optimize</Button>
-        )}
-
-        {file.convertedDst && (
-          <a
-            href={`/api/serve-file?fileUrl=${encodeURIComponent(file.convertedDst)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onDownload?.(file.url, "dst")}
-          >
-            <Button>Download .DST</Button>
-          </a>
-        )}
-
-        {file.convertedPes && (
-          <a
-            href={`/api/serve-file?fileUrl=${encodeURIComponent(file.convertedPes)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onDownload?.(file.url, "pes")}
-          >
-            <Button>Download .PES</Button>
-          </a>
-        )}
-
-        {onDownloadAll && file.convertedDst && file.convertedPes && (
-          <Button onClick={() => onDownloadAll(file.url)}>Download All</Button>
-        )}
-
-        {file.status === "Error" && onRetry && (
-          <Button onClick={onRetry}>Retry</Button>
-        )}
-      </div>
+      <FileActions
+        file={file}
+        onConvert={onConvert}
+        onPreview={onPreview}
+        onAutoStitch={onAutoStitch}
+        onRetry={onRetry}
+        onDownload={onDownload}
+        onDownloadAll={onDownloadAll}
+        onEdit={onEdit}
+        onVectorPreview={onVectorPreview}
+      />
     </div>
   );
 }
