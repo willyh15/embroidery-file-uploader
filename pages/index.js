@@ -142,7 +142,7 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
-  console.log("Starting conversion for:", fileUrl);
+  console.log("Starting conversion for:", fileUrl);  // Log when conversion starts
 
   try {
     const res = await fetch("/api/convert-file", {
@@ -156,10 +156,10 @@ function Home() {
 
     let result;
     try {
-      result = JSON.parse(text);
+      result = JSON.parse(text);  // Try to parse JSON response from Flask
       console.log("Parsed result:", result); // Log parsed result
     } catch (err) {
-      console.error("Failed to parse JSON:", err);
+      console.error("Failed to parse JSON:", err);  // Log parsing errors
       throw new Error("Invalid JSON response from /api/convert-file");
     }
 
@@ -171,12 +171,11 @@ function Home() {
     updateFileStatus(fileUrl, "Converted", result.convertedUrl);
     toast.success("File converted!");
   } catch (err) {
-    console.error("Conversion error:", err);
+    console.error("Conversion error:", err);  // Detailed error log
     toast.error("Conversion failed");
     updateFileStatus(fileUrl, "Error");
   }
 };
-
   const handlePreview = (fileUrl) => setPreviewFileUrl(fileUrl);
 
   const handleRetry = async (fileUrl) => {
