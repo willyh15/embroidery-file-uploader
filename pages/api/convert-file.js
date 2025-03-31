@@ -8,10 +8,7 @@ const redis = new Redis({
 });
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-
-const CONVERT_ENDPOINT = (
-  process.env.CONVERT_URL || "http://23.94.202.56:5000"
-) + "/convert";
+const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -30,37 +27,29 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     }));
 
-    console.log("Sending to Flask:", CONVERT_ENDPOINT, { fileUrl });
-
     const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     });
 
-    // More robust JSON parsing with debug logging
+    const text = await response.text();
     let result;
-    let responseText = await response.text();
+
     try {
-      result = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error("Failed to parse JSON from Flask response:", parseErr, "Raw response:", responseText);
+      result = JSON.parse(text);
+    } catch (err) {
+      console.error("JSON parse error from Flask:", err, text);
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Invalid JSON response",
         stage: "error",
         timestamp: new Date().toISOString()
       }));
-      return res.status(500).json({ error: "Invalid JSON from Flask", details: responseText });
+      return res.status(500).json({ error: "Invalid JSON from Flask" });
     }
 
-    console.log("Flask conversion response:", {
-      status: response.status,
-      ok: response.ok,
-      result
-    });
-
     if (!response.ok || (!result.dst && !result.pes)) {
-      console.error("Flask conversion error details:", result);
+      console.error("Conversion error response:", result);
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
@@ -109,7 +98,7 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error("Conversion error:", err);
+    console.error("Unhandled conversion error:", err);
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Internal error",
       stage: "error",
