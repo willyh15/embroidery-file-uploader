@@ -5,7 +5,7 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";  // Ensure this URL is correct
+const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -24,19 +24,29 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
     }));
 
-    // Fire-and-forget POST to Flask server (does not wait for result)
-    fetch(CONVERT_ENDPOINT, {
+    // Log the conversion job being sent to Flask
+    console.log(`Sending conversion job for file: ${fileUrl} to Flask backend at ${CONVERT_ENDPOINT}`);
+    
+    const response = await fetch(CONVERT_ENDPOINT, {
       method: "POST",  // Make sure this is a POST request to your Flask server
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
-    }).catch((err) => {
-      console.error("Failed to send job to Flask:", err);
-      redis.set(`status:${fileUrl}`, JSON.stringify({
+    });
+
+    // Check if Flask responded
+    if (!response.ok) {
+      const errorMsg = `Flask server returned an error: ${response.statusText}`;
+      console.error(errorMsg);
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Flask request failed",
         stage: "error",
         timestamp: new Date().toISOString(),
       }));
-    });
+      return res.status(500).json({ error: errorMsg });
+    }
+
+    const responseData = await response.json();
+    console.log("Flask conversion response:", responseData);
 
     return res.status(200).json({ message: "Conversion job submitted." });
   } catch (err) {
