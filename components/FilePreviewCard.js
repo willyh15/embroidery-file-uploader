@@ -40,25 +40,47 @@ export default function FilePreviewCard({
     return () => clearInterval(interval);
   }, [file.url]);
 
+  const formatStage = (stage) => {
+    return stage
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   return (
     <div className="file-card">
       <div className="file-card-header">
         <strong>{fileName}</strong>
         <div className="badges">
           {file.status && <span className="badge">{file.status}</span>}
+
           {file.stage && file.stage !== "done" && file.stage !== "pending" && (
-            <span className="badge info">{file.stage}</span>
+            <span
+              className="badge info"
+              title={`${file.status || "Processing"} (${formatStage(file.stage)})\n${
+                file.timestamp ? new Date(file.timestamp).toLocaleString() : ""
+              }`}
+            >
+              {formatStage(file.stage)}
+            </span>
           )}
+
           {file.status === "Converted" && (
             <span className="badge success">DST/PES Ready</span>
           )}
-          {file.status === "Error" && <span className="badge error">Failed</span>}
+
+          {file.status === "Error" && (
+            <span className="badge error" title={file.stage}>
+              Failed
+            </span>
+          )}
+
           {downloadCount !== null && (
             <span className="badge" title="Total downloads">
               {downloadCount} downloads
             </span>
           )}
         </div>
+
         {onToggleVisibility && (
           <VisibilityToggle
             visibility={file.visibility}
@@ -68,14 +90,22 @@ export default function FilePreviewCard({
       </div>
 
       {typeof file.progress === "number" && (
-        <div className="progress-bar" style={{ marginTop: "4px" }}>
+        <div
+          className="progress-bar"
+          title={`Progress: ${file.progress}%`}
+          style={{ marginTop: "4px" }}
+        >
           <div
             className="progress-fill"
             style={{
               height: "6px",
               width: `${file.progress}%`,
               backgroundColor:
-                file.status === "Error" ? "#f44336" : file.progress === 100 ? "#4caf50" : "#2196f3",
+                file.status === "Error"
+                  ? "#f44336"
+                  : file.progress === 100
+                  ? "#4caf50"
+                  : "#2196f3",
               borderRadius: "4px",
               transition: "width 0.3s ease-in-out",
             }}
@@ -104,7 +134,8 @@ export default function FilePreviewCard({
             <ul style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
               {downloadLogs.map((log, i) => (
                 <li key={i}>
-                  [{log.type?.toUpperCase() || "?"}] {new Date(log.timestamp).toLocaleString()}
+                  [{log.type?.toUpperCase() || "?"}]{" "}
+                  {new Date(log.timestamp).toLocaleString()}
                 </li>
               ))}
             </ul>
