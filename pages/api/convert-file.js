@@ -33,19 +33,20 @@ export default async function handler(req, res) {
       body: JSON.stringify({ fileUrl }),
     });
 
-    const text = await response.text();
-    let result;
+    const responseText = await response.text();
+    console.log("FLASK RAW RESPONSE:", responseText); // Add this
 
+    let result;
     try {
-      result = JSON.parse(text);
-    } catch (err) {
-      console.error("JSON parse error from Flask:", err, text);
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error("Failed to parse JSON from Flask:", parseErr, "Raw:", responseText); // Add this
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Invalid JSON response",
         stage: "error",
         timestamp: new Date().toISOString()
       }));
-      return res.status(500).json({ error: "Invalid JSON from Flask" });
+      return res.status(500).json({ error: "Invalid JSON from Flask", details: responseText });
     }
 
     if (!response.ok || (!result.dst && !result.pes)) {
@@ -105,9 +106,9 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     }));
     return res.status(200).json({
-  convertedDst: uploadedDstUrl,
-  convertedPes: uploadedPesUrl,
-  convertedUrl: fileUrl
-});
+      convertedDst: null,
+      convertedPes: null,
+      convertedUrl: fileUrl
+    });
   }
 }
