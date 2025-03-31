@@ -9,15 +9,19 @@ const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/co
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
+    console.error("Invalid method: expected POST");
     return res.status(405).json({ error: "Method Not Allowed" });  // Ensure we only accept POST requests
   }
 
   const { fileUrl } = req.body;
   if (!fileUrl) {
+    console.error("Missing fileUrl in request body.");
     return res.status(400).json({ error: "Missing fileUrl" });
   }
 
   try {
+    // Log status to Redis
+    console.log(`Setting status to "submitted" for fileUrl: ${fileUrl}`);
     await redis.set(`status:${fileUrl}`, JSON.stringify({
       status: "Job submitted",
       stage: "submitted",
@@ -26,14 +30,17 @@ export default async function handler(req, res) {
 
     // Log the conversion job being sent to Flask
     console.log(`Sending conversion job for file: ${fileUrl} to Flask backend at ${CONVERT_ENDPOINT}`);
-    
+
     const response = await fetch(CONVERT_ENDPOINT, {
-      method: "POST",  // Make sure this is a POST request to your Flask server
+      method: "POST",  // Ensure POST request
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     });
 
-    // Check if Flask responded
+    // Log the response from Flask
+    console.log("Flask response status:", response.status);
+    console.log("Flask response text:", await response.text());  // Log raw response
+
     if (!response.ok) {
       const errorMsg = `Flask server returned an error: ${response.statusText}`;
       console.error(errorMsg);
