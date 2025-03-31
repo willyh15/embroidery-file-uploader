@@ -46,8 +46,31 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [jumpPage, setJumpPage] = useState("");
+  const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
+  
+  useEffect(() => {
+  const fetchDownloadStats = async () => {
+    const newStats = {};
+    for (const file of uploadedFiles) {
+      try {
+        const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
+        const data = await res.json();
+        if (res.ok) {
+          newStats[file.url] = data;
+        }
+      } catch (err) {
+        console.error("Failed to fetch download stats:", err);
+      }
+    }
+    setDownloadStats(newStats);
+  };
+
+  if (uploadedFiles.length > 0) {
+    fetchDownloadStats();
+  }
+}, [uploadedFiles]);
 
   useEffect(() => {
     const fetchHoopSizes = async () => {
@@ -301,17 +324,18 @@ function Home() {
             <ConvertAllButton onConvertAll={() => currentFiles.forEach((file) => handleConvert(file.url))} />
             {currentFiles.map((file) => (
               <FilePreviewCard
-                key={file.url}
-                file={file}
-                onConvert={() => handleConvert(file.url)}
-                onPreview={() => handlePreview(file.url)}
-                onAutoStitch={() => handleAutoStitch(file.url)}
-                onRetry={() => handleRetry(file.url)}
-                onEdit={() => handleEdit(file.url)}
-                onVectorPreview={() => handleVectorPreview(file.url)}
-                onDownload={handleDownload}
-                onDownloadAll={handleDownloadAll}
-              />
+  key={file.url}
+  file={file}
+  onConvert={() => handleConvert(file.url)}
+  onPreview={() => handlePreview(file.url)}
+  onAutoStitch={() => handleAutoStitch(file.url)}
+  onRetry={() => handleRetry(file.url)}
+  onEdit={() => handleEdit(file.url)}
+  onVectorPreview={() => handleVectorPreview(file.url)}
+  onDownload={handleDownload}
+  onDownloadAll={handleDownloadAll}
+  downloadStat={downloadStats[file.url] || {}}
+/>
             ))}
             <div className="pagination-controls" style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
               <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1}>Prev</button>
