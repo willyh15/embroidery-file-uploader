@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
-// Import components (including the new SVG preview modal)
 import SVGPreviewModal from "../components/SVGPreviewModal";
 import FileFilters from "../components/FileFilters";
 import Sidebar from "../components/Sidebar";
@@ -25,8 +24,8 @@ import UploaderDashboard from "../components/UploaderDashboard";
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
   const dropRef = useRef(null);
+
   const [isClient, setIsClient] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [alignmentGuide, setAlignmentGuide] = useState(null);
@@ -38,13 +37,9 @@ function Home() {
   const [hoopSize, setHoopSize] = useState(null);
   const [hoopSizes, setHoopSizes] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [editorFileUrl, setEditorFileUrl] = useState(null);
-
-  // NEW: State for vector preview (SVG)
   const [vectorPreviewData, setVectorPreviewData] = useState(null);
-
   const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -54,7 +49,6 @@ function Home() {
 
   useEffect(() => setIsClient(true), []);
 
-  // Fetch hoop sizes from API
   useEffect(() => {
     const fetchHoopSizes = async () => {
       try {
@@ -68,14 +62,10 @@ function Home() {
     fetchHoopSizes();
   }, []);
 
-  // Redirect to sign-in if unauthenticated
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
+    if (status === "unauthenticated") router.push("/auth/signin");
   }, [status, router]);
 
-  // Process setupComplete query param
   useEffect(() => {
     if (router.query.setupComplete === "true") {
       toast.success("Role setup complete! You're ready to upload.");
@@ -85,13 +75,11 @@ function Home() {
     }
   }, [router.query]);
 
-  // Load recent activity from localStorage
   useEffect(() => {
     const activity = localStorage.getItem("recentActivity");
     if (activity) setRecentActivity(JSON.parse(activity));
   }, []);
 
-  // Poll progress every 2 seconds if there are uploaded files
   useEffect(() => {
     let interval;
     if (uploadedFiles.length > 0) {
@@ -119,12 +107,7 @@ function Home() {
     setUploadedFiles((prev) =>
       prev.map((file) =>
         file.url === fileUrl
-          ? {
-              ...file,
-              status,
-              stage: stage || file.stage,
-              convertedUrl: convertedUrl || file.convertedUrl,
-            }
+          ? { ...file, status, stage: stage || file.stage, convertedUrl: convertedUrl || file.convertedUrl }
           : file
       )
     );
@@ -145,40 +128,47 @@ function Home() {
     localStorage.setItem("recentActivity", JSON.stringify(activity));
   };
 
-  // NEW: Handler to request a vectorized (SVG) preview from the backend
+  const handleDownload = async (fileUrl, format) => {
+    try {
+      await fetch("/api/log-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, format }),
+      });
+      logActivity(`Downloaded ${format.toUpperCase()} for file.`);
+    } catch (err) {
+      console.error("Download log failed:", err);
+    }
+  };
+
+  const handleDownloadAll = async (fileUrl) => {
+    await handleDownload(fileUrl, "dst");
+    await handleDownload(fileUrl, "pes");
+  };
+
   const handleVectorPreview = async (fileUrl) => {
     try {
-      console.log("Requesting vector preview for:", fileUrl);
       const res = await fetch("/api/vector-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        const msg = data?.error || "Vector preview failed (no detail)";
-        console.error("Vector preview error:", msg, "HTTP status:", res.status);
-        throw new Error(msg);
-      }
-      if (!data.vectorSvgUrl && !data.vectorSvgData) {
-        throw new Error("Vector preview returned no data");
-      }
-      // Set the preview data (either a URL or raw SVG string)
+      if (!res.ok || (!data.vectorSvgUrl && !data.vectorSvgData)) throw new Error("Vector preview error");
       setVectorPreviewData(data.vectorSvgUrl || data.vectorSvgData);
       toast.success("Vector preview loaded!");
     } catch (err) {
-      console.error("Error during vector preview:", err);
       toast.error("Vector preview failed");
     }
   };
 
-  // Filtering & pagination
   const filteredFiles = uploadedFiles.filter((file) => {
     const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter ? file.status === statusFilter : true;
     const matchesType = typeFilter ? file.name?.toLowerCase().endsWith(typeFilter) : true;
     return matchesSearch && matchesStatus && matchesType;
   });
+
   const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
   const indexOfLastFile = currentPage * itemsPerPage;
   const indexOfFirstFile = indexOfLastFile - itemsPerPage;
@@ -191,7 +181,6 @@ function Home() {
     }
   };
 
-  // UPLOAD
   const handleUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
@@ -209,7 +198,6 @@ function Home() {
         setUploadedFiles((prev) => [...prev, ...newFiles]);
         toast.success("Files uploaded successfully!");
         logActivity("Uploaded file(s)");
-        // If auto-stitch is enabled, process them immediately
         if (autoStitchEnabled) {
           for (const file of newFiles) {
             handleAutoStitch(file.url);
@@ -226,7 +214,6 @@ function Home() {
     });
   };
 
-  // AUTO-STITCH
   const handleAutoStitch = async (fileUrl) => {
     try {
       const res = await fetch("/api/auto-stitch", {
@@ -244,47 +231,27 @@ function Home() {
     }
   };
 
-  // CONVERT
   const handleConvert = async (fileUrl) => {
     try {
-      console.log("Starting conversion for:", fileUrl);
       const res = await fetch("/api/convert-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
-      let data;
-      try {
-        data = await res.json();
-      } catch (parseErr) {
-        console.error("Failed to parse JSON from /api/convert-file:", parseErr);
-        throw new Error("Invalid JSON response from server");
-      }
-      if (!res.ok) {
-        const msg = data?.error ? `Server error: ${data.error}` : "Conversion failed (no detail)";
-        console.error("Conversion request failed:", msg, "HTTP status:", res.status);
-        throw new Error(msg);
-      }
-      if (!data.convertedDst && !data.convertedPes) {
-        console.error("No .dst or .pes from server:", data);
-        throw new Error("Conversion returned no .dst or .pes files");
-      }
+      const data = await res.json();
+      if (!res.ok || (!data.convertedDst && !data.convertedPes)) throw new Error("Conversion failed");
       updateFileStatus(fileUrl, "Converted");
       toast.success("File converted!");
-      console.log("Conversion success for:", fileUrl, "Response data:", data);
     } catch (err) {
-      console.error("Conversion error detail:", err);
       toast.error("Conversion failed");
       updateFileStatus(fileUrl, "Error");
     }
   };
 
-  // PREVIEW
   const handlePreview = (fileUrl) => {
     setPreviewFileUrl(fileUrl);
   };
 
-  // RETRY
   const handleRetry = async (fileUrl) => {
     const file = uploadedFiles.find((f) => f.url === fileUrl);
     if (!file) return;
@@ -295,7 +262,6 @@ function Home() {
     }
   };
 
-  // EDIT
   const handleEdit = (fileUrl) => {
     setEditorFileUrl(fileUrl);
   };
@@ -309,68 +275,30 @@ function Home() {
       <Sidebar isOpen={sidebarOpen} toggle={setSidebarOpen} />
       <div className="main-content container fadeIn">
         <WelcomeCard user={session.user} onLogout={signOut} />
-        <UploadSection
-          onUpload={handleUpload}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-          setHovering={setHovering}
-        />
-        <UploaderDashboard
-          dropRef={dropRef}
-          hovering={hovering}
-          setHovering={setHovering}
-          handleUpload={handleUpload}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
-          autoStitchEnabled={autoStitchEnabled}
-          setAutoStitchEnabled={setAutoStitchEnabled}
-          hoopSizes={hoopSizes}
-          hoopSize={hoopSize}
-          setHoopSize={setHoopSize}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-        <AlignmentGuide
-          alignmentGuide={alignmentGuide}
-          fetchGuide={async () => {
-            const res = await fetch("/api/get-alignment-guide", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ hoopSize }),
-            });
-            const data = await res.json();
-            setAlignmentGuide(data.alignmentGuideUrl);
-            toast.success("Hoop guide fetched!");
-          }}
-        />
-        <FileFilters
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-        />
+        <UploadSection onUpload={handleUpload} uploading={uploading} uploadProgress={uploadProgress} setHovering={setHovering} />
+        <UploaderDashboard dropRef={dropRef} hovering={hovering} setHovering={setHovering} handleUpload={handleUpload} uploading={uploading} uploadProgress={uploadProgress} autoStitchEnabled={autoStitchEnabled} setAutoStitchEnabled={setAutoStitchEnabled} hoopSizes={hoopSizes} hoopSize={hoopSize} setHoopSize={setHoopSize} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <AlignmentGuide alignmentGuide={alignmentGuide} fetchGuide={async () => {
+          const res = await fetch("/api/get-alignment-guide", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ hoopSize }),
+          });
+          const data = await res.json();
+          setAlignmentGuide(data.alignmentGuideUrl);
+          toast.success("Hoop guide fetched!");
+        }} />
+        <FileFilters searchQuery={searchQuery} setSearchQuery={setSearchQuery} statusFilter={statusFilter} setStatusFilter={setStatusFilter} typeFilter={typeFilter} setTypeFilter={setTypeFilter} />
         <div style={{ margin: "1rem 0" }}>
           <label>Items per page: </label>
-          <select
-            value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-          >
+          <select value={itemsPerPage} onChange={(e) => setItemsPerPage(parseInt(e.target.value))}>
             {[6, 10, 15, 20].map((num) => (
-              <option key={num} value={num}>
-                {num}
-              </option>
+              <option key={num} value={num}>{num}</option>
             ))}
           </select>
         </div>
         {currentFiles.length > 0 && (
           <>
-            <ConvertAllButton
-              onConvertAll={() => {
-                currentFiles.forEach((file) => handleConvert(file.url));
-              }}
-            />
+            <ConvertAllButton onConvertAll={() => currentFiles.forEach((file) => handleConvert(file.url))} />
             {currentFiles.map((file) => (
               <FilePreviewCard
                 key={file.url}
@@ -380,63 +308,23 @@ function Home() {
                 onAutoStitch={() => handleAutoStitch(file.url)}
                 onRetry={() => handleRetry(file.url)}
                 onEdit={() => handleEdit(file.url)}
-                onVectorPreview={() => handleVectorPreview(file.url)} // NEW vector preview handler
+                onVectorPreview={() => handleVectorPreview(file.url)}
+                onDownload={handleDownload}
+                onDownloadAll={handleDownloadAll}
               />
             ))}
-            <div
-              className="pagination-controls"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                marginTop: "1rem",
-              }}
-            >
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                Prev
-              </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-              <input
-                type="number"
-                placeholder="Jump to page"
-                value={jumpPage}
-                onChange={(e) => setJumpPage(e.target.value)}
-                style={{ width: "100px" }}
-              />
+            <div className="pagination-controls" style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
+              <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1}>Prev</button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</button>
+              <input type="number" placeholder="Jump to page" value={jumpPage} onChange={(e) => setJumpPage(e.target.value)} style={{ width: "100px" }} />
               <button onClick={handleJumpToPage}>Go</button>
             </div>
           </>
         )}
-        {editorFileUrl && (
-          <StitchEditorModal
-            fileUrl={editorFileUrl}
-            onClose={() => setEditorFileUrl(null)}
-          />
-        )}
-        {previewFileUrl && (
-          <StitchPreviewModal
-            fileUrl={previewFileUrl}
-            onClose={() => setPreviewFileUrl(null)}
-          />
-        )}
-        {/* Render SVG preview modal if vector preview data is available */}
-        {vectorPreviewData && (
-          <SVGPreviewModal
-            svgData={vectorPreviewData}
-            onClose={() => setVectorPreviewData(null)}
-          />
-        )}
+        {editorFileUrl && <StitchEditorModal fileUrl={editorFileUrl} onClose={() => setEditorFileUrl(null)} />}
+        {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={() => setPreviewFileUrl(null)} />}
+        {vectorPreviewData && <SVGPreviewModal svgData={vectorPreviewData} onClose={() => setVectorPreviewData(null)} />}
       </div>
     </div>
   );
