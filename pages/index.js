@@ -256,13 +256,13 @@ function Home() {
 
   const handleConvert = async (fileUrl) => {
     try {
-      const res = await fetch("/api/convert-file", {
+      const res = await fetch("http://23.94.202.56:5000/convert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
       const data = await res.json();
-      if (!res.ok || (!data.convertedDst && !data.convertedPes)) throw new Error("Conversion failed");
+      if (!res.ok || (!data.dst && !data.pes)) throw new Error("Conversion failed");
       updateFileStatus(fileUrl, "Converted");
       toast.success("File converted!");
     } catch (err) {
