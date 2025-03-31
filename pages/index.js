@@ -3,7 +3,6 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
-import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
 import SVGPreviewModal from "../components/SVGPreviewModal";
 import FileFilters from "../components/FileFilters";
@@ -117,7 +116,7 @@ function Home() {
         const data = await res.json();
         if (res.ok) {
           updateFileProgress(file.url, data.progress);
-          updateFileStatus(file.url, data.status, null, data.stage);
+          updateFileStatus(file.url, data.status, null, data.stage, data.timestamp);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -125,11 +124,11 @@ function Home() {
     }
   };
 
-  const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null) => {
+  const updateFileStatus = (fileUrl, status, convertedUrl = null, stage = null, timestamp = null) => {
     setUploadedFiles((prev) =>
       prev.map((file) =>
         file.url === fileUrl
-          ? { ...file, status, stage: stage || file.stage, convertedUrl: convertedUrl || file.convertedUrl }
+          ? { ...file, status, stage: stage || file.stage, convertedUrl: convertedUrl || file.convertedUrl, timestamp }
           : file
       )
     );
