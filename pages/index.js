@@ -162,9 +162,7 @@ function Home() {
     }
   };
 
-  const handlePreview = (fileUrl) => {
-    setPreviewFileUrl(fileUrl);
-  };
+  const handlePreview = (fileUrl) => setPreviewFileUrl(fileUrl);
 
   const handleRetry = async (fileUrl) => {
     const file = uploadedFiles.find((f) => f.url === fileUrl);
@@ -176,8 +174,106 @@ function Home() {
     }
   };
 
-  const handleEdit = (fileUrl) => {
-    setEditorFileUrl(fileUrl);
+  const handleEdit = (fileUrl) => setEditorFileUrl(fileUrl);
+
+  const handleAutoStitch = async (fileUrl) => {
+    try {
+      const res = await fetch("/api/auto-stitch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      if (!res.ok) throw new Error("Auto-stitch failed");
+      toast.success("Auto-stitched file!");
+      updateFileStatus(fileUrl, "Auto-stitched");
+    } catch {
+      toast.error("Auto-stitch failed");
+      updateFileStatus(fileUrl, "Error");
+    }
+  };
+
+  const handleVectorPreview = async (fileUrl) => {
+    try {
+      const res = await fetch("/api/vector-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || (!data.vectorSvgUrl && !data.vectorSvgData)) throw new Error("Vector preview error");
+      setVectorPreviewData(data.vectorSvgUrl || data.vectorSvgData);
+      toast.success("Vector preview loaded!");
+    } catch (err) {
+      toast.error("Vector preview failed");
+    }
+  };
+
+  const handleDownload = async (fileUrl, format) => {
+    try {
+      await fetch("/api/log-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, format }),
+      });
+    } catch (err) {
+      console.error("Download log failed:", err);
+    }
+  };
+
+  const handleDownloadAll = async (fileUrl) => {
+    await handleDownload(fileUrl, "dst");
+    await handleDownload(fileUrl, "pes");
+  };
+
+  const filteredFiles = uploadedFiles.filter((file) => {
+    const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter ? file.status === statusFilter : true;
+    const matchesType = typeFilter ? file.name?.toLowerCase().endsWith(typeFilter) : true;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+  const indexOfLastFile = currentPage * itemsPerPage;
+  const indexOfFirstFile = indexOfLastFile - itemsPerPage;
+  const currentFiles = filteredFiles.slice(indexOfFirstFile, indexOfLastFile);
+
+  const handleJumpToPage = () => {
+    const num = parseInt(jumpPage);
+    if (!isNaN(num) && num >= 1 && num <= totalPages) {
+      setCurrentPage(num);
+    }
+  };
+
+  const handleUpload = async (files) => {
+    if (!files.length) return;
+    setUploading(true);
+    setUploadProgress(0);
+    uploadFilesWithProgress({
+      files,
+      onProgress: (percent) => setUploadProgress(percent),
+      onComplete: (uploaded) => {
+        const newFiles = uploaded.map((entry) => ({
+          url: entry.url,
+          status: "Uploaded",
+          name: entry.url.split("/").pop(),
+          progress: 100,
+        }));
+        setUploadedFiles((prev) => [...prev, ...newFiles]);
+        toast.success("Files uploaded successfully!");
+        if (autoStitchEnabled) {
+          for (const file of newFiles) {
+            handleAutoStitch(file.url);
+          }
+        }
+        setUploading(false);
+        setUploadProgress(100);
+      },
+      onError: () => {
+        toast.error("Upload failed");
+        setUploading(false);
+        setUploadProgress(0);
+      },
+    });
   };
 
   if (!isClient || status === "loading") return <Loader />;
