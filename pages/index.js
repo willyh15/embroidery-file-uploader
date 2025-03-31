@@ -20,15 +20,6 @@ import StitchEditorModal from "../components/StitchEditorModal";
 import WelcomeCard from "../components/WelcomeCard";
 import AlignmentGuide from "../components/AlignmentGuide";
 import UploaderDashboard from "../components/UploaderDashboard";
-import { Redis } from "@upstash/redis";
-import { put } from "@vercel/blob";
-
-const redis = new Redis({
-  url: process.env.NEXT_PUBLIC_KV_REST_API_URL,
-  token: process.env.NEXT_PUBLIC_KV_REST_API_TOKEN,
-});
-
-const BLOB_TOKEN = process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN;
 
 function Home() {
   const { data: session, status } = useSession();
@@ -153,82 +144,20 @@ function Home() {
 
   const handleConvert = async (fileUrl) => {
     try {
-      await redis.set(`status:${fileUrl}`, JSON.stringify({
-        status: "Starting conversion",
-        stage: "converting",
-        timestamp: new Date().toISOString(),
-      }));
-
-      const res = await fetch("http://23.94.202.56:5000/convert", {
+      const res = await fetch("/api/convert-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
 
-      const text = await res.text();
-      console.log("Raw response from Flask:", text);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Conversion failed");
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error("Failed to parse JSON:", err);
-        await redis.set(`status:${fileUrl}`, JSON.stringify({
-          status: "Invalid JSON response",
-          stage: "error",
-          timestamp: new Date().toISOString(),
-        }));
-        throw new Error("Invalid JSON from Flask");
-      }
-
-      if (!res.ok || (!data.dst && !data.pes)) {
-        console.error("Flask error payload:", data);
-        await redis.set(`status:${fileUrl}`, JSON.stringify({
-          status: "Conversion failed",
-          stage: "error",
-          timestamp: new Date().toISOString(),
-        }));
-        throw new Error("Conversion failed");
-      }
-
-      let uploadedDstUrl = null;
-      let uploadedPesUrl = null;
-
-      if (data.dst) {
-        const dstBuffer = Buffer.from(data.dst, "hex");
-        const dstBlob = await put(`converted/${Date.now()}.dst`, dstBuffer, {
-          access: "public",
-          token: BLOB_TOKEN,
-        });
-        uploadedDstUrl = dstBlob.url;
-      }
-
-      if (data.pes) {
-        const pesBuffer = Buffer.from(data.pes, "hex");
-        const pesBlob = await put(`converted/${Date.now()}.pes`, pesBuffer, {
-          access: "public",
-          token: BLOB_TOKEN,
-        });
-        uploadedPesUrl = pesBlob.url;
-      }
-
-      await redis.set(`status:${fileUrl}`, JSON.stringify({
-        status: "Conversion complete",
-        stage: "done",
-        timestamp: new Date().toISOString(),
-      }));
-
-      await redis.set(`preview:${fileUrl}`, JSON.stringify({
-        dstUrl: uploadedDstUrl,
-        pesUrl: uploadedPesUrl,
-        timestamp: new Date().toISOString(),
-      }));
-
-      updateFileStatus(fileUrl, "Converted", uploadedDstUrl);
+      updateFileStatus(fileUrl, "Converted", result.convertedUrl);
       toast.success("File converted!");
     } catch (err) {
       toast.error("Conversion failed");
-      console.error("Final convert error:", err);
+      console.error("Convert error:", err);
       updateFileStatus(fileUrl, "Error");
     }
   };
@@ -286,18 +215,18 @@ function Home() {
             <ConvertAllButton onConvertAll={() => currentFiles.forEach((file) => handleConvert(file.url))} />
             {currentFiles.map((file) => (
               <FilePreviewCard
-  key={file.url}
-  file={file}
-  onConvert={() => handleConvert(file.url)}
-  onPreview={() => handlePreview(file.url)}
-  onAutoStitch={() => handleAutoStitch(file.url)}
-  onRetry={() => handleRetry(file.url)}
-  onEdit={() => handleEdit(file.url)}
-  onVectorPreview={() => handleVectorPreview(file.url)}
-  onDownload={handleDownload}
-  onDownloadAll={handleDownloadAll}
-  downloadStat={downloadStats[file.url] || {}}
-/>
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onPreview={() => handlePreview(file.url)}
+                onAutoStitch={() => handleAutoStitch(file.url)}
+                onRetry={() => handleRetry(file.url)}
+                onEdit={() => handleEdit(file.url)}
+                onVectorPreview={() => handleVectorPreview(file.url)}
+                onDownload={handleDownload}
+                onDownloadAll={handleDownloadAll}
+                downloadStat={downloadStats[file.url] || {}}
+              />
             ))}
             <div className="pagination-controls" style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "1rem" }}>
               <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1}>Prev</button>
