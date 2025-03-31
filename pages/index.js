@@ -20,6 +20,15 @@ import StitchEditorModal from "../components/StitchEditorModal";
 import WelcomeCard from "../components/WelcomeCard";
 import AlignmentGuide from "../components/AlignmentGuide";
 import UploaderDashboard from "../components/UploaderDashboard";
+import { Redis } from "@upstash/redis";
+import { put } from "@vercel/blob";
+
+const redis = new Redis({
+  url: process.env.NEXT_PUBLIC_KV_REST_API_URL,
+  token: process.env.NEXT_PUBLIC_KV_REST_API_TOKEN,
+});
+
+const BLOB_TOKEN = process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN;
 
 function Home() {
   const { data: session, status } = useSession();
@@ -49,28 +58,28 @@ function Home() {
   const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
-  
-  useEffect(() => {
-  const fetchDownloadStats = async () => {
-    const newStats = {};
-    for (const file of uploadedFiles) {
-      try {
-        const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
-        const data = await res.json();
-        if (res.ok) {
-          newStats[file.url] = data;
-        }
-      } catch (err) {
-        console.error("Failed to fetch download stats:", err);
-      }
-    }
-    setDownloadStats(newStats);
-  };
 
-  if (uploadedFiles.length > 0) {
-    fetchDownloadStats();
-  }
-}, [uploadedFiles]);
+  useEffect(() => {
+    const fetchDownloadStats = async () => {
+      const newStats = {};
+      for (const file of uploadedFiles) {
+        try {
+          const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
+          const data = await res.json();
+          if (res.ok) {
+            newStats[file.url] = data;
+          }
+        } catch (err) {
+          console.error("Failed to fetch download stats:", err);
+        }
+      }
+      setDownloadStats(newStats);
+    };
+
+    if (uploadedFiles.length > 0) {
+      fetchDownloadStats();
+    }
+  }, [uploadedFiles]);
 
   useEffect(() => {
     const fetchHoopSizes = async () => {
@@ -142,146 +151,87 @@ function Home() {
     );
   };
 
-  const logActivity = (message) => {
-    const activity = [
-      { message, timestamp: new Date().toLocaleString() },
-      ...recentActivity,
-    ].slice(0, 5);
-    setRecentActivity(activity);
-    localStorage.setItem("recentActivity", JSON.stringify(activity));
-  };
-
-  const handleDownload = async (fileUrl, format) => {
+  const handleConvert = async (fileUrl) => {
     try {
-      await fetch("/api/log-download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl, format }),
-      });
-      logActivity(`Downloaded ${format.toUpperCase()} for file.`);
-    } catch (err) {
-      console.error("Download log failed:", err);
-    }
-  };
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "Starting conversion",
+        stage: "converting",
+        timestamp: new Date().toISOString(),
+      }));
 
-  const handleDownloadAll = async (fileUrl) => {
-    await handleDownload(fileUrl, "dst");
-    await handleDownload(fileUrl, "pes");
-  };
-
-  const handleVectorPreview = async (fileUrl) => {
-    try {
-      const res = await fetch("/api/vector-preview", {
+      const res = await fetch("http://23.94.202.56:5000/convert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
-      const data = await res.json();
-      if (!res.ok || (!data.vectorSvgUrl && !data.vectorSvgData)) throw new Error("Vector preview error");
-      setVectorPreviewData(data.vectorSvgUrl || data.vectorSvgData);
-      toast.success("Vector preview loaded!");
-    } catch (err) {
-      toast.error("Vector preview failed");
-    }
-  };
 
-  const filteredFiles = uploadedFiles.filter((file) => {
-    const matchesSearch = file.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter ? file.status === statusFilter : true;
-    const matchesType = typeFilter ? file.name?.toLowerCase().endsWith(typeFilter) : true;
-    return matchesSearch && matchesStatus && matchesType;
-  });
+      const text = await res.text();
+      console.log("Raw response from Flask:", text);
 
-  const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
-  const indexOfLastFile = currentPage * itemsPerPage;
-  const indexOfFirstFile = indexOfLastFile - itemsPerPage;
-  const currentFiles = filteredFiles.slice(indexOfFirstFile, indexOfLastFile);
-
-  const handleJumpToPage = () => {
-    const num = parseInt(jumpPage);
-    if (!isNaN(num) && num >= 1 && num <= totalPages) {
-      setCurrentPage(num);
-    }
-  };
-
-  const handleUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
-    setUploadProgress(0);
-    uploadFilesWithProgress({
-      files,
-      onProgress: (percent) => setUploadProgress(percent),
-      onComplete: (uploaded) => {
-        const newFiles = uploaded.map((entry) => ({
-          url: entry.url,
-          status: "Uploaded",
-          name: entry.url.split("/").pop(),
-          progress: 100,
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error("Failed to parse JSON:", err);
+        await redis.set(`status:${fileUrl}`, JSON.stringify({
+          status: "Invalid JSON response",
+          stage: "error",
+          timestamp: new Date().toISOString(),
         }));
-        setUploadedFiles((prev) => [...prev, ...newFiles]);
-        toast.success("Files uploaded successfully!");
-        logActivity("Uploaded file(s)");
-        if (autoStitchEnabled) {
-          for (const file of newFiles) {
-            handleAutoStitch(file.url);
-          }
-        }
-        setUploading(false);
-        setUploadProgress(100);
-      },
-      onError: () => {
-        toast.error("Upload failed");
-        setUploading(false);
-        setUploadProgress(0);
-      },
-    });
-  };
+        throw new Error("Invalid JSON from Flask");
+      }
 
-  const handleAutoStitch = async (fileUrl) => {
-    try {
-      const res = await fetch("/api/auto-stitch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
-      if (!res.ok) throw new Error("Auto-stitch failed");
-      toast.success("Auto-stitched file!");
-      updateFileStatus(fileUrl, "Auto-stitched");
-      logActivity("Auto-stitched a file");
-    } catch {
-      toast.error("Auto-stitch failed");
+      if (!res.ok || (!data.dst && !data.pes)) {
+        console.error("Flask error payload:", data);
+        await redis.set(`status:${fileUrl}`, JSON.stringify({
+          status: "Conversion failed",
+          stage: "error",
+          timestamp: new Date().toISOString(),
+        }));
+        throw new Error("Conversion failed");
+      }
+
+      let uploadedDstUrl = null;
+      let uploadedPesUrl = null;
+
+      if (data.dst) {
+        const dstBuffer = Buffer.from(data.dst, "hex");
+        const dstBlob = await put(`converted/${Date.now()}.dst`, dstBuffer, {
+          access: "public",
+          token: BLOB_TOKEN,
+        });
+        uploadedDstUrl = dstBlob.url;
+      }
+
+      if (data.pes) {
+        const pesBuffer = Buffer.from(data.pes, "hex");
+        const pesBlob = await put(`converted/${Date.now()}.pes`, pesBuffer, {
+          access: "public",
+          token: BLOB_TOKEN,
+        });
+        uploadedPesUrl = pesBlob.url;
+      }
+
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "Conversion complete",
+        stage: "done",
+        timestamp: new Date().toISOString(),
+      }));
+
+      await redis.set(`preview:${fileUrl}`, JSON.stringify({
+        dstUrl: uploadedDstUrl,
+        pesUrl: uploadedPesUrl,
+        timestamp: new Date().toISOString(),
+      }));
+
+      updateFileStatus(fileUrl, "Converted", uploadedDstUrl);
+      toast.success("File converted!");
+    } catch (err) {
+      toast.error("Conversion failed");
+      console.error("Final convert error:", err);
       updateFileStatus(fileUrl, "Error");
     }
   };
-
-  const handleConvert = async (fileUrl) => {
-  try {
-    const res = await fetch("http://23.94.202.56:5000/convert", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl }),
-    });
-
-    const text = await res.text();
-    console.log("Raw response from Flask:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      console.error("Failed to parse JSON:", err);
-      throw new Error("Invalid response from server");
-    }
-
-    if (!res.ok || (!data.dst && !data.pes)) throw new Error("Conversion failed");
-
-    updateFileStatus(fileUrl, "Converted");
-    toast.success("File converted!");
-  } catch (err) {
-    toast.error("Conversion failed");
-    updateFileStatus(fileUrl, "Error");
-  }
-};
 
   const handlePreview = (fileUrl) => {
     setPreviewFileUrl(fileUrl);
