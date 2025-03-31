@@ -7,11 +7,7 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
-  const { fileUrl } = req.query;
+  let fileUrl = req.method === "POST" ? req.body.fileUrl : req.query.fileUrl;
 
   if (!fileUrl) {
     return res.status(400).json({ error: "Missing fileUrl" });
@@ -26,7 +22,8 @@ export default async function handler(req, res) {
     let parsed;
     try {
       parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-    } catch {
+    } catch (err) {
+      console.error("Failed to parse Redis preview data:", err);
       return res.status(500).json({ error: "Corrupted preview data" });
     }
 
