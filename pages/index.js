@@ -255,21 +255,33 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
+  try {
+    const res = await fetch("http://23.94.202.56:5000/convert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+
+    const text = await res.text();
+    console.log("Raw response from Flask:", text);
+
+    let data;
     try {
-      const res = await fetch("http://23.94.202.56:5000/convert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok || (!data.dst && !data.pes)) throw new Error("Conversion failed");
-      updateFileStatus(fileUrl, "Converted");
-      toast.success("File converted!");
+      data = JSON.parse(text);
     } catch (err) {
-      toast.error("Conversion failed");
-      updateFileStatus(fileUrl, "Error");
+      console.error("Failed to parse JSON:", err);
+      throw new Error("Invalid response from server");
     }
-  };
+
+    if (!res.ok || (!data.dst && !data.pes)) throw new Error("Conversion failed");
+
+    updateFileStatus(fileUrl, "Converted");
+    toast.success("File converted!");
+  } catch (err) {
+    toast.error("Conversion failed");
+    updateFileStatus(fileUrl, "Error");
+  }
+};
 
   const handlePreview = (fileUrl) => {
     setPreviewFileUrl(fileUrl);
