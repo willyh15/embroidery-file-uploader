@@ -1,4 +1,3 @@
-// /pages/api/convert-file.js
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -6,11 +5,11 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";
+const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";  // Ensure this URL is correct
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return res.status(405).json({ error: "Method Not Allowed" });  // Ensure we only accept POST requests
   }
 
   const { fileUrl } = req.body;
@@ -27,7 +26,7 @@ export default async function handler(req, res) {
 
     // Fire-and-forget POST to Flask server (does not wait for result)
     fetch(CONVERT_ENDPOINT, {
-      method: "POST",
+      method: "POST",  // Make sure this is a POST request to your Flask server
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     }).catch((err) => {
