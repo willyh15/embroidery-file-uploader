@@ -142,6 +142,8 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
+  console.log("Starting conversion for:", fileUrl);
+
   try {
     const res = await fetch("/api/convert-file", {
       method: "POST",  // Ensure POST request
@@ -150,11 +152,12 @@ function Home() {
     });
 
     const text = await res.text();
-    console.log("Raw conversion response:", text);
+    console.log("Raw conversion response:", text);  // Log raw response
 
     let result;
     try {
       result = JSON.parse(text);
+      console.log("Parsed result:", result); // Log parsed result
     } catch (err) {
       console.error("Failed to parse JSON:", err);
       throw new Error("Invalid JSON response from /api/convert-file");
@@ -168,8 +171,8 @@ function Home() {
     updateFileStatus(fileUrl, "Converted", result.convertedUrl);
     toast.success("File converted!");
   } catch (err) {
+    console.error("Conversion error:", err);
     toast.error("Conversion failed");
-    console.error("Convert error:", err);
     updateFileStatus(fileUrl, "Error");
   }
 };
