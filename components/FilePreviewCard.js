@@ -67,15 +67,17 @@ export default function FilePreviewCard({
         )}
       </div>
 
-      {file.progress !== undefined && (
+      {typeof file.progress === "number" && (
         <div className="progress-bar" style={{ marginTop: "4px" }}>
           <div
             className="progress-fill"
             style={{
               height: "6px",
               width: `${file.progress}%`,
-              backgroundColor: "#4caf50",
+              backgroundColor:
+                file.status === "Error" ? "#f44336" : file.progress === 100 ? "#4caf50" : "#2196f3",
               borderRadius: "4px",
+              transition: "width 0.3s ease-in-out",
             }}
           />
         </div>
