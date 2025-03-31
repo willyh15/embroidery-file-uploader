@@ -1,4 +1,4 @@
-// /components/FilePreviewCard.js
+import { useEffect, useState } from "react";
 import VisibilityToggle from "./VisibilityToggle";
 import FileActions from "./FileActions";
 
@@ -15,6 +15,30 @@ export default function FilePreviewCard({
   onVectorPreview,
 }) {
   const fileName = file.name || file.url?.split("/").pop() || "Untitled";
+  const [downloadCount, setDownloadCount] = useState(null);
+  const [downloadLogs, setDownloadLogs] = useState([]);
+  const [showLogs, setShowLogs] = useState(false);
+
+  const fetchDownloadStats = async () => {
+    try {
+      const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setDownloadCount(data.count || 0);
+        setDownloadLogs(data.logs || []);
+      } else {
+        console.warn("Failed to fetch download stats", data);
+      }
+    } catch (err) {
+      console.error("Download stats fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDownloadStats();
+    const interval = setInterval(fetchDownloadStats, 10000);
+    return () => clearInterval(interval);
+  }, [file.url]);
 
   return (
     <div className="file-card">
@@ -29,6 +53,11 @@ export default function FilePreviewCard({
             <span className="badge success">DST/PES Ready</span>
           )}
           {file.status === "Error" && <span className="badge error">Failed</span>}
+          {downloadCount !== null && (
+            <span className="badge" title="Total downloads">
+              {downloadCount} downloads
+            </span>
+          )}
         </div>
         {onToggleVisibility && (
           <VisibilityToggle
@@ -63,6 +92,23 @@ export default function FilePreviewCard({
         onDownloadAll={onDownloadAll}
         onVectorPreview={onVectorPreview}
       />
+
+      {downloadLogs.length > 0 && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <button onClick={() => setShowLogs(!showLogs)}>
+            {showLogs ? "Hide" : "View"} Download Logs
+          </button>
+          {showLogs && (
+            <ul style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
+              {downloadLogs.map((log, i) => (
+                <li key={i}>
+                  [{log.type?.toUpperCase() || "?"}] {new Date(log.timestamp).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
