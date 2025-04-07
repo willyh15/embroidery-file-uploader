@@ -1,8 +1,5 @@
 // pages/api/blob-upload-url.js
-import { createUploadUrl } from "@vercel/blob";
-
-// DEBUG: Check if token is actually being injected
-console.log("BLOB_READ_WRITE_TOKEN:", process.env.BLOB_READ_WRITE_TOKEN);
+import { put } from "@vercel/blob";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -16,15 +13,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing filename" });
     }
 
-    const { url, blob } = await createUploadUrl({
-      filename,
+    const result = await put(filename, "", {
       access: "public",
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    return res.status(200).json({ url, blob });
+    return res.status(200).json({ url: result.url, blob: result });
   } catch (err) {
-    console.error("Failed to generate upload URL:", err?.message || err);
+    console.error("Failed to generate upload URL:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }
