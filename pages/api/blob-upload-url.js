@@ -15,7 +15,8 @@ export default async function handler(req, res) {
 
     const { url, blob } = await createUploadUrl({
       filename,
-      access: "public", // Optional but safe to include
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
     return res.status(200).json({ url, blob });
