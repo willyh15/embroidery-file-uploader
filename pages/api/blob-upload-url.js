@@ -1,14 +1,25 @@
-// pages/api/blob-upload-url.js
-import { getSignedUrl } from '@vercel/blob';
-import { NextResponse } from 'next/server';
+import { createUploadUrl } from "@vercel/blob";
 
 export default async function handler(req, res) {
-  const { filename } = req.body;
-  const { url } = await getSignedUrl({
-    access: 'public', // or 'private'
-    token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN,
-    pathname: `converted/${filename}`,
-  });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
-  res.status(200).json({ url });
+  try {
+    const { filename } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: "Missing filename" });
+    }
+
+    const { url, blob } = await createUploadUrl({
+      filename,
+      // Optional: add tags or metadata here
+    });
+
+    return res.status(200).json({ url, blob });
+  } catch (err) {
+    console.error("Failed to generate upload URL:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 }
