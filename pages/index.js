@@ -163,12 +163,12 @@ function Home() {
       throw new Error("Invalid JSON response from /api/convert-file");
     }
 
-    if (!res.ok || (!result.convertedDst && !result.convertedPes)) {
+    if (!res.ok || (!result.convertedPes)) {
       console.error("Conversion failed:", result);
       throw new Error(result.error || "Unknown error during conversion");
     }
 
-    updateFileStatus(fileUrl, "Converted", result.convertedUrl);
+    updateFileStatus(fileUrl, "Converted", result.convertedPes);
     toast.success("File converted!");
   } catch (err) {
     console.error("Conversion error:", err);  // Detailed error log
