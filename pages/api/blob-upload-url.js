@@ -1,3 +1,4 @@
+// pages/api/blob-upload-url.js
 import { createUploadUrl } from "@vercel/blob";
 
 export default async function handler(req, res) {
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
 
     const { url, blob } = await createUploadUrl({
       filename,
-      // Optional: add tags or metadata here
+      access: "public", // Optional but safe to include
     });
 
     return res.status(200).json({ url, blob });
