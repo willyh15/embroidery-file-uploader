@@ -64,7 +64,7 @@ export default function FilePreviewCard({
             </span>
           )}
 
-          {file.status === "Converted" && (
+          {(file.status === "Converted" && file.convertedUrl) && (
             <span className="badge success">DST/PES Ready</span>
           )}
 
