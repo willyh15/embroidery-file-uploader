@@ -1,3 +1,4 @@
+// pages/api/convert-file.js
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -15,7 +16,6 @@ export default async function handler(req, res) {
 
   const { fileUrl } = req.body;
   if (!fileUrl) {
-    console.error("Missing fileUrl in request body.");
     return res.status(400).json({ error: "Missing fileUrl" });
   }
 
@@ -45,7 +45,6 @@ export default async function handler(req, res) {
     }
 
     const result = JSON.parse(raw);
-
     if (!result || (!result.pesUrl && !result.dstUrl)) {
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
