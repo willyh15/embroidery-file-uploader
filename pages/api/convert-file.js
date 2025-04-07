@@ -45,8 +45,29 @@ export default async function handler(req, res) {
     }
 
     const result = JSON.parse(raw);
-    return res.status(200).json(result);
 
+    if (!result || (!result.pesUrl && !result.dstUrl)) {
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "Conversion failed",
+        stage: "error",
+        timestamp: new Date().toISOString(),
+      }));
+      return res.status(500).json({ error: "Conversion did not return output URLs." });
+    }
+
+    await redis.set(`status:${fileUrl}`, JSON.stringify({
+      status: "Converted",
+      stage: "done",
+      timestamp: new Date().toISOString(),
+      pesUrl: result.pesUrl || null,
+      dstUrl: result.dstUrl || null,
+    }));
+
+    return res.status(200).json({
+      message: "Conversion complete",
+      pesUrl: result.pesUrl,
+      dstUrl: result.dstUrl,
+    });
   } catch (err) {
     console.error("Trigger error:", err);
     await redis.set(`status:${fileUrl}`, JSON.stringify({
