@@ -10,7 +10,6 @@ const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/co
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    console.error("Invalid method: expected POST");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
@@ -45,7 +44,9 @@ export default async function handler(req, res) {
     }
 
     const result = JSON.parse(raw);
-    if (!result || (!result.pesUrl && !result.dstUrl)) {
+    const pesUrl = result.convertedPes;
+
+    if (!pesUrl) {
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
@@ -58,14 +59,12 @@ export default async function handler(req, res) {
       status: "Converted",
       stage: "done",
       timestamp: new Date().toISOString(),
-      pesUrl: result.pesUrl || null,
-      dstUrl: result.dstUrl || null,
+      pesUrl,
     }));
 
     return res.status(200).json({
       message: "Conversion complete",
-      pesUrl: result.pesUrl,
-      dstUrl: result.dstUrl,
+      pesUrl,
     });
   } catch (err) {
     console.error("Trigger error:", err);
