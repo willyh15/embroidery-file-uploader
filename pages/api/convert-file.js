@@ -1,3 +1,4 @@
+// /pages/api/convert-file.js
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -34,17 +35,9 @@ export default async function handler(req, res) {
     const raw = await response.text();
     console.log("Flask response:", raw);
 
-    if (!response.ok) {
-      await redis.set(`status:${fileUrl}`, JSON.stringify({
-        status: "Flask request failed",
-        stage: "error",
-        timestamp: new Date().toISOString(),
-      }));
-      return res.status(500).json({ error: "Failed to submit conversion job." });
-    }
-
     const result = JSON.parse(raw);
-    if (!result || (!result.convertedPes && !result.convertedDst)) {
+
+    if (!result || (!result.pesUrl && !result.dstUrl)) {
       await redis.set(`status:${fileUrl}`, JSON.stringify({
         status: "Conversion failed",
         stage: "error",
@@ -57,14 +50,14 @@ export default async function handler(req, res) {
       status: "Converted",
       stage: "done",
       timestamp: new Date().toISOString(),
-      pesUrl: result.convertedPes || null,
-      dstUrl: result.convertedDst || null,
+      pesUrl: result.pesUrl || null,
+      dstUrl: result.dstUrl || null,
     }));
 
     return res.status(200).json({
       message: "Conversion complete",
-      pesUrl: result.convertedPes,
-      dstUrl: result.convertedDst,
+      pesUrl: result.pesUrl,
+      dstUrl: result.dstUrl,
     });
   } catch (err) {
     console.error("Trigger error:", err);
