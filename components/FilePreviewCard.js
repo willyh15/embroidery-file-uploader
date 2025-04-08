@@ -26,6 +26,8 @@ export default function FilePreviewCard({
       if (res.ok) {
         setDownloadCount(data.count || 0);
         setDownloadLogs(data.logs || []);
+      } else {
+        console.warn("Failed to fetch download stats", data);
       }
     } catch (err) {
       console.error("Download stats fetch error:", err);
@@ -39,7 +41,7 @@ export default function FilePreviewCard({
   }, [file.url]);
 
   const formatStage = (stage) =>
-    stage.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    stage?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="file-card">
@@ -47,19 +49,26 @@ export default function FilePreviewCard({
         <strong>{fileName}</strong>
         <div className="badges">
           {file.status && <span className="badge">{file.status}</span>}
-          {file.stage && file.stage !== "done" && (
-            <span className="badge info" title={`${file.status} (${formatStage(file.stage)})`}>
+          {file.stage && file.stage !== "done" && file.stage !== "pending" && (
+            <span
+              className="badge info"
+              title={`${file.status || "Processing"} (${formatStage(file.stage)})\n${
+                file.timestamp ? new Date(file.timestamp).toLocaleString() : ""
+              }`}
+            >
               {formatStage(file.stage)}
             </span>
           )}
-          {file.status === "Converted" && file.convertedUrl && (
-            <span className="badge success">PES Ready</span>
+          {file.status === "Converted" && (
+            <span className="badge success">DST/PES Ready</span>
           )}
           {file.status === "Error" && (
-            <span className="badge error">{file.stage || "Error"}</span>
+            <span className="badge error" title={file.stage}>Failed</span>
           )}
           {downloadCount !== null && (
-            <span className="badge">{downloadCount} downloads</span>
+            <span className="badge" title="Total downloads">
+              {downloadCount} downloads
+            </span>
           )}
         </div>
         {onToggleVisibility && (
@@ -75,6 +84,7 @@ export default function FilePreviewCard({
           <div
             className="progress-fill"
             style={{
+              height: "6px",
               width: `${file.progress}%`,
               backgroundColor:
                 file.status === "Error"
@@ -82,6 +92,8 @@ export default function FilePreviewCard({
                   : file.progress === 100
                   ? "#4caf50"
                   : "#2196f3",
+              borderRadius: "4px",
+              transition: "width 0.3s ease-in-out",
             }}
           />
         </div>
@@ -99,27 +111,13 @@ export default function FilePreviewCard({
         onVectorPreview={onVectorPreview}
       />
 
-      {file.convertedUrl && (
-        <div style={{ marginTop: "0.5rem" }}>
-          <a
-            href={file.convertedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="download-link"
-            onClick={() => onDownload?.(file.url, "pes")}
-          >
-            Download PES
-          </a>
-        </div>
-      )}
-
       {downloadLogs.length > 0 && (
         <div style={{ marginTop: "0.5rem" }}>
           <button onClick={() => setShowLogs(!showLogs)}>
             {showLogs ? "Hide" : "View"} Download Logs
           </button>
           {showLogs && (
-            <ul className="download-log">
+            <ul style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
               {downloadLogs.map((log, i) => (
                 <li key={i}>
                   [{log.type?.toUpperCase() || "?"}] {new Date(log.timestamp).toLocaleString()}
