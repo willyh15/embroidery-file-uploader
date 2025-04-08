@@ -14,10 +14,15 @@ function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     const fetchDownloadStats = async () => {
