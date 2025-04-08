@@ -5,33 +5,42 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
-import Sidebar from "../components/Sidebar";
-import Loader from "../components/Loader";
-import UploadSection from "../components/UploadSection";
-import FilePreviewCard from "../components/FilePreviewCard";
-import ConvertAllButton from "../components/ConvertAllButton";
-import SVGPreviewModal from "../components/SVGPreviewModal";
-import StitchPreviewModal from "../components/StitchPreviewModal";
-import StitchEditorModal from "../components/StitchEditorModal";
-
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const dropRef = useRef(null);
 
+  const [isClient, setIsClient] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
-  const [editorFileUrl, setEditorFileUrl] = useState(null);
-  const [vectorPreviewData, setVectorPreviewData] = useState(null);
-  const [autoStitchEnabled, setAutoStitchEnabled] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
+
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/signin");
-  }, [status, router]);
+    const fetchDownloadStats = async () => {
+      const stats = {};
+      for (const file of uploadedFiles) {
+        try {
+          const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
+          const data = await res.json();
+          if (res.ok) stats[file.url] = data;
+        } catch (err) {
+          console.error("Stats error:", err);
+        }
+      }
+      setDownloadStats(stats);
+    };
+    if (uploadedFiles.length > 0) fetchDownloadStats();
+  }, [uploadedFiles]);
+
+  const updateFileStatus = (url, status, stage = "", pesUrl = "") => {
+    setUploadedFiles(prev =>
+      prev.map(f => f.url === url ? { ...f, status, stage, convertedPes: pesUrl } : f)
+    );
+  };
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -39,17 +48,15 @@ function Home() {
     setUploadProgress(0);
     uploadFilesWithProgress({
       files,
-      onProgress: (p) => setUploadProgress(p),
+      onProgress: setUploadProgress,
       onComplete: (uploaded) => {
-        const entries = uploaded.map((f) => ({
-          url: f.url,
-          name: f.name,
+        const newFiles = uploaded.map(file => ({
+          ...file,
           status: "Uploaded",
           progress: 100,
         }));
-        setUploadedFiles((prev) => [...prev, ...entries]);
+        setUploadedFiles(prev => [...prev, ...newFiles]);
         toast.success("Upload complete");
-        if (autoStitchEnabled) entries.forEach((f) => handleAutoStitch(f.url));
         setUploading(false);
       },
       onError: () => {
@@ -66,101 +73,93 @@ function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
-      const result = await res.json();
-      if (!res.ok || !result.convertedPes) throw new Error(result.error);
-      updateFile(fileUrl, { status: "Converted", convertedPes: result.convertedPes });
+      const text = await res.text();
+      const result = JSON.parse(text);
+      if (!res.ok || !result.pesUrl) throw new Error("No PES URL");
+      updateFileStatus(fileUrl, "Converted", "done", result.pesUrl);
       toast.success("Converted!");
     } catch (err) {
-      toast.error("Convert error");
-      updateFile(fileUrl, { status: "Error" });
+      toast.error("Conversion failed");
+      updateFileStatus(fileUrl, "Error", "failed");
     }
   };
 
-  const handleAutoStitch = async (fileUrl) => {
+  const handleDownload = async (fileUrl, format) => {
     try {
-      const res = await fetch("/api/auto-stitch", {
+      await fetch("/api/log-download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
+        body: JSON.stringify({ fileUrl, format }),
       });
-      if (!res.ok) throw new Error("Auto-stitch failed");
-      toast.success("Auto-stitched!");
-      updateFile(fileUrl, { status: "Auto-stitched" });
-    } catch {
-      toast.error("Auto-stitch error");
-      updateFile(fileUrl, { status: "Error" });
+    } catch (err) {
+      console.error("Log error:", err);
     }
   };
 
-  const updateFile = (fileUrl, patch) => {
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.url === fileUrl ? { ...f, ...patch } : f))
-    );
-  };
-
-  const handleRetry = async (fileUrl) => {
-    const file = uploadedFiles.find((f) => f.url === fileUrl);
-    if (!file) return;
-    file.status === "Error" ? handleConvert(fileUrl) : handleAutoStitch(fileUrl);
-  };
-
-  if (!isClient || status === "loading") return <Loader />;
+  if (!isClient || status === "loading") return null;
   if (!session) return null;
 
   return (
-    <div>
+    <div className="container">
       <Toaster position="top-right" />
-      <Sidebar isOpen={true} toggle={() => {}} />
-      <div className="main-content container">
-        <h2>Welcome, {session.user?.name}</h2>
-        <UploadSection
-          onUpload={handleUpload}
-          uploading={uploading}
-          uploadProgress={uploadProgress}
+      <h2>Welcome, {session.user.name}</h2>
+      <button onClick={() => signOut()}>Sign out</button>
+
+      <div
+        ref={dropRef}
+        className={`upload-box ${uploading ? "dragover" : ""}`}
+        onDragEnter={() => dropRef.current.classList.add("dragover")}
+        onDragLeave={() => dropRef.current.classList.remove("dragover")}
+      >
+        <input
+          type="file"
+          multiple
+          onChange={(e) => handleUpload(Array.from(e.target.files))}
         />
-
-        {uploadedFiles.length > 0 && (
-          <>
-            <ConvertAllButton onConvertAll={() =>
-              uploadedFiles.forEach((f) => handleConvert(f.url))
-            } />
-            {uploadedFiles.map((file) => (
-              <FilePreviewCard
-                key={file.url}
-                file={file}
-                onConvert={() => handleConvert(file.url)}
-                onAutoStitch={() => handleAutoStitch(file.url)}
-                onRetry={() => handleRetry(file.url)}
-                onPreview={() => setPreviewFileUrl(file.url)}
-                onEdit={() => setEditorFileUrl(file.url)}
-                onVectorPreview={() => {
-                  fetch("/api/vector-preview", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ fileUrl: file.url }),
-                  })
-                    .then((res) => res.json())
-                    .then((data) => {
-                      if (!data.vectorSvgData) throw new Error();
-                      setVectorPreviewData(data.vectorSvgData);
-                    })
-                    .catch(() => toast.error("Vector preview failed"));
-                }}
-              />
-            ))}
-          </>
-        )}
-
-        {previewFileUrl && (
-          <StitchPreviewModal fileUrl={previewFileUrl} onClose={() => setPreviewFileUrl(null)} />
-        )}
-        {editorFileUrl && (
-          <StitchEditorModal fileUrl={editorFileUrl} onClose={() => setEditorFileUrl(null)} />
-        )}
-        {vectorPreviewData && (
-          <SVGPreviewModal svgData={vectorPreviewData} onClose={() => setVectorPreviewData(null)} />
-        )}
+        <p>Drag & Drop files or click to upload</p>
       </div>
+
+      {uploading && (
+        <div className="progress-container">
+          <div className="progress-bar" style={{ width: `${uploadProgress}%` }} />
+        </div>
+      )}
+
+      {uploadedFiles.map(file => (
+        <div key={file.url} className="file-card">
+          <div className="file-card-header">
+            <strong>{file.name}</strong>
+            {file.status && <span className="badge">{file.status}</span>}
+            {file.stage && <span className="badge info">{file.stage}</span>}
+            {downloadStats[file.url] && (
+              <span className="badge">{downloadStats[file.url].count || 0} downloads</span>
+            )}
+          </div>
+
+          {typeof file.progress === "number" && (
+            <div className="progress-bar" title={`${file.progress}%`}>
+              <div
+                className="progress-fill"
+                style={{ width: `${file.progress}%` }}
+              />
+            </div>
+          )}
+
+          <div className="file-actions">
+            <button onClick={() => handleConvert(file.url)}>Convert</button>
+            {file.convertedPes && (
+              <a
+                href={file.convertedPes}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => handleDownload(file.url, "pes")}
+              >
+                <button>Download PES</button>
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
