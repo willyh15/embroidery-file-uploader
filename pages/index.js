@@ -12,8 +12,6 @@ function Home() {
   const [isClient, setIsClient] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -21,72 +19,85 @@ function Home() {
   }, [status]);
 
   const handleUpload = async (files) => {
-  if (!files.length) return;
+    if (!files.length) return;
+    setUploading(true);
 
-  setUploading(true);
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
 
-  const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
 
-  try {
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
+      const newFiles = data.urls.map(file => ({
+        ...file,
+        status: "Uploaded",
+        pesUrl: "",
+        taskId: "",
+        stage: "",
+      }));
 
-    const newFiles = data.urls.map(file => ({
-      ...file,
-      status: "Uploaded",
-      pesUrl: "",
-      taskId: "",
-    }));
-
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-    toast.success("Upload complete");
-  } catch (err) {
-    toast.error(err.message);
-  } finally {
-    setUploading(false);
-  }
-};
-
-const handleConvert = async (fileUrl) => {
-  try {
-    const res = await fetch("/api/convert-file", {
-      method: "POST",
-      body: JSON.stringify({ fileUrl }),
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.taskId) throw new Error("Conversion failed to start");
-
-    pollConversionStatus(data.taskId, fileUrl);
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
-
-const pollConversionStatus = (taskId, fileUrl) => {
-  const interval = setInterval(async () => {
-    const res = await fetch(`http://23.94.202.56:5000/status/${taskId}`);
-    const statusData = await res.json();
-
-    if (statusData.state === "done") {
-      updateFileStatus(fileUrl, "Converted", statusData.pesUrl);
-      clearInterval(interval);
-      toast.success("Conversion complete");
-    } else if (statusData.state === "error") {
-      updateFileStatus(fileUrl, "Error");
-      clearInterval(interval);
-      toast.error("Conversion failed");
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      toast.success("Upload complete");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
     }
-  }, 3000);
-};
+  };
 
-const updateFileStatus = (fileUrl, status, pesUrl = "") => {
-  setUploadedFiles(prev =>
-    prev.map(f => f.url === fileUrl ? { ...f, status, pesUrl } : f)
-  );
-};
+  const handleConvert = async (fileUrl) => {
+    updateFileStatus(fileUrl, "Converting", "initiating");
+
+    try {
+      const res = await fetch("/api/convert-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.taskId) throw new Error("Conversion failed to start");
+
+      updateFileStatus(fileUrl, "Converting", "processing");
+      pollConversionStatus(data.taskId, fileUrl);
+    } catch (err) {
+      toast.error(err.message);
+      updateFileStatus(fileUrl, "Error", "failed");
+    }
+  };
+
+  const pollConversionStatus = (taskId, fileUrl) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`http://23.94.202.56:5000/status/${taskId}`);
+        const statusData = await res.json();
+
+        if (statusData.state === "done") {
+          updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
+          clearInterval(interval);
+          toast.success("Conversion complete");
+        } else if (statusData.state === "error") {
+          updateFileStatus(fileUrl, "Error", "failed");
+          clearInterval(interval);
+          toast.error("Conversion failed");
+        } else {
+          updateFileStatus(fileUrl, "Converting", statusData.state);
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        toast.error("Polling error");
+        clearInterval(interval);
+      }
+    }, 3000);
+  };
+
+  const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
+    setUploadedFiles(prev =>
+      prev.map(f => f.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
+    );
+  };
 
   const handleDownload = async (fileUrl, format) => {
     try {
@@ -123,12 +134,6 @@ const updateFileStatus = (fileUrl, status, pesUrl = "") => {
         <p>Drag & Drop files or click to upload</p>
       </div>
 
-      {uploading && (
-        <div className="progress-container">
-          <div className="progress-bar" style={{ width: `${uploadProgress}%` }} />
-        </div>
-      )}
-
       {uploadedFiles.map(file => (
         <div key={file.url} className="file-card">
           <div className="file-card-header">
@@ -138,8 +143,11 @@ const updateFileStatus = (fileUrl, status, pesUrl = "") => {
           </div>
 
           <div className="file-actions">
-            <button onClick={() => handleConvert(file.url)}>Convert</button>
-            {file.convertedPes && (
+            {file.status === "Uploaded" && (
+              <button onClick={() => handleConvert(file.url)}>Convert</button>
+            )}
+            {file.status === "Converting" && <span>Conversion in progress...</span>}
+            {file.status === "Converted" && file.convertedPes && (
               <a
                 href={file.convertedPes}
                 target="_blank"
@@ -148,6 +156,9 @@ const updateFileStatus = (fileUrl, status, pesUrl = "") => {
               >
                 <button>Download PES</button>
               </a>
+            )}
+            {file.status === "Error" && (
+              <button onClick={() => handleConvert(file.url)}>Retry</button>
             )}
           </div>
         </div>
