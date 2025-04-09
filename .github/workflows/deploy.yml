@@ -39,7 +39,8 @@ jobs:
             react-zoom-pan-pinch \
             @upstash/redis \
             node-fetch \
-            react-hot-toast
+            react-hot-toast \
+            formidable
 
       - name: "🏗️ Build Project"
         run: npm run build
