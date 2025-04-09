@@ -25,7 +25,6 @@ export default async function handler(req, res) {
     try {
       const formData = new FormData();
 
-      // Ensure files are handled as an array
       const uploadedFiles = Array.isArray(files.files) ? files.files : [files.files];
 
       uploadedFiles.forEach((file) => {
@@ -38,9 +37,21 @@ export default async function handler(req, res) {
         body: formData,
       });
 
-      const data = await flaskResponse.json();
+      const text = await flaskResponse.text();
+      console.log("Flask raw response:", text);
 
-      if (!flaskResponse.ok) throw new Error(data.error || "Flask upload failed");
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (jsonErr) {
+        console.error("Failed to parse JSON from Flask:", jsonErr);
+        return res.status(500).json({ error: "Invalid JSON from Flask", details: text });
+      }
+
+      if (!flaskResponse.ok) {
+        console.error("Flask Error Response:", data);
+        throw new Error(data.error || "Flask upload failed");
+      }
 
       return res.status(200).json(data);
     } catch (error) {
