@@ -16,29 +16,9 @@ function Home() {
   const [downloadStats, setDownloadStats] = useState({});
 
   useEffect(() => setIsClient(true), []);
-
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    const fetchDownloadStats = async () => {
-      const stats = {};
-      for (const file of uploadedFiles) {
-        try {
-          const res = await fetch(`/api/get-download-stats?fileUrl=${encodeURIComponent(file.url)}`);
-          const data = await res.json();
-          if (res.ok) stats[file.url] = data;
-        } catch (err) {
-          console.error("Stats error:", err);
-        }
-      }
-      setDownloadStats(stats);
-    };
-    if (uploadedFiles.length > 0) fetchDownloadStats();
-  }, [uploadedFiles]);
+    if (status === "unauthenticated") router.push("/auth/signin");
+  }, [status]);
 
   const updateFileStatus = (url, status, stage = "", pesUrl = "") => {
     setUploadedFiles(prev =>
@@ -48,13 +28,12 @@ function Home() {
 
   const handleUpload = async (files) => {
     if (!files.length) return;
+
     setUploading(true);
     setUploadProgress(0);
 
     const formData = new FormData();
-    for (const file of files) {
-      formData.append("files", file);
-    }
+    files.forEach(file => formData.append("files", file));
 
     try {
       const res = await fetch("/api/upload", {
@@ -63,23 +42,20 @@ function Home() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.urls?.length) throw new Error("Upload failed");
+      if (!res.ok) throw new Error(data.error || "Upload failed");
 
-      const newFiles = data.urls.map((entry) => ({
-        url: entry.url,
-        name: entry.name,
+      const newFiles = data.urls.map(file => ({
+        ...file,
         status: "Uploaded",
         progress: 100,
       }));
 
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
+      setUploadedFiles(prev => [...prev, ...newFiles]);
       toast.success("Upload complete");
     } catch (err) {
-      console.error("Upload error:", err);
       toast.error("Upload failed");
     } finally {
       setUploading(false);
-      setUploadProgress(100);
     }
   };
 
@@ -91,8 +67,7 @@ function Home() {
         body: JSON.stringify({ fileUrl }),
       });
 
-      const text = await res.text();
-      const result = JSON.parse(text);
+      const result = await res.json();
       if (!res.ok || !result.pesUrl) throw new Error("No PES URL");
 
       updateFileStatus(fileUrl, "Converted", "done", result.pesUrl);
@@ -112,7 +87,7 @@ function Home() {
         body: JSON.stringify({ fileUrl, format }),
       });
     } catch (err) {
-      console.error("Log error:", err);
+      console.error("Download logging error:", err);
     }
   };
 
@@ -151,19 +126,7 @@ function Home() {
             <strong>{file.name}</strong>
             {file.status && <span className="badge">{file.status}</span>}
             {file.stage && <span className="badge info">{file.stage}</span>}
-            {downloadStats[file.url] && (
-              <span className="badge">{downloadStats[file.url].count || 0} downloads</span>
-            )}
           </div>
-
-          {typeof file.progress === "number" && (
-            <div className="progress-bar" title={`${file.progress}%`}>
-              <div
-                className="progress-fill"
-                style={{ width: `${file.progress}%` }}
-              />
-            </div>
-          )}
 
           <div className="file-actions">
             <button onClick={() => handleConvert(file.url)}>Convert</button>
