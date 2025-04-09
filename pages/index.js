@@ -3,7 +3,6 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
-import { uploadFilesWithProgress } from "../lib/uploadWithProgress";
 
 function Home() {
   const { data: session, status } = useSession();
@@ -51,24 +50,41 @@ function Home() {
     if (!files.length) return;
     setUploading(true);
     setUploadProgress(0);
-    uploadFilesWithProgress({
-      files,
-      onProgress: setUploadProgress,
-      onComplete: (uploaded) => {
-        const newFiles = uploaded.map(file => ({
-          ...file,
+
+    const uploaded = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const formData = new FormData();
+      formData.append("files", files[i]);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.urls?.length) {
+          throw new Error(data.error || "Upload failed");
+        }
+
+        uploaded.push({
+          url: data.urls[0].url,
+          name: files[i].name,
           status: "Uploaded",
           progress: 100,
-        }));
-        setUploadedFiles(prev => [...prev, ...newFiles]);
-        toast.success("Upload complete");
-        setUploading(false);
-      },
-      onError: () => {
-        toast.error("Upload failed");
-        setUploading(false);
-      },
-    });
+        });
+
+        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+      } catch (err) {
+        toast.error(`Upload failed for ${files[i].name}`);
+        console.error(err);
+      }
+    }
+
+    setUploadedFiles((prev) => [...prev, ...uploaded]);
+    setUploading(false);
+    toast.success("Upload complete");
   };
 
   const handleConvert = async (fileUrl) => {
