@@ -1,26 +1,32 @@
-export const config = { runtime: "edge" };
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    const { fileUrl } = await req.json();
-    const res = await fetch("http://23.94.202.56:5000/convert", {
+    const { fileUrl } = req.body;
+
+    const response = await fetch("http://23.94.202.56:5000/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
     });
 
-    const data = await res.json();
+    const data = await response.json();
 
-    if (!res.ok || !data.task_id) {
+    if (!response.ok || !data.task_id) {
       throw new Error(data.error || "Conversion initiation failed");
     }
 
-    return new Response(JSON.stringify({ taskId: data.task_id }), { status: 202 });
+    return res.status(202).json({ taskId: data.task_id });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
