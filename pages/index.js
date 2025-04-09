@@ -20,64 +20,73 @@ function Home() {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status]);
 
-  const updateFileStatus = (url, status, stage = "", pesUrl = "") => {
-    setUploadedFiles(prev =>
-      prev.map(f => f.url === url ? { ...f, status, stage, convertedPes: pesUrl } : f)
-    );
-  };
-
   const handleUpload = async (files) => {
-    if (!files.length) return;
+  if (!files.length) return;
 
-    setUploading(true);
-    setUploadProgress(0);
+  setUploading(true);
 
-    const formData = new FormData();
-    files.forEach(file => formData.append("files", file));
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
 
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+  try {
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+    const newFiles = data.urls.map(file => ({
+      ...file,
+      status: "Uploaded",
+      pesUrl: "",
+      taskId: "",
+    }));
 
-      const newFiles = data.urls.map(file => ({
-        ...file,
-        status: "Uploaded",
-        progress: 100,
-      }));
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    toast.success("Upload complete");
+  } catch (err) {
+    toast.error(err.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
-      setUploadedFiles(prev => [...prev, ...newFiles]);
-      toast.success("Upload complete");
-    } catch (err) {
-      toast.error("Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  };
+const handleConvert = async (fileUrl) => {
+  try {
+    const res = await fetch("/api/convert-file", {
+      method: "POST",
+      body: JSON.stringify({ fileUrl }),
+    });
 
-  const handleConvert = async (fileUrl) => {
-    try {
-      const res = await fetch("/api/convert-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
+    const data = await res.json();
+    if (!res.ok || !data.taskId) throw new Error("Conversion failed to start");
 
-      const result = await res.json();
-      if (!res.ok || !result.pesUrl) throw new Error("No PES URL");
+    pollConversionStatus(data.taskId, fileUrl);
+  } catch (err) {
+    toast.error(err.message);
+  }
+};
 
-      updateFileStatus(fileUrl, "Converted", "done", result.pesUrl);
-      toast.success("Converted!");
-    } catch (err) {
-      console.error("Conversion error:", err);
+const pollConversionStatus = (taskId, fileUrl) => {
+  const interval = setInterval(async () => {
+    const res = await fetch(`http://23.94.202.56:5000/status/${taskId}`);
+    const statusData = await res.json();
+
+    if (statusData.state === "done") {
+      updateFileStatus(fileUrl, "Converted", statusData.pesUrl);
+      clearInterval(interval);
+      toast.success("Conversion complete");
+    } else if (statusData.state === "error") {
+      updateFileStatus(fileUrl, "Error");
+      clearInterval(interval);
       toast.error("Conversion failed");
-      updateFileStatus(fileUrl, "Error", "failed");
     }
-  };
+  }, 3000);
+};
+
+const updateFileStatus = (fileUrl, status, pesUrl = "") => {
+  setUploadedFiles(prev =>
+    prev.map(f => f.url === fileUrl ? { ...f, status, pesUrl } : f)
+  );
+};
 
   const handleDownload = async (fileUrl, format) => {
     try {
