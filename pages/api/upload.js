@@ -15,10 +15,18 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ error: "No files uploaded" }), { status: 400 });
     }
 
-    const uploadedFiles = files.map((file, i) => ({
-      name: file.name || `file-${i}`,
-      url: URL.createObjectURL(file), // placeholder for mock; replace with actual upload logic
-    }));
+    const uploadedFiles = [];
+
+    for (const file of files) {
+      const buffer = await file.arrayBuffer();
+      const blob = new Blob([buffer]);
+      const url = URL.createObjectURL(blob);
+
+      uploadedFiles.push({
+        name: file.name,
+        url,
+      });
+    }
 
     return new Response(JSON.stringify({ urls: uploadedFiles }), { status: 200 });
   } catch (err) {
