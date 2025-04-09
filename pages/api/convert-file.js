@@ -1,45 +1,76 @@
-export const config = {
-  runtime: "edge",
-};
+// /pages/api/convert-file.js
+import { Redis } from "@upstash/redis";
 
-export default async function handler(req) {
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
+
+const CONVERT_ENDPOINT = process.env.CONVERT_URL || "http://23.94.202.56:5000/convert";
+
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-    });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { fileUrl } = await req.json();
+  const { fileUrl } = req.body;
   if (!fileUrl) {
-    return new Response(JSON.stringify({ error: "Missing fileUrl" }), {
-      status: 400,
-    });
+    return res.status(400).json({ error: "Missing fileUrl" });
   }
-
-  const response = await fetch("http://23.94.202.56:5000/convert", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fileUrl }),
-  });
-
-  const text = await response.text();
-  let result;
 
   try {
-    result = JSON.parse(text);
+    await redis.set(`status:${fileUrl}`, JSON.stringify({
+      status: "Queued",
+      stage: "submitted",
+      timestamp: new Date().toISOString(),
+    }));
+
+    const flaskRes = await fetch(CONVERT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
+
+    const raw = await flaskRes.text();
+
+    if (!flaskRes.ok) {
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "Flask error",
+        stage: "error",
+        timestamp: new Date().toISOString(),
+      }));
+      return res.status(500).json({ error: "Flask backend failed", details: raw });
+    }
+
+    let result;
+    try {
+      result = JSON.parse(raw);
+    } catch (err) {
+      return res.status(500).json({ error: "Invalid JSON from Flask" });
+    }
+
+    const { pesUrl, dstUrl } = result;
+
+    if (!pesUrl) {
+      await redis.set(`status:${fileUrl}`, JSON.stringify({
+        status: "No output",
+        stage: "error",
+        timestamp: new Date().toISOString(),
+      }));
+      return res.status(500).json({ error: "No PES output received" });
+    }
+
+    await redis.set(`status:${fileUrl}`, JSON.stringify({
+      status: "Converted",
+      stage: "done",
+      timestamp: new Date().toISOString(),
+      pesUrl,
+      dstUrl,
+    }));
+
+    return res.status(200).json({ pesUrl, dstUrl });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Invalid JSON from Flask" }), {
-      status: 500,
-    });
+    console.error("Convert API Error:", err);
+    return res.status(500).json({ error: "Conversion failed", details: err.message });
   }
-
-  if (!result.pesUrl) {
-    return new Response(JSON.stringify({ error: "Conversion did not return output URLs." }), {
-      status: 500,
-    });
-  }
-
-  return new Response(JSON.stringify({ pesUrl: result.pesUrl }), {
-    status: 200,
-  });
 }
