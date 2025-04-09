@@ -1,4 +1,7 @@
 import formidable from "formidable";
+import fs from "fs";
+import fetch from "node-fetch";
+import FormData from "form-data";
 
 export const config = {
   api: {
@@ -16,19 +19,20 @@ export default async function handler(req, res) {
   form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error("Formidable Error:", err);
-      return res.status(500).json({ error: "Error parsing the files" });
+      return res.status(500).json({ error: "Error parsing files" });
     }
 
-    const formData = new FormData();
-
-    // Handle multiple files
-    const uploadedFiles = files.files instanceof Array ? files.files : [files.files];
-
-    uploadedFiles.forEach((file) => {
-      formData.append("files", new Blob([fs.readFileSync(file.filepath)]), file.originalFilename);
-    });
-
     try {
+      const formData = new FormData();
+
+      // Ensure files are handled as an array
+      const uploadedFiles = Array.isArray(files.files) ? files.files : [files.files];
+
+      uploadedFiles.forEach((file) => {
+        const fileBuffer = fs.readFileSync(file.filepath);
+        formData.append("files", fileBuffer, file.originalFilename);
+      });
+
       const flaskResponse = await fetch("http://23.94.202.56:5000/upload", {
         method: "POST",
         body: formData,
