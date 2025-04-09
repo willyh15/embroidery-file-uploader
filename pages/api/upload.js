@@ -1,32 +1,36 @@
-export const config = { runtime: "edge" };
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    const formData = await req.formData();
-    const files = formData.getAll("files");
+    const formData = new FormData();
+    const files = req.body.files;
 
-    if (!files.length) {
-      return new Response(JSON.stringify({ error: "No files uploaded" }), { status: 400 });
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
     }
 
-    const flaskFormData = new FormData();
-    files.forEach(file => flaskFormData.append("files", file));
+    files.forEach(file => formData.append("files", file));
 
     const flaskResponse = await fetch("http://23.94.202.56:5000/upload", {
       method: "POST",
-      body: flaskFormData,
+      body: formData,
     });
 
     const data = await flaskResponse.json();
 
     if (!flaskResponse.ok) throw new Error(data.error || "Flask upload failed");
 
-    return new Response(JSON.stringify(data), { status: 200 });
+    return res.status(200).json(data);
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
