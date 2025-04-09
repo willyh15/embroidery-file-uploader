@@ -51,40 +51,36 @@ function Home() {
     setUploading(true);
     setUploadProgress(0);
 
-    const uploaded = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const formData = new FormData();
-      formData.append("files", files[i]);
-
-      try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data.urls?.length) {
-          throw new Error(data.error || "Upload failed");
-        }
-
-        uploaded.push({
-          url: data.urls[0].url,
-          name: files[i].name,
-          status: "Uploaded",
-          progress: 100,
-        });
-
-        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-      } catch (err) {
-        toast.error(`Upload failed for ${files[i].name}`);
-        console.error(err);
-      }
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("files", file);
     }
 
-    setUploadedFiles((prev) => [...prev, ...uploaded]);
-    setUploading(false);
-    toast.success("Upload complete");
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.urls?.length) throw new Error("Upload failed");
+
+      const newFiles = data.urls.map((entry) => ({
+        url: entry.url,
+        name: entry.name,
+        status: "Uploaded",
+        progress: 100,
+      }));
+
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
+      toast.success("Upload complete");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress(100);
+    }
   };
 
   const handleConvert = async (fileUrl) => {
@@ -94,12 +90,15 @@ function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUrl }),
       });
+
       const text = await res.text();
       const result = JSON.parse(text);
       if (!res.ok || !result.pesUrl) throw new Error("No PES URL");
+
       updateFileStatus(fileUrl, "Converted", "done", result.pesUrl);
       toast.success("Converted!");
     } catch (err) {
+      console.error("Conversion error:", err);
       toast.error("Conversion failed");
       updateFileStatus(fileUrl, "Error", "failed");
     }
