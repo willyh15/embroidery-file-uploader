@@ -71,7 +71,7 @@ function Home() {
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
-        const statusUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL}/status/${taskId}`;
+        const statusUrl = `https://embroideryfiles.duckdns.org/status/${taskId}`;
         const res = await fetch(statusUrl);
         const statusData = await res.json();
 

@@ -1,4 +1,3 @@
-import https from "https";
 import { IncomingForm } from "formidable";
 import fs from "fs";
 import fetch from "node-fetch";
@@ -32,12 +31,9 @@ export default async function handler(req, res) {
         formData.append("files", fileBuffer, safeFilename);
       });
 
-      const agent = new https.Agent({ rejectUnauthorized: false }); // 👈 bypass cert check
-
-      const flaskResponse = await fetch("https://23.94.202.56/upload", {
+      const flaskResponse = await fetch("https://embroideryfiles.duckdns.org/upload", {
         method: "POST",
         body: formData,
-        agent, // 👈 trust self-signed cert
       });
 
       const text = await flaskResponse.text();
