@@ -1,9 +1,17 @@
-// Updated `index.js` with animated icons and success/error badges
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
+import {
+  Upload,
+  Loader,
+  CheckCircle,
+  AlertTriangle,
+  ImageIcon,
+  FileClock,
+  FileCheck,
+} from "lucide-react";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 
@@ -20,17 +28,6 @@ function Home() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status]);
-
-  const stageColor = {
-    downloading: "bg-blue-400",
-    resizing: "bg-indigo-400",
-    vectorizing: "bg-purple-400",
-    "converting-pes": "bg-pink-500",
-    done: "bg-green-500",
-    error: "bg-red-500",
-    initiating: "bg-yellow-400",
-    processing: "bg-yellow-500",
-  };
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -97,7 +94,7 @@ function Home() {
           clearInterval(interval);
           toast.error("Conversion failed");
         } else {
-          updateFileStatus(fileUrl, "Converting", statusData.stage || statusData.state);
+          updateFileStatus(fileUrl, "Converting", statusData.state);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -125,6 +122,17 @@ function Home() {
     }
   };
 
+  const getIconForStage = (stage, status) => {
+    if (status === "Error") return <AlertTriangle className="text-red-500 animate-pulse" size={20} />;
+    if (status === "Converted") return <CheckCircle className="text-green-500" size={20} />;
+    if (stage === "downloading") return <FileClock className="animate-pulse text-yellow-500" size={20} />;
+    if (stage === "resizing") return <ImageIcon className="animate-spin-slow text-blue-400" size={20} />;
+    if (stage === "vectorizing") return <Upload className="animate-spin text-purple-500" size={20} />;
+    if (stage === "converting-pes") return <Loader className="animate-spin text-teal-500" size={20} />;
+    if (stage === "done") return <FileCheck className="text-green-400" size={20} />;
+    return <Loader className="animate-spin text-gray-500" size={20} />;
+  };
+
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
@@ -150,28 +158,18 @@ function Home() {
 
       {uploadedFiles.map(file => (
         <div key={file.url} className="file-card">
-          <div className="file-card-header">
+          <div className="file-card-header flex items-center gap-2">
+            {getIconForStage(file.stage, file.status)}
             <strong>{file.name}</strong>
             {file.status && <span className="badge">{file.status}</span>}
-            {file.stage && (
-              <span className={`badge info animate-pulse ${stageColor[file.stage] || "bg-gray-400"}`}>
-                {file.stage.replace("-", " ")}
-              </span>
-            )}
+            {file.stage && <span className="badge info">{file.stage}</span>}
           </div>
 
           <div className="file-actions">
             {file.status === "Uploaded" && (
               <button onClick={() => handleConvert(file.url)}>Convert</button>
             )}
-            {file.status === "Converting" && (
-              <div className="w-full h-2 bg-gray-300 rounded overflow-hidden">
-                <div
-                  className={`h-full animate-pulse transition-all duration-500 ease-in-out ${stageColor[file.stage] || "bg-yellow-400"}`}
-                  style={{ width: "100%" }}
-                ></div>
-              </div>
-            )}
+            {file.status === "Converting" && <span>Conversion in progress...</span>}
             {file.status === "Converted" && file.convertedPes && (
               <a
                 href={file.convertedPes}
@@ -179,11 +177,11 @@ function Home() {
                 rel="noopener noreferrer"
                 onClick={() => handleDownload(file.url, "pes")}
               >
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded">Download PES</button>
+                <button>Download PES</button>
               </a>
             )}
             {file.status === "Error" && (
-              <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" onClick={() => handleConvert(file.url)}>Retry</button>
+              <button onClick={() => handleConvert(file.url)}>Retry</button>
             )}
           </div>
         </div>
