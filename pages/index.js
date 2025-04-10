@@ -73,8 +73,7 @@ function Home() {
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
-        const statusUrl = `${FLASK_BASE}/status/${taskId}`;
-        const res = await fetch(statusUrl);
+        const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
         const statusData = await res.json();
 
         if (statusData.state === "done") {
