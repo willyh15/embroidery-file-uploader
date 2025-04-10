@@ -71,9 +71,7 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
-    let attempt = 0;
     const interval = setInterval(async () => {
-      attempt++;
       try {
         const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
         const statusData = await res.json();
@@ -86,17 +84,13 @@ function Home() {
           updateFileStatus(fileUrl, "Error", "failed");
           clearInterval(interval);
           toast.error("Conversion failed");
-        } else if (statusData.status && statusData.stage) {
-          updateFileStatus(fileUrl, statusData.status, statusData.stage);
+        } else {
+          updateFileStatus(fileUrl, "Converting", statusData.state);
         }
       } catch (err) {
         console.error("Polling error:", err);
         toast.error("Polling error");
         clearInterval(interval);
-      }
-      if (attempt > 40) {
-        clearInterval(interval);
-        toast.error("Conversion timed out");
       }
     }, 3000);
   };
@@ -105,17 +99,6 @@ function Home() {
     setUploadedFiles(prev =>
       prev.map(f => f.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
     );
-  };
-
-  const stageToProgress = (stage) => {
-    const map = {
-      downloading: 10,
-      resizing: 25,
-      vectorizing: 50,
-      "converting-pes": 75,
-      done: 100,
-    };
-    return map[stage] || 10;
   };
 
   const handleDownload = async (fileUrl, format) => {
@@ -132,6 +115,24 @@ function Home() {
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
+
+  const stageColor = (stage) => {
+    if (stage.includes("error")) return "bg-red-500";
+    if (stage.includes("done")) return "bg-green-500";
+    return "bg-blue-500 animate-pulse";
+  };
+
+  const stageIcon = (stage) => {
+    const icons = {
+      downloading: "⬇️",
+      resizing: "🖼️",
+      vectorizing: "✏️",
+      "converting-pes": "🧵",
+      done: "✅",
+      error: "❌",
+    };
+    return icons[stage] || "⏳";
+  };
 
   return (
     <div className="container">
@@ -158,13 +159,18 @@ function Home() {
           <div className="file-card-header">
             <strong>{file.name}</strong>
             {file.status && <span className="badge">{file.status}</span>}
-            {file.stage && <span className="badge info">{file.stage}</span>}
+            {file.stage && (
+              <span className="badge info">
+                {stageIcon(file.stage)} {file.stage}
+              </span>
+            )}
           </div>
 
-          {file.status === "Converting" && (
-            <div className="progress-wrapper">
-              <div className="progress-bar" style={{ width: `${stageToProgress(file.stage)}%` }} />
-              <p className="stage-label">{file.stage}</p>
+          {file.status === "Converting" && file.stage && (
+            <div className="progress-container">
+              <div className="progress-bar-wrapper">
+                <div className={`progress-bar ${stageColor(file.stage)}`} style={{ width: "80%", height: "8px", borderRadius: "6px" }}></div>
+              </div>
             </div>
           )}
 
@@ -189,6 +195,21 @@ function Home() {
           </div>
         </div>
       ))}
+
+      <style jsx>{`
+        .progress-container {
+          margin: 10px 0;
+        }
+        .progress-bar-wrapper {
+          width: 100%;
+          background: #eee;
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        .progress-bar {
+          transition: width 0.5s ease;
+        }
+      `}</style>
     </div>
   );
 }
