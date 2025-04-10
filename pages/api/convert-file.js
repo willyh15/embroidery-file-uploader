@@ -1,7 +1,5 @@
 import fetch from "node-fetch";
-
-// Optional: Allow self-signed SSL certs in dev (uncomment if needed)
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+import https from "https";
 
 export const config = {
   api: {
@@ -21,14 +19,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing or invalid fileUrl" });
     }
 
-    const flaskUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL}/convert`;
+    const flaskUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://23.94.202.56"}/convert`;
 
     console.log("➡️ Sending to Flask:", flaskUrl, "with fileUrl:", fileUrl);
+
+    // Allow self-signed certs (Flask TLS via Caddy)
+    const agent = new https.Agent({ rejectUnauthorized: false });
 
     const flaskResponse = await fetch(flaskUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),
+      agent, // 👈 secure override per request
     });
 
     const text = await flaskResponse.text();
