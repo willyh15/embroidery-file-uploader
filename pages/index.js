@@ -116,22 +116,10 @@ function Home() {
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
-  const stageColor = (stage) => {
-    if (stage.includes("error")) return "bg-red-500";
-    if (stage.includes("done")) return "bg-green-500";
+  const getProgressColor = (stage) => {
+    if (stage === "done") return "bg-green-500";
+    if (stage === "failed" || stage.includes("error")) return "bg-red-500";
     return "bg-blue-500 animate-pulse";
-  };
-
-  const stageIcon = (stage) => {
-    const icons = {
-      downloading: "⬇️",
-      resizing: "🖼️",
-      vectorizing: "✏️",
-      "converting-pes": "🧵",
-      done: "✅",
-      error: "❌",
-    };
-    return icons[stage] || "⏳";
   };
 
   return (
@@ -159,18 +147,15 @@ function Home() {
           <div className="file-card-header">
             <strong>{file.name}</strong>
             {file.status && <span className="badge">{file.status}</span>}
-            {file.stage && (
-              <span className="badge info">
-                {stageIcon(file.stage)} {file.stage}
-              </span>
-            )}
+            {file.stage && <span className="badge info">{file.stage}</span>}
           </div>
 
-          {file.status === "Converting" && file.stage && (
-            <div className="progress-container">
-              <div className="progress-bar-wrapper">
-                <div className={`progress-bar ${stageColor(file.stage)}`} style={{ width: "80%", height: "8px", borderRadius: "6px" }}></div>
-              </div>
+          {file.status === "Converting" && (
+            <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+              <div
+                className={`h-3 rounded-full transition-all duration-500 ease-in-out ${getProgressColor(file.stage)}`}
+                style={{ width: file.stage === "done" ? "100%" : "50%" }}
+              ></div>
             </div>
           )}
 
@@ -195,21 +180,6 @@ function Home() {
           </div>
         </div>
       ))}
-
-      <style jsx>{`
-        .progress-container {
-          margin: 10px 0;
-        }
-        .progress-bar-wrapper {
-          width: 100%;
-          background: #eee;
-          border-radius: 6px;
-          overflow: hidden;
-        }
-        .progress-bar {
-          transition: width 0.5s ease;
-        }
-      `}</style>
     </div>
   );
 }
