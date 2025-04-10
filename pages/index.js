@@ -71,7 +71,9 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
+    let attempt = 0;
     const interval = setInterval(async () => {
+      attempt++;
       try {
         const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
         const statusData = await res.json();
@@ -84,13 +86,17 @@ function Home() {
           updateFileStatus(fileUrl, "Error", "failed");
           clearInterval(interval);
           toast.error("Conversion failed");
-        } else {
-          updateFileStatus(fileUrl, "Converting", statusData.state);
+        } else if (statusData.status && statusData.stage) {
+          updateFileStatus(fileUrl, statusData.status, statusData.stage);
         }
       } catch (err) {
         console.error("Polling error:", err);
         toast.error("Polling error");
         clearInterval(interval);
+      }
+      if (attempt > 40) {
+        clearInterval(interval);
+        toast.error("Conversion timed out");
       }
     }, 3000);
   };
@@ -99,6 +105,17 @@ function Home() {
     setUploadedFiles(prev =>
       prev.map(f => f.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
     );
+  };
+
+  const stageToProgress = (stage) => {
+    const map = {
+      downloading: 10,
+      resizing: 25,
+      vectorizing: 50,
+      "converting-pes": 75,
+      done: 100,
+    };
+    return map[stage] || 10;
   };
 
   const handleDownload = async (fileUrl, format) => {
@@ -143,6 +160,13 @@ function Home() {
             {file.status && <span className="badge">{file.status}</span>}
             {file.stage && <span className="badge info">{file.stage}</span>}
           </div>
+
+          {file.status === "Converting" && (
+            <div className="progress-wrapper">
+              <div className="progress-bar" style={{ width: `${stageToProgress(file.stage)}%` }} />
+              <p className="stage-label">{file.stage}</p>
+            </div>
+          )}
 
           <div className="file-actions">
             {file.status === "Uploaded" && (
