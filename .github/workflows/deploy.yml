@@ -16,6 +16,7 @@ jobs:
       KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
       NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+
     steps:
       - name: "⬇️ Checkout Repository"
         uses: actions/checkout@v4
@@ -40,7 +41,8 @@ jobs:
             @upstash/redis \
             node-fetch \
             react-hot-toast \
-            formidable
+            formidable \
+            lucide-react
 
       - name: "🏗️ Build Project"
         run: npm run build
