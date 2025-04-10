@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import FileCard from "../components/FileCard";
+import UploadBox from "../components/UploadBox";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 
@@ -123,26 +124,18 @@ function Home() {
       <h2>Welcome, {session.user.name}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
-      <div
-        ref={dropRef}
-        className={`upload-box ${uploading ? "dragover" : ""}`}
-        onDragEnter={() => dropRef.current.classList.add("dragover")}
-        onDragLeave={() => dropRef.current.classList.remove("dragover")}
-      >
-        <input
-          type="file"
-          multiple
-          onChange={(e) => handleUpload(Array.from(e.target.files))}
-        />
-        <p>Drag & Drop files or click to upload</p>
-      </div>
+      <UploadBox
+        uploading={uploading}
+        dropRef={dropRef}
+        onUpload={handleUpload}
+      />
 
       {uploadedFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
-          onConvert={handleConvert}
-          onDownload={handleDownload}
+          onConvert={() => handleConvert(file.url)}
+          onDownload={() => handleDownload(file.url, "pes")}
         />
       ))}
     </div>
