@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function UploadBox({ uploading, dropRef, onUpload }) {
+function UploadBox({ uploading, dropRef, onUpload }) {
   return (
     <div
       ref={dropRef}
@@ -13,7 +13,9 @@ export default function UploadBox({ uploading, dropRef, onUpload }) {
         multiple
         onChange={(e) => onUpload(Array.from(e.target.files))}
       />
-      <p>Drag & Drop files or click to upload</p>
+      <p>{uploading ? "Uploading..." : "Drag & Drop files or click to upload"}</p>
     </div>
   );
 }
+
+export default UploadBox;
