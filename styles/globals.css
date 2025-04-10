@@ -10,6 +10,24 @@
   --radius: 12px;
 }
 
+.progress-wrapper {
+  background: #333;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: #57f287;
+  transition: width 0.4s ease;
+}
+.stage-label {
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 4px;
+}
+
 /* Add somewhere globally or as a .scss module: */
 
 .modal-backdrop {
