@@ -1,3 +1,4 @@
+// Updated `index.js` with animated icons and success/error badges
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -19,6 +20,17 @@ function Home() {
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status]);
+
+  const stageColor = {
+    downloading: "bg-blue-400",
+    resizing: "bg-indigo-400",
+    vectorizing: "bg-purple-400",
+    "converting-pes": "bg-pink-500",
+    done: "bg-green-500",
+    error: "bg-red-500",
+    initiating: "bg-yellow-400",
+    processing: "bg-yellow-500",
+  };
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -85,7 +97,7 @@ function Home() {
           clearInterval(interval);
           toast.error("Conversion failed");
         } else {
-          updateFileStatus(fileUrl, "Converting", statusData.state);
+          updateFileStatus(fileUrl, "Converting", statusData.stage || statusData.state);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -116,12 +128,6 @@ function Home() {
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
-  const getProgressColor = (stage) => {
-    if (stage === "done") return "bg-green-500";
-    if (stage === "failed" || stage.includes("error")) return "bg-red-500";
-    return "bg-blue-500 animate-pulse";
-  };
-
   return (
     <div className="container">
       <Toaster position="top-right" />
@@ -147,23 +153,25 @@ function Home() {
           <div className="file-card-header">
             <strong>{file.name}</strong>
             {file.status && <span className="badge">{file.status}</span>}
-            {file.stage && <span className="badge info">{file.stage}</span>}
+            {file.stage && (
+              <span className={`badge info animate-pulse ${stageColor[file.stage] || "bg-gray-400"}`}>
+                {file.stage.replace("-", " ")}
+              </span>
+            )}
           </div>
-
-          {file.status === "Converting" && (
-            <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
-              <div
-                className={`h-3 rounded-full transition-all duration-500 ease-in-out ${getProgressColor(file.stage)}`}
-                style={{ width: file.stage === "done" ? "100%" : "50%" }}
-              ></div>
-            </div>
-          )}
 
           <div className="file-actions">
             {file.status === "Uploaded" && (
               <button onClick={() => handleConvert(file.url)}>Convert</button>
             )}
-            {file.status === "Converting" && <span>Conversion in progress...</span>}
+            {file.status === "Converting" && (
+              <div className="w-full h-2 bg-gray-300 rounded overflow-hidden">
+                <div
+                  className={`h-full animate-pulse transition-all duration-500 ease-in-out ${stageColor[file.stage] || "bg-yellow-400"}`}
+                  style={{ width: "100%" }}
+                ></div>
+              </div>
+            )}
             {file.status === "Converted" && file.convertedPes && (
               <a
                 href={file.convertedPes}
@@ -171,11 +179,11 @@ function Home() {
                 rel="noopener noreferrer"
                 onClick={() => handleDownload(file.url, "pes")}
               >
-                <button>Download PES</button>
+                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded">Download PES</button>
               </a>
             )}
             {file.status === "Error" && (
-              <button onClick={() => handleConvert(file.url)}>Retry</button>
+              <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" onClick={() => handleConvert(file.url)}>Retry</button>
             )}
           </div>
         </div>
