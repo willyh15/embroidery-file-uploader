@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     const { fileUrl } = req.body;
 
-    const response = await fetch("http://23.94.202.56:5000/convert", {
+    const response = await fetch("https://23.94.202.56:5000/convert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),

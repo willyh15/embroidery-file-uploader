@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const flaskResponse = await fetch("http://23.94.202.56:5000/optimize-stitch", {
+    const flaskResponse = await fetch("https://23.94.202.56:5000/optimize-stitch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl, format }),

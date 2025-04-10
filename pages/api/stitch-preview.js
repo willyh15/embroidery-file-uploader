@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   try {
     // Forward to Flask
-    const flaskResponse = await fetch("http://23.94.202.56:5000/stitch-preview", {
+    const flaskResponse = await fetch("https://23.94.202.56:5000/stitch-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl }),

@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         formData.append("files", fileBuffer, file.originalFilename);
       });
 
-      const flaskResponse = await fetch("http://23.94.202.56:5000/upload", {
+      const flaskResponse = await fetch("https://23.94.202.56:5000/upload", {
         method: "POST",
         body: formData,
       });

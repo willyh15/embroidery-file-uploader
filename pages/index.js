@@ -71,7 +71,7 @@ function Home() {
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`http://23.94.202.56:5000/status/${taskId}`);
+        const res = await fetch(`https://23.94.202.56:5000/status/${taskId}`);
         const statusData = await res.json();
 
         if (statusData.state === "done") {
