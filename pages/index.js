@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 
+const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
+
 function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -71,7 +73,7 @@ function Home() {
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
-        const statusUrl = `https://embroideryfiles.duckdns.org/status/${taskId}`;
+        const statusUrl = `${FLASK_BASE}/status/${taskId}`;
         const res = await fetch(statusUrl);
         const statusData = await res.json();
 

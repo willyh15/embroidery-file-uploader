@@ -31,9 +31,12 @@ export default async function handler(req, res) {
         formData.append("files", fileBuffer, safeFilename);
       });
 
-      const flaskResponse = await fetch("https://embroideryfiles.duckdns.org/upload", {
+      const flaskUploadUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
+
+      const flaskResponse = await fetch(flaskUploadUrl, {
         method: "POST",
         body: formData,
+        headers: formData.getHeaders(),
       });
 
       const text = await flaskResponse.text();
