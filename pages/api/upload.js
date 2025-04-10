@@ -1,4 +1,4 @@
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
 import fs from "fs";
 import fetch from "node-fetch";
 import FormData from "form-data";
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const form = new formidable.IncomingForm({ multiples: true });
+  const form = new IncomingForm({ multiples: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
@@ -39,25 +39,30 @@ export default async function handler(req, res) {
       });
 
       const text = await flaskResponse.text();
-      console.log("Flask raw response:", text);
+      console.log("⬅️ Flask raw response:", text);
+
+      if (!text.trim()) {
+        return res.status(502).json({ error: "Flask server returned empty response" });
+      }
 
       let data;
       try {
         data = JSON.parse(text);
       } catch (jsonErr) {
-        console.error("Failed to parse JSON from Flask:", jsonErr);
+        console.error("❌ Failed to parse JSON from Flask:", jsonErr);
         return res.status(500).json({ error: "Invalid JSON from Flask", details: text });
       }
 
       if (!flaskResponse.ok) {
-        console.error("Flask Error Response:", data);
+        console.error("❌ Flask Error Response:", data);
         throw new Error(data.error || "Flask upload failed");
       }
 
       return res.status(200).json(data);
     } catch (error) {
-      console.error("Upload Error:", error);
+      console.error("❌ Upload Error:", error);
       return res.status(500).json({ error: error.message });
     }
   });
 }
+
