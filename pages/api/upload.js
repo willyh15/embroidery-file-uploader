@@ -2,6 +2,7 @@ import formidable from "formidable";
 import fs from "fs";
 import fetch from "node-fetch";
 import FormData from "form-data";
+import path from "path";
 
 export const config = {
   api: {
@@ -24,15 +25,15 @@ export default async function handler(req, res) {
 
     try {
       const formData = new FormData();
-
       const uploadedFiles = Array.isArray(files.files) ? files.files : [files.files];
 
       uploadedFiles.forEach((file) => {
         const fileBuffer = fs.readFileSync(file.filepath);
-        formData.append("files", fileBuffer, file.originalFilename);
+        const safeFilename = path.basename(file.originalFilename || "upload");
+        formData.append("files", fileBuffer, safeFilename);
       });
 
-      const flaskResponse = await fetch("https://23.94.202.56:5000/upload", {
+      const flaskResponse = await fetch("https://23.94.202.56/upload", {
         method: "POST",
         body: formData,
       });
