@@ -3,7 +3,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
-import { Loader2, UploadCloud, Wand2, CheckCircle2, AlertTriangle, Download } from "lucide-react";
+import FileCard from "../components/FileCard";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 
@@ -114,14 +114,6 @@ function Home() {
     }
   };
 
-  const getStageIcon = (file) => {
-    if (file.status === "Converted") return <CheckCircle2 className="text-green-600 animate-pulse" />;
-    if (file.status === "Error") return <AlertTriangle className="text-red-500 animate-shake" />;
-    if (file.stage === "vectorizing") return <Wand2 className="animate-spin" />;
-    if (file.stage === "resizing") return <UploadCloud className="animate-pulse" />;
-    return <Loader2 className="animate-spin text-blue-500" />;
-  };
-
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
@@ -146,43 +138,12 @@ function Home() {
       </div>
 
       {uploadedFiles.map(file => (
-        <div key={file.url} className="file-card">
-          <div className="file-card-header">
-            <strong>{file.name}</strong>
-            {file.status && <span className="badge">{file.status}</span>}
-            {file.stage && <span className="badge info">{file.stage}</span>}
-            <span className="icon ml-2">{getStageIcon(file)}</span>
-          </div>
-
-          <div className="progress-bar mt-2 h-2 rounded bg-gray-200 overflow-hidden">
-            <div
-              className="h-full transition-all duration-500 bg-gradient-to-r from-blue-400 to-blue-600 bg-stripes animate-stripes"
-              style={{
-                width: file.stage === "done" ? "100%" : file.stage ? "80%" : "0%"
-              }}
-            ></div>
-          </div>
-
-          <div className="file-actions mt-2">
-            {file.status === "Uploaded" && (
-              <button onClick={() => handleConvert(file.url)}>Convert</button>
-            )}
-            {file.status === "Converting" && <span>Conversion in progress...</span>}
-            {file.status === "Converted" && file.convertedPes && (
-              <a
-                href={file.convertedPes}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => handleDownload(file.url, "pes")}
-              >
-                <button><Download className="inline mr-1" />Download PES</button>
-              </a>
-            )}
-            {file.status === "Error" && (
-              <button onClick={() => handleConvert(file.url)}>Retry</button>
-            )}
-          </div>
-        </div>
+        <FileCard
+          key={file.url}
+          file={file}
+          onConvert={handleConvert}
+          onDownload={handleDownload}
+        />
       ))}
     </div>
   );
