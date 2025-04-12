@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
