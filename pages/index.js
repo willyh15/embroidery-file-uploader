@@ -7,6 +7,8 @@ import FileCard from "../components/FileCard";
 import UploadBox from "../components/UploadBox";
 import SidebarFilters from "../components/SidebarFilters";
 import PaginationControls from "../components/PaginationControls";
+import OnboardingModal from "../components/OnboardingModal";
+import RecentActivityPanel from "../components/RecentActivityPanel";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -21,11 +23,19 @@ function Home() {
   const [uploading, setUploading] = useState(false);
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/signin");
   }, [status]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem("onboardingShown")) {
+      setShowOnboarding(true);
+      localStorage.setItem("onboardingShown", "true");
+    }
+  }, []);
 
   const handleUpload = async (files) => {
     if (!files.length) return;
@@ -131,6 +141,8 @@ function Home() {
       <h2>Welcome, {session.user.name}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
+      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
+
       <SidebarFilters
         allFiles={uploadedFiles}
         onFilterChange={(results) => {
@@ -156,6 +168,8 @@ function Home() {
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
       />
+
+      <RecentActivityPanel uploadedFiles={uploadedFiles} />
     </div>
   );
 }
