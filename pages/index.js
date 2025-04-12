@@ -29,9 +29,17 @@ function Home() {
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [editFileUrl, setEditFileUrl] = useState(null);
 
-  useEffect(() => setIsClient(true), []);
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/signin");
+    console.log("[Home] Component mounted");
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    console.log("[Auth] useSession status:", status);
+    if (status === "unauthenticated") {
+      console.log("[Auth] Redirecting to /auth/signin");
+      router.push("/auth/signin");
+    }
   }, [status]);
 
   useEffect(() => {
@@ -61,9 +69,11 @@ function Home() {
         stage: "",
       }));
 
+      console.log("[Upload] Received files:", newFiles);
       setUploadedFiles(prev => [...prev, ...newFiles]);
       toast.success("Upload complete");
     } catch (err) {
+      console.error("[Upload Error]", err);
       toast.error(err.message);
     } finally {
       setUploading(false);
@@ -71,6 +81,7 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
+    console.log(`[Convert] Starting conversion for: ${fileUrl}`);
     updateFileStatus(fileUrl, "Converting", "initiating");
 
     try {
@@ -86,12 +97,14 @@ function Home() {
       updateFileStatus(fileUrl, "Converting", "processing");
       pollConversionStatus(data.taskId, fileUrl);
     } catch (err) {
+      console.error("[Convert Error]", err);
       toast.error(err.message);
       updateFileStatus(fileUrl, "Error", "failed");
     }
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
+    console.log(`[Polling] Task ID: ${taskId}`);
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
@@ -109,7 +122,7 @@ function Home() {
           updateFileStatus(fileUrl, "Converting", statusData.state);
         }
       } catch (err) {
-        console.error("Polling error:", err);
+        console.error("[Polling Error]", err);
         toast.error("Polling error");
         clearInterval(interval);
       }
@@ -117,9 +130,20 @@ function Home() {
   };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-    if (!fileUrl || !status) return;
+    if (!fileUrl || !status) {
+      console.warn("[updateFileStatus] Skipping invalid update:", { fileUrl, status });
+      return;
+    }
+
     setUploadedFiles(prev =>
-      prev.map(f => f?.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
+      prev.map(f => {
+        if (!f || !f.url) return f;
+        if (f.url === fileUrl) {
+          console.log("[updateFileStatus] Updating:", { fileUrl, status, stage });
+          return { ...f, status, stage, convertedPes: pesUrl };
+        }
+        return f;
+      })
     );
   };
 
@@ -131,7 +155,7 @@ function Home() {
         body: JSON.stringify({ fileUrl, format }),
       });
     } catch (err) {
-      console.error("Download logging error:", err);
+      console.error("[Download Log Error]", err);
     }
   };
 
@@ -141,6 +165,7 @@ function Home() {
   const closeEditor = () => setEditFileUrl(null);
 
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  console.log("[Render] paginatedFiles:", paginatedFiles);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -148,14 +173,15 @@ function Home() {
   return (
     <div className="container">
       <Toaster position="top-right" />
-      <h2>Welcome, {session.user.name}</h2>
+      <h2>Welcome, {session.user?.name || "Unknown"}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       <SidebarFilters
-        allFiles={uploadedFiles}
+        filters={{ status: "", type: "", query: "" }}
         onFilterChange={(results) => {
+          console.log("[SidebarFilters] Filtered results:", results);
           setFilteredFiles(results.filter(r => r && r.status));
           setCurrentPage(1);
         }}
@@ -163,18 +189,18 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles.map(file => (
-  file && file.url ? (
-    <FileCard
-      key={file.url}
-      file={file}
-      onConvert={() => handleConvert(file.url)}
-      onDownload={() => handleDownload(file.url, "pes")}
-      onPreview={() => handlePreview(file.url)}
-      onEdit={() => handleEdit(file.url)}
-    />
-  ) : null
-))}
+      {paginatedFiles.map(file =>
+        file && file.url ? (
+          <FileCard
+            key={file.url}
+            file={file}
+            onConvert={() => handleConvert(file.url)}
+            onDownload={() => handleDownload(file.url, "pes")}
+            onPreview={() => handlePreview(file.url)}
+            onEdit={() => handleEdit(file.url)}
+          />
+        ) : null
+      )}
 
       <PaginationControls
         currentPage={currentPage}
