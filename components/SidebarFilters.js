@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 
-export default function SidebarFilters({ filters, onFilterChange }) {
+export default function SidebarFilters({ filters = {}, onFilterChange }) {
   const [status, setStatus] = useState(filters.status || "");
   const [type, setType] = useState(filters.type || "");
   const [query, setQuery] = useState(filters.query || "");
 
   useEffect(() => {
-    onFilterChange({ status, type, query });
+    const timeout = setTimeout(() => {
+      if (typeof onFilterChange === "function") {
+        onFilterChange({ status, type, query });
+      }
+    }, 150); // small debounce to avoid rapid calls
+
+    return () => clearTimeout(timeout);
   }, [status, type, query]);
 
   return (
