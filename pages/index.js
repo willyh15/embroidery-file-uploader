@@ -189,17 +189,21 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles.map(file =>
-        file && file.url ? (
-          <FileCard
-            key={file.url}
-            file={file}
-            onConvert={() => handleConvert(file.url)}
-            onDownload={() => handleDownload(file.url, "pes")}
-            onPreview={() => handlePreview(file.url)}
-            onEdit={() => handleEdit(file.url)}
-          />
-        ) : null
+      {Array.isArray(paginatedFiles) && paginatedFiles.length > 0 ? (
+        paginatedFiles.map(file =>
+          file && file.url ? (
+            <FileCard
+              key={file.url}
+              file={file}
+              onConvert={() => handleConvert(file.url)}
+              onDownload={() => handleDownload(file.url, "pes")}
+              onPreview={() => handlePreview(file.url)}
+              onEdit={() => handleEdit(file.url)}
+            />
+          ) : null
+        )
+      ) : (
+        <div className="text-gray-500 italic text-center mt-4">No files to show.</div>
       )}
 
       <PaginationControls
