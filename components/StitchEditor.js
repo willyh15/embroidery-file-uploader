@@ -1,94 +1,88 @@
-import { useState, useEffect } from "react";
-import { Dialog } from "@headlessui/react";
-import { X, Palette, SlidersHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 
 export default function StitchEditor({ fileUrl, onClose }) {
-  const [threadColor, setThreadColor] = useState("#000000");
-  const [density, setDensity] = useState(1);
+  const canvasRef = useRef(null);
   const [vectorPaths, setVectorPaths] = useState([]);
+  const [threadColor, setThreadColor] = useState("#007bff");
+  const [density, setDensity] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPaths = async () => {
+    const fetchVectorData = async () => {
       try {
-        const res = await fetch(`/api/vector-paths?fileUrl=${encodeURIComponent(fileUrl)}`);
+        const fileName = fileUrl.split("/").pop().split(".")[0];
+        const res = await fetch(`/api/vector-data?name=${fileName}`);
         const data = await res.json();
-        if (res.ok) setVectorPaths(data.paths || []);
+        setVectorPaths(data.paths || []);
       } catch (err) {
-        console.error("Failed to fetch paths", err);
+        console.error("Error loading vector data:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchPaths();
+
+    fetchVectorData();
   }, [fileUrl]);
 
-  return (
-    <Dialog open={true} onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center">
-      <Dialog.Overlay className="fixed inset-0 bg-black bg-opacity-50" />
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = threadColor;
+    ctx.lineWidth = density;
 
-      <div className="bg-white w-full max-w-4xl p-6 rounded-lg z-50 relative shadow-xl">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black">
-          <X className="w-5 h-5" />
+    vectorPaths.forEach((path) => {
+      ctx.beginPath();
+      path.forEach(([x, y], index) => {
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    });
+  }, [vectorPaths, threadColor, density]);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-lg p-4 w-[90%] max-w-4xl relative">
+        <button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-red-500">
+          <X className="w-6 h-6" />
         </button>
 
-        <Dialog.Title className="text-xl font-semibold mb-4">Stitch Editor</Dialog.Title>
+        <h2 className="text-xl font-semibold mb-4">Stitch Editor</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex items-center gap-4 mb-4">
           <div>
-            <label className="block font-medium mb-1">Thread Color</label>
-            <div className="flex items-center space-x-2">
-              <Palette className="w-4 h-4 text-gray-500" />
-              <input
-                type="color"
-                value={threadColor}
-                onChange={(e) => setThreadColor(e.target.value)}
-                className="w-12 h-8 border rounded"
-              />
-            </div>
+            <label className="block text-sm font-medium">Thread Color</label>
+            <input
+              type="color"
+              value={threadColor}
+              onChange={(e) => setThreadColor(e.target.value)}
+              className="border border-gray-300 rounded p-1"
+            />
           </div>
 
           <div>
-            <label className="block font-medium mb-1">Stitch Density</label>
-            <div className="flex items-center space-x-2">
-              <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-              <input
-                type="range"
-                min={0.2}
-                max={2.0}
-                step={0.1}
-                value={density}
-                onChange={(e) => setDensity(parseFloat(e.target.value))}
-              />
-              <span className="text-sm text-gray-600">{density.toFixed(1)}x</span>
-            </div>
+            <label className="block text-sm font-medium">Density</label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              step="0.5"
+              value={density}
+              onChange={(e) => setDensity(parseFloat(e.target.value))}
+              className="w-32"
+            />
+            <span className="ml-2 text-sm">{density.toFixed(1)}</span>
           </div>
         </div>
 
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-2">Vector Paths</h3>
-          <div className="max-h-48 overflow-auto border rounded p-3 text-sm text-gray-700 bg-gray-50">
-            {vectorPaths.length > 0 ? (
-              vectorPaths.map((path, i) => (
-                <pre key={i} className="mb-2 whitespace-pre-wrap break-words">
-                  {JSON.stringify(path, null, 2)}
-                </pre>
-              ))
-            ) : (
-              <div className="text-gray-500">Loading or no paths found.</div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 text-right">
-          <button
-            onClick={() => {
-              console.log("Save action with:", threadColor, density);
-              onClose();
-            }}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Save Changes
-          </button>
-        </div>
+        {loading ? (
+          <div className="text-center text-gray-500">Loading vector data...</div>
+        ) : (
+          <canvas ref={canvasRef} width={600} height={400} className="border rounded shadow" />
+        )}
       </div>
-    </Dialog>
+    </div>
   );
 }
