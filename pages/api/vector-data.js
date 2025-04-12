@@ -1,19 +1,31 @@
 // pages/api/vector-data.js
-import { NextResponse } from 'next/server';
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { fileUrl } = req.body;
+  if (!fileUrl) {
+    return res.status(400).json({ error: "Missing fileUrl" });
+  }
+
   try {
-    const { fileUrl } = await req.json();
-    if (!fileUrl) return NextResponse.json({ error: 'Missing fileUrl' }, { status: 400 });
+    const backendUrl = process.env.FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
+    const response = await fetch(`${backendUrl}/vector-data`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl })
+    });
 
-    const svgName = fileUrl.split('/').pop().replace(/\.[^.]+$/, '.svg');
-    const vectorEndpoint = `https://embroideryfiles.duckdns.org/vector/${svgName}`;
-    const res = await fetch(vectorEndpoint);
-    const svgText = await res.text();
+    if (!response.ok) {
+      throw new Error("Failed to fetch vector data");
+    }
 
-    return NextResponse.json({ svg: svgText });
-  } catch (err) {
-    console.error('[vector-data error]', err);
-    return NextResponse.json({ error: 'Failed to fetch vector data' }, { status: 500 });
+    const data = await response.json();
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error("/api/vector-data.js error:", error);
+    return res.status(500).json({ error: "Failed to load vector data" });
   }
 }
