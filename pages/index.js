@@ -163,18 +163,18 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles
-        .filter(file => file && file.status)
-        .map(file => (
-          <FileCard
-            key={file.url || file.name || Math.random()}
-            file={file}
-            onConvert={() => handleConvert(file.url)}
-            onDownload={() => handleDownload(file.url, "pes")}
-            onPreview={() => handlePreview(file.url)}
-            onEdit={() => handleEdit(file.url)}
-          />
-        ))}
+      {paginatedFiles.map(file => (
+  file && file.url ? (
+    <FileCard
+      key={file.url}
+      file={file}
+      onConvert={() => handleConvert(file.url)}
+      onDownload={() => handleDownload(file.url, "pes")}
+      onPreview={() => handlePreview(file.url)}
+      onEdit={() => handleEdit(file.url)}
+    />
+  ) : null
+))}
 
       <PaginationControls
         currentPage={currentPage}
