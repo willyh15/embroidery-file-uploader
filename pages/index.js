@@ -167,58 +167,72 @@ function Home() {
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   console.log("[Render] paginatedFiles:", paginatedFiles);
 
-  if (!isClient || status === "loading") return null;
-  if (!session) return null;
+  try {
+    if (!isClient || status === "loading") return null;
+    if (!session) return null;
 
-  return (
-    <div className="container">
-      <Toaster position="top-right" />
-      <h2>Welcome, {session.user?.name || "Unknown"}</h2>
-      <button onClick={() => signOut()}>Sign out</button>
+    return (
+      <div className="container">
+        <Toaster position="top-right" />
+        <h2>Welcome, {session.user?.name || "Unknown"}</h2>
+        <button onClick={() => signOut()}>Sign out</button>
 
-      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
+        {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
-      <SidebarFilters
-        filters={{ status: "", type: "", query: "" }}
-        onFilterChange={(results) => {
-          console.log("[SidebarFilters] Filtered results:", results);
-          setFilteredFiles(results.filter(r => r && r.status));
-          setCurrentPage(1);
-        }}
-      />
+        <SidebarFilters
+          filters={{ status: "", type: "", query: "" }}
+          onFilterChange={(results) => {
+            console.log("[SidebarFilters] Filtered results:", results);
+            setFilteredFiles(results.filter(r => r && r.status));
+            setCurrentPage(1);
+          }}
+        />
 
-      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
+        <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {Array.isArray(paginatedFiles) && paginatedFiles.length > 0 ? (
-        paginatedFiles.map(file =>
-          file && file.url ? (
-            <FileCard
-              key={file.url}
-              file={file}
-              onConvert={() => handleConvert(file.url)}
-              onDownload={() => handleDownload(file.url, "pes")}
-              onPreview={() => handlePreview(file.url)}
-              onEdit={() => handleEdit(file.url)}
-            />
-          ) : null
-        )
-      ) : (
-        <div className="text-gray-500 italic text-center mt-4">No files to show.</div>
-      )}
+        <div className="file-grid">
+          {Array.isArray(paginatedFiles)
+            ? paginatedFiles.map((file, i) => {
+                if (!file || !file.url) {
+                  console.warn(`[Render] Skipping null/undefined file at index ${i}`, file);
+                  return null;
+                }
 
-      <PaginationControls
-        currentPage={currentPage}
-        totalItems={filteredFiles.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={setCurrentPage}
-      />
+                return (
+                  <FileCard
+                    key={file.url}
+                    file={file}
+                    onConvert={() => handleConvert(file.url)}
+                    onDownload={() => handleDownload(file.url, "pes")}
+                    onPreview={() => handlePreview(file.url)}
+                    onEdit={() => handleEdit(file.url)}
+                  />
+                );
+              })
+            : "[Render] paginatedFiles not array!"}
+        </div>
 
-      <RecentActivityPanel uploadedFiles={uploadedFiles} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalItems={filteredFiles.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
 
-      {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />}
-      {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />}
-    </div>
-  );
+        <RecentActivityPanel uploadedFiles={uploadedFiles} />
+
+        {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />}
+        {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />}
+      </div>
+    );
+  } catch (err) {
+    console.error("[Render Crash]", err);
+    return (
+      <div className="text-red-600 font-bold p-4">
+        A critical error occurred while rendering the Home component. Check console for details.
+      </div>
+    );
+  }
 }
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
