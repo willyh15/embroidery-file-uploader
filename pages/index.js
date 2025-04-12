@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import FileCard from "../components/FileCard";
@@ -16,8 +14,6 @@ const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroidery
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const dropRef = useRef(null);
 
   const [isClient, setIsClient] = useState(false);
@@ -33,14 +29,6 @@ function Home() {
     console.log("[Home] Component mounted");
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    console.log("[Auth] useSession status:", status);
-    if (status === "unauthenticated") {
-      console.log("[Auth] Redirecting to /auth/signin");
-      router.push("/auth/signin");
-    }
-  }, [status]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem("onboardingShown")) {
@@ -167,72 +155,61 @@ function Home() {
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   console.log("[Render] paginatedFiles:", paginatedFiles);
 
-  try {
-    if (!isClient || status === "loading") return null;
-    if (!session) return null;
+  if (!isClient) return null;
 
-    return (
-      <div className="container">
-        <Toaster position="top-right" />
-        <h2>Welcome, {session.user?.name || "Unknown"}</h2>
-        <button onClick={() => signOut()}>Sign out</button>
+  return (
+    <div className="container">
+      <Toaster position="top-right" />
+      <h2>Welcome</h2>
 
-        {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
+      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
-        <SidebarFilters
-          filters={{ status: "", type: "", query: "" }}
-          onFilterChange={(results) => {
-            console.log("[SidebarFilters] Filtered results:", results);
-            setFilteredFiles(results.filter(r => r && r.status));
-            setCurrentPage(1);
-          }}
-        />
+      <SidebarFilters
+        filters={{ status: "", type: "", query: "" }}
+        onFilterChange={(results) => {
+          console.log("[SidebarFilters] Filtered results:", results);
+          setFilteredFiles(results.filter(r => r && r.status));
+          setCurrentPage(1);
+        }}
+      />
 
-        <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
+      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-        <div className="file-grid">
-          {Array.isArray(paginatedFiles)
-            ? paginatedFiles.map((file, i) => {
-                if (!file || !file.url) {
-                  console.warn(`[Render] Skipping null/undefined file at index ${i}`, file);
-                  return null;
-                }
+      <div className="file-grid">
+        {Array.isArray(paginatedFiles)
+          ? paginatedFiles.map((file, i) => {
+              if (!file || !file.url) {
+                console.warn(`[Render] Skipping null/undefined file at index ${i}`, file);
+                return null;
+              }
 
-                return (
-                  <FileCard
-                    key={file.url}
-                    file={file}
-                    onConvert={() => handleConvert(file.url)}
-                    onDownload={() => handleDownload(file.url, "pes")}
-                    onPreview={() => handlePreview(file.url)}
-                    onEdit={() => handleEdit(file.url)}
-                  />
-                );
-              })
-            : "[Render] paginatedFiles not array!"}
-        </div>
-
-        <PaginationControls
-          currentPage={currentPage}
-          totalItems={filteredFiles.length}
-          itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={setCurrentPage}
-        />
-
-        <RecentActivityPanel uploadedFiles={uploadedFiles} />
-
-        {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />}
-        {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />}
+              return (
+                <FileCard
+                  key={file.url}
+                  file={file}
+                  onConvert={() => handleConvert(file.url)}
+                  onDownload={() => handleDownload(file.url, "pes")}
+                  onPreview={() => handlePreview(file.url)}
+                  onEdit={() => handleEdit(file.url)}
+                />
+              );
+            })
+          : "[Render] paginatedFiles not array!"}
       </div>
-    );
-  } catch (err) {
-    console.error("[Render Crash]", err);
-    return (
-      <div className="text-red-600 font-bold p-4">
-        A critical error occurred while rendering the Home component. Check console for details.
-      </div>
-    );
-  }
+
+      <PaginationControls
+        currentPage={currentPage}
+        totalItems={filteredFiles.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
+      />
+
+      <RecentActivityPanel uploadedFiles={uploadedFiles} />
+
+      {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />}
+      {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />}
+    </div>
+  );
 }
 
 export default dynamic(() => Promise.resolve(Home), { ssr: false });
