@@ -1,3 +1,4 @@
+// index.js
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -57,8 +58,7 @@ function Home() {
         stage: "",
       }));
 
-      const validFiles = newFiles.filter(f => f.url && f.name);
-      setUploadedFiles(prev => [...prev, ...validFiles]);
+      setUploadedFiles(prev => [...prev, ...newFiles]);
       toast.success("Upload complete");
     } catch (err) {
       toast.error(err.message);
@@ -137,10 +137,12 @@ function Home() {
   if (!session) return null;
 
   return (
-    <div className="container">
+    <div className="container mx-auto px-4 py-6">
       <Toaster position="top-right" />
-      <h2>Welcome, {session.user.name}</h2>
-      <button onClick={() => signOut()}>Sign out</button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-gray-800">Welcome, {session.user.name}</h2>
+        <button onClick={() => signOut()} className="text-sm px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600">Sign out</button>
+      </div>
 
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
@@ -154,9 +156,8 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles
-        .filter(file => file && file.url)
-        .map(file => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
+        {paginatedFiles.map(file => (
           <FileCard
             key={file.url}
             file={file}
@@ -164,6 +165,7 @@ function Home() {
             onDownload={() => handleDownload(file.url, "pes")}
           />
         ))}
+      </div>
 
       <PaginationControls
         currentPage={currentPage}
