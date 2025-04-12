@@ -8,7 +8,7 @@ import UploadBox from "../components/UploadBox";
 import PaginationControls from "../components/PaginationControls";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
-const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20, 50];
+const ITEMS_PER_PAGE = 5;
 
 function Home() {
   const { data: session, status } = useSession();
@@ -19,7 +19,7 @@ function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -119,11 +119,8 @@ function Home() {
     }
   };
 
-  const paginatedFiles = uploadedFiles.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(uploadedFiles.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedFiles = uploadedFiles.slice(startIndex, startIndex + itemsPerPage);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -134,7 +131,11 @@ function Home() {
       <h2>Welcome, {session.user.name}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
-      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
+      <UploadBox
+        uploading={uploading}
+        dropRef={dropRef}
+        onUpload={handleUpload}
+      />
 
       {paginatedFiles.map(file => (
         <FileCard
@@ -146,14 +147,11 @@ function Home() {
       ))}
 
       <PaginationControls
+        totalItems={uploadedFiles.length}
         currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
         itemsPerPage={itemsPerPage}
-        onItemsPerPageChange={(val) => {
-          setItemsPerPage(val);
-          setCurrentPage(1);
-        }}
+        onPageChange={setCurrentPage}
+        onItemsPerPageChange={setItemsPerPage}
       />
     </div>
   );
