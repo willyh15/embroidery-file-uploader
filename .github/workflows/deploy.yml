@@ -42,7 +42,8 @@ jobs:
             node-fetch \
             react-hot-toast \
             formidable \
-            lucide-react
+            lucide-react \
+            @headlessui/react   # <- ADD THIS LINE
 
       - name: "🏗️ Build Project"
         run: npm run build
