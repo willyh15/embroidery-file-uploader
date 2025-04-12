@@ -5,8 +5,10 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import FileCard from "../components/FileCard";
 import UploadBox from "../components/UploadBox";
+import PaginationControls from "../components/PaginationControls";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
+const ITEMS_PER_PAGE = 5;
 
 function Home() {
   const { data: session, status } = useSession();
@@ -16,6 +18,7 @@ function Home() {
   const [isClient, setIsClient] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -115,6 +118,9 @@ function Home() {
     }
   };
 
+  const totalPages = Math.ceil(uploadedFiles.length / ITEMS_PER_PAGE);
+  const paginatedFiles = uploadedFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
@@ -130,7 +136,7 @@ function Home() {
         onUpload={handleUpload}
       />
 
-      {uploadedFiles.map(file => (
+      {paginatedFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
@@ -138,6 +144,14 @@ function Home() {
           onDownload={() => handleDownload(file.url, "pes")}
         />
       ))}
+
+      {uploadedFiles.length > ITEMS_PER_PAGE && (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }
