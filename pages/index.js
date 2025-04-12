@@ -10,6 +10,7 @@ import PaginationControls from "../components/PaginationControls";
 import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
+import StitchEditor from "../components/StitchEditor"; // NEW
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -26,6 +27,7 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
+  const [editFileUrl, setEditFileUrl] = useState(null); // NEW
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -140,6 +142,14 @@ function Home() {
     setPreviewFileUrl(null);
   };
 
+  const handleEdit = (fileUrl) => {
+    setEditFileUrl(fileUrl);
+  };
+
+  const closeEditor = () => {
+    setEditFileUrl(null);
+  };
+
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (!isClient || status === "loading") return null;
@@ -170,6 +180,7 @@ function Home() {
           onConvert={() => handleConvert(file.url)}
           onDownload={() => handleDownload(file.url, "pes")}
           onPreview={() => handlePreview(file.url)}
+          onEdit={() => handleEdit(file.url)}
         />
       ))}
 
@@ -184,6 +195,10 @@ function Home() {
 
       {previewFileUrl && (
         <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />
+      )}
+
+      {editFileUrl && (
+        <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />
       )}
     </div>
   );
