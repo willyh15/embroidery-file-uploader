@@ -5,10 +5,10 @@ import dynamic from "next/dynamic";
 import toast, { Toaster } from "react-hot-toast";
 import FileCard from "../components/FileCard";
 import UploadBox from "../components/UploadBox";
+import SidebarFilters from "../components/SidebarFilters";
 import PaginationControls from "../components/PaginationControls";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
-
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
@@ -19,10 +19,8 @@ function Home() {
   const [isClient, setIsClient] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterType, setFilterType] = useState("");
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -122,15 +120,7 @@ function Home() {
     }
   };
 
-  const filteredFiles = uploadedFiles.filter(file => {
-    const matchesQuery = file.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = !filterStatus || file.status === filterStatus;
-    const matchesType = !filterType || file.name.toLowerCase().endsWith(filterType.toLowerCase());
-    return matchesQuery && matchesStatus && matchesType;
-  });
-
-  const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
-  const currentFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -141,36 +131,17 @@ function Home() {
       <h2>Welcome, {session.user.name}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
-      <UploadBox
-        uploading={uploading}
-        dropRef={dropRef}
-        onUpload={handleUpload}
+      <SidebarFilters
+        allFiles={uploadedFiles}
+        onFilterChange={(results) => {
+          setFilteredFiles(results);
+          setCurrentPage(1);
+        }}
       />
 
-      <div className="filter-controls">
-        <input
-          type="text"
-          placeholder="Search by name"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-        />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">All Statuses</option>
-          <option value="Uploaded">Uploaded</option>
-          <option value="Converting">Converting</option>
-          <option value="Converted">Converted</option>
-          <option value="Error">Error</option>
-        </select>
-        <select value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
-          <option value=".png">PNG</option>
-          <option value=".jpg">JPG</option>
-          <option value=".svg">SVG</option>
-          <option value=".pes">PES</option>
-        </select>
-      </div>
+      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {currentFiles.map(file => (
+      {paginatedFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
@@ -181,8 +152,9 @@ function Home() {
 
       <PaginationControls
         currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
+        totalItems={filteredFiles.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={setCurrentPage}
       />
     </div>
   );
