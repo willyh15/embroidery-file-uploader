@@ -8,7 +8,8 @@ import UploadBox from "../components/UploadBox";
 import PaginationControls from "../components/PaginationControls";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
-const ITEMS_PER_PAGE = 5;
+
+const ITEMS_PER_PAGE = 6;
 
 function Home() {
   const { data: session, status } = useSession();
@@ -19,7 +20,9 @@ function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(ITEMS_PER_PAGE);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -119,8 +122,15 @@ function Home() {
     }
   };
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedFiles = uploadedFiles.slice(startIndex, startIndex + itemsPerPage);
+  const filteredFiles = uploadedFiles.filter(file => {
+    const matchesQuery = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = !filterStatus || file.status === filterStatus;
+    const matchesType = !filterType || file.name.toLowerCase().endsWith(filterType.toLowerCase());
+    return matchesQuery && matchesStatus && matchesType;
+  });
+
+  const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE);
+  const currentFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -137,7 +147,30 @@ function Home() {
         onUpload={handleUpload}
       />
 
-      {paginatedFiles.map(file => (
+      <div className="filter-controls">
+        <input
+          type="text"
+          placeholder="Search by name"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">All Statuses</option>
+          <option value="Uploaded">Uploaded</option>
+          <option value="Converting">Converting</option>
+          <option value="Converted">Converted</option>
+          <option value="Error">Error</option>
+        </select>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)}>
+          <option value="">All Types</option>
+          <option value=".png">PNG</option>
+          <option value=".jpg">JPG</option>
+          <option value=".svg">SVG</option>
+          <option value=".pes">PES</option>
+        </select>
+      </div>
+
+      {currentFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
@@ -147,11 +180,9 @@ function Home() {
       ))}
 
       <PaginationControls
-        totalItems={uploadedFiles.length}
         currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        onPageChange={setCurrentPage}
-        onItemsPerPageChange={setItemsPerPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
       />
     </div>
   );
