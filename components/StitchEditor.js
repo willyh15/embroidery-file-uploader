@@ -56,9 +56,7 @@ export default function StitchEditor({ fileUrl, onClose }) {
     const bounds = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - bounds.left;
     const y = e.clientY - bounds.top;
-
-    // Placeholder: always select first path for now
-    setSelectedPathIndex(0);
+    setSelectedPathIndex(0); // Simulated path selection
     setDragOffset({ x, y });
     setIsDragging(true);
   };
@@ -70,7 +68,6 @@ export default function StitchEditor({ fileUrl, onClose }) {
     const dy = e.clientY - bounds.top - dragOffset.y;
     setDragOffset({ x: e.clientX - bounds.left, y: e.clientY - bounds.top });
 
-    // Placeholder: simulate simple transformation
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgPathData, "image/svg+xml");
     const paths = svgDoc.querySelectorAll("path");
@@ -89,6 +86,21 @@ export default function StitchEditor({ fileUrl, onClose }) {
   };
 
   const handleMouseUp = () => setIsDragging(false);
+
+  const handleSave = async () => {
+    try {
+      const res = await fetch("/api/save-vector", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, svg: svgPathData }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      alert("Saved successfully");
+    } catch (e) {
+      console.error("Save failed:", e);
+      alert("Failed to save changes");
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
@@ -109,6 +121,14 @@ export default function StitchEditor({ fileUrl, onClose }) {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         />
+        <div className="mt-4 text-right">
+          <button
+            onClick={handleSave}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Save Changes
+          </button>
+        </div>
       </div>
     </div>
   );
