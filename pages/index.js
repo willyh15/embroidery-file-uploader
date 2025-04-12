@@ -10,7 +10,7 @@ import PaginationControls from "../components/PaginationControls";
 import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
-import StitchEditor from "../components/StitchEditor"; // NEW
+import StitchEditor from "../components/StitchEditor";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -27,7 +27,7 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
-  const [editFileUrl, setEditFileUrl] = useState(null); // NEW
+  const [editFileUrl, setEditFileUrl] = useState(null);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -117,8 +117,9 @@ function Home() {
   };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
+    if (!fileUrl || !status) return;
     setUploadedFiles(prev =>
-      prev.map(f => f.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
+      prev.map(f => f?.url === fileUrl ? { ...f, status, stage, convertedPes: pesUrl } : f)
     );
   };
 
@@ -134,21 +135,10 @@ function Home() {
     }
   };
 
-  const handlePreview = (fileUrl) => {
-    setPreviewFileUrl(fileUrl);
-  };
-
-  const closePreview = () => {
-    setPreviewFileUrl(null);
-  };
-
-  const handleEdit = (fileUrl) => {
-    setEditFileUrl(fileUrl);
-  };
-
-  const closeEditor = () => {
-    setEditFileUrl(null);
-  };
+  const handlePreview = (fileUrl) => setPreviewFileUrl(fileUrl);
+  const closePreview = () => setPreviewFileUrl(null);
+  const handleEdit = (fileUrl) => setEditFileUrl(fileUrl);
+  const closeEditor = () => setEditFileUrl(null);
 
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -166,23 +156,25 @@ function Home() {
       <SidebarFilters
         allFiles={uploadedFiles}
         onFilterChange={(results) => {
-          setFilteredFiles(results);
+          setFilteredFiles(results.filter(r => r && r.status));
           setCurrentPage(1);
         }}
       />
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles.map(file => (
-        <FileCard
-          key={file.url}
-          file={file}
-          onConvert={() => handleConvert(file.url)}
-          onDownload={() => handleDownload(file.url, "pes")}
-          onPreview={() => handlePreview(file.url)}
-          onEdit={() => handleEdit(file.url)}
-        />
-      ))}
+      {paginatedFiles
+        .filter(file => file && file.status)
+        .map(file => (
+          <FileCard
+            key={file.url || file.name || Math.random()}
+            file={file}
+            onConvert={() => handleConvert(file.url)}
+            onDownload={() => handleDownload(file.url, "pes")}
+            onPreview={() => handlePreview(file.url)}
+            onEdit={() => handleEdit(file.url)}
+          />
+        ))}
 
       <PaginationControls
         currentPage={currentPage}
@@ -193,13 +185,8 @@ function Home() {
 
       <RecentActivityPanel uploadedFiles={uploadedFiles} />
 
-      {previewFileUrl && (
-        <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />
-      )}
-
-      {editFileUrl && (
-        <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />
-      )}
+      {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />}
+      {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={closeEditor} />}
     </div>
   );
 }
