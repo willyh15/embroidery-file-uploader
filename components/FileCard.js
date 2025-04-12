@@ -1,8 +1,11 @@
 import React from "react";
 import { ArrowDownCircle, RotateCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-export default function FileCard({ file, onConvert, onDownload }) {
-  if (!file || typeof file !== "object") return null;
+export default function FileCard({ file, onConvert, onDownload, onPreview, onEdit }) {
+  if (!file || typeof file !== "object" || !file.url || !file.name || !file.status) {
+    console.warn("Invalid file passed to FileCard:", file);
+    return null;
+  }
 
   const getStageColor = (stage) => {
     switch (stage) {
@@ -28,10 +31,10 @@ export default function FileCard({ file, onConvert, onDownload }) {
     <div className="bg-white shadow rounded p-4 mb-4 border border-gray-200">
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
-          <strong>{file.name || "Unnamed file"}</strong>
+          <strong>{file.name}</strong>
           {renderStatusIcon()}
         </div>
-        <div className="text-sm text-gray-600">{file.status || "Unknown"}</div>
+        <div className="text-sm text-gray-600">{file.status}</div>
       </div>
 
       {file.stage && (
@@ -43,7 +46,7 @@ export default function FileCard({ file, onConvert, onDownload }) {
         </div>
       )}
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 flex-wrap">
         {file.status === "Uploaded" && (
           <button onClick={onConvert} className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
             <RotateCw className="inline-block w-4 h-4 mr-1" /> Convert
@@ -65,6 +68,16 @@ export default function FileCard({ file, onConvert, onDownload }) {
           <button onClick={onConvert} className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600">
             <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
           </button>
+        )}
+        {file.status === "Converted" && (
+          <>
+            <button onClick={onPreview} className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+              Preview
+            </button>
+            <button onClick={onEdit} className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500">
+              Edit
+            </button>
+          </>
         )}
       </div>
     </div>
