@@ -1,4 +1,3 @@
-// index.js
 import { useState, useEffect, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -10,6 +9,7 @@ import SidebarFilters from "../components/SidebarFilters";
 import PaginationControls from "../components/PaginationControls";
 import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
+import StitchPreviewModal from "../components/StitchPreviewModal";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -25,6 +25,7 @@ function Home() {
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -131,18 +132,20 @@ function Home() {
     }
   };
 
+  const handlePreview = (file) => {
+    if (file?.convertedPes) setPreviewUrl(file.convertedPes);
+  };
+
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container">
       <Toaster position="top-right" />
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Welcome, {session.user.name}</h2>
-        <button onClick={() => signOut()} className="text-sm px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600">Sign out</button>
-      </div>
+      <h2>Welcome, {session.user.name}</h2>
+      <button onClick={() => signOut()}>Sign out</button>
 
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
@@ -156,16 +159,15 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-6">
-        {paginatedFiles.map(file => (
-          <FileCard
-            key={file.url}
-            file={file}
-            onConvert={() => handleConvert(file.url)}
-            onDownload={() => handleDownload(file.url, "pes")}
-          />
-        ))}
-      </div>
+      {paginatedFiles.map(file => (
+        <FileCard
+          key={file.url}
+          file={file}
+          onConvert={() => handleConvert(file.url)}
+          onDownload={() => handleDownload(file.url, "pes")}
+          onPreview={() => handlePreview(file)}
+        />
+      ))}
 
       <PaginationControls
         currentPage={currentPage}
@@ -175,6 +177,13 @@ function Home() {
       />
 
       <RecentActivityPanel uploadedFiles={uploadedFiles} />
+
+      {previewUrl && (
+        <StitchPreviewModal
+          pesUrl={previewUrl}
+          onClose={() => setPreviewUrl(null)}
+        />
+      )}
     </div>
   );
 }
