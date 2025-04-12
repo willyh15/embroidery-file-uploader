@@ -25,7 +25,7 @@ function Home() {
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewFileUrl, setPreviewFileUrl] = useState(null);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -132,8 +132,12 @@ function Home() {
     }
   };
 
-  const handlePreview = (file) => {
-    if (file?.convertedPes) setPreviewUrl(file.convertedPes);
+  const handlePreview = (fileUrl) => {
+    setPreviewFileUrl(fileUrl);
+  };
+
+  const closePreview = () => {
+    setPreviewFileUrl(null);
   };
 
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -165,7 +169,7 @@ function Home() {
           file={file}
           onConvert={() => handleConvert(file.url)}
           onDownload={() => handleDownload(file.url, "pes")}
-          onPreview={() => handlePreview(file)}
+          onPreview={() => handlePreview(file.url)}
         />
       ))}
 
@@ -178,11 +182,8 @@ function Home() {
 
       <RecentActivityPanel uploadedFiles={uploadedFiles} />
 
-      {previewUrl && (
-        <StitchPreviewModal
-          pesUrl={previewUrl}
-          onClose={() => setPreviewUrl(null)}
-        />
+      {previewFileUrl && (
+        <StitchPreviewModal fileUrl={previewFileUrl} onClose={closePreview} />
       )}
     </div>
   );
