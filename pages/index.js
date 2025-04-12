@@ -39,35 +39,40 @@ function Home() {
   }, []);
 
   const handleUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
+  if (!files.length) return;
+  setUploading(true);
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
 
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+  try {
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
 
-      const newFiles = data.urls.map(file => ({
-        ...file,
-        status: "Uploaded",
-        pesUrl: "",
-        taskId: "",
-        stage: "",
-      }));
+    const newFiles = data.urls.map(file => ({
+      ...file,
+      status: "Uploaded",
+      pesUrl: "",
+      taskId: "",
+      stage: "",
+    }));
 
-      console.log("[Upload] Received files:", newFiles);
-      setUploadedFiles(prev => [...prev, ...newFiles]);
-      toast.success("Upload complete");
-    } catch (err) {
-      console.error("[Upload Error]", err);
-      toast.error(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
+    console.log("[Upload] Received files:", newFiles);
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+
+    // **Fix**
+    setFilteredFiles(prev => [...prev, ...newFiles]);
+    setCurrentPage(1);
+
+    toast.success("Upload complete");
+  } catch (err) {
+    console.error("[Upload Error]", err);
+    toast.error(err.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   const handleConvert = async (fileUrl) => {
     console.log(`[Convert] Starting conversion for: ${fileUrl}`);
