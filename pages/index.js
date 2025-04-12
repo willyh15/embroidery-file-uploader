@@ -57,7 +57,8 @@ function Home() {
         stage: "",
       }));
 
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+      const validFiles = newFiles.filter(f => f.url && f.name);
+      setUploadedFiles(prev => [...prev, ...validFiles]);
       toast.success("Upload complete");
     } catch (err) {
       toast.error(err.message);
@@ -153,14 +154,16 @@ function Home() {
 
       <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {paginatedFiles.map(file => (
-        <FileCard
-          key={file.url}
-          file={file}
-          onConvert={() => handleConvert(file.url)}
-          onDownload={() => handleDownload(file.url, "pes")}
-        />
-      ))}
+      {paginatedFiles
+        .filter(file => file && file.url)
+        .map(file => (
+          <FileCard
+            key={file.url}
+            file={file}
+            onConvert={() => handleConvert(file.url)}
+            onDownload={() => handleDownload(file.url, "pes")}
+          />
+        ))}
 
       <PaginationControls
         currentPage={currentPage}
