@@ -119,7 +119,7 @@ function Home() {
   };
 
   const totalPages = Math.ceil(uploadedFiles.length / ITEMS_PER_PAGE);
-  const paginatedFiles = uploadedFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const currentFiles = uploadedFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -136,7 +136,7 @@ function Home() {
         onUpload={handleUpload}
       />
 
-      {paginatedFiles.map(file => (
+      {currentFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
