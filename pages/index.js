@@ -8,7 +8,7 @@ import UploadBox from "../components/UploadBox";
 import PaginationControls from "../components/PaginationControls";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20, 50];
 
 function Home() {
   const { data: session, status } = useSession();
@@ -19,6 +19,7 @@ function Home() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -118,8 +119,11 @@ function Home() {
     }
   };
 
-  const totalPages = Math.ceil(uploadedFiles.length / ITEMS_PER_PAGE);
-  const currentFiles = uploadedFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedFiles = uploadedFiles.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(uploadedFiles.length / itemsPerPage);
 
   if (!isClient || status === "loading") return null;
   if (!session) return null;
@@ -130,13 +134,9 @@ function Home() {
       <h2>Welcome, {session.user.name}</h2>
       <button onClick={() => signOut()}>Sign out</button>
 
-      <UploadBox
-        uploading={uploading}
-        dropRef={dropRef}
-        onUpload={handleUpload}
-      />
+      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
 
-      {currentFiles.map(file => (
+      {paginatedFiles.map(file => (
         <FileCard
           key={file.url}
           file={file}
@@ -145,13 +145,16 @@ function Home() {
         />
       ))}
 
-      {uploadedFiles.length > ITEMS_PER_PAGE && (
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
-      )}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={(val) => {
+          setItemsPerPage(val);
+          setCurrentPage(1);
+        }}
+      />
     </div>
   );
 }
