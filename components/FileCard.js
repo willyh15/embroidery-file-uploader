@@ -1,24 +1,33 @@
 import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 export default function FileCard({ file, onConvert, onDownload, onPreview, onEdit }) {
   const [retrying, setRetrying] = useState(false);
+  const [countdown, setCountdown] = useState(3); // Countdown seconds after retry
+
+  useEffect(() => {
+    let timer;
+    if (retrying && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [retrying, countdown]);
 
   const handleRetry = async () => {
     setRetrying(true);
+    setCountdown(3); // Reset countdown
     try {
       await onConvert(file.url);
-      toast.success("Retry started successfully!");
+      toast.success("Retry started!");
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
     } catch (err) {
       console.error("[Retry Error]", err);
-      toast.error("Retry failed. Please try again.");
-    } finally {
-      // Keep retrying true until next polling or manual change
-      setTimeout(() => setRetrying(false), 5000); // Just in case no update
+      toast.error("Retry failed.");
     }
   };
 
@@ -101,7 +110,8 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           >
             {retrying ? (
               <>
-                <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" /> Polling...
+                <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
+                Polling... ({countdown}s)
               </>
             ) : (
               <>
