@@ -38,100 +38,100 @@ function Home() {
   }, []);
 
   const handleUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
+  if (!files.length) return;
+  setUploading(true);
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
 
-    const localFiles = files.map(file => ({
-      name: file.name,
-      url: URL.createObjectURL(file),
-      status: "Uploading",
-      stage: "uploading",
-      uploadProgress: 0,
-      isLocal: true,
-      timestamp: Date.now(),
-    }));
+  const localFiles = files.map(file => ({
+    name: file.name,
+    url: URL.createObjectURL(file),
+    status: "Uploading",
+    stage: "uploading",
+    uploadProgress: 0,
+    isLocal: true,
+    timestamp: Date.now(),
+  }));
 
-    setUploadedFiles(prev => [...localFiles, ...prev]);
-    setFilteredFiles(prev => [...localFiles, ...prev]);
-    setCurrentPage(1);
+  setUploadedFiles(prev => [...localFiles, ...prev]);
+  setFilteredFiles(prev => [...localFiles, ...prev]);
+  setCurrentPage(1);
 
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload", true);
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://embroideryfiles.duckdns.org/upload", true); // <<<<< IMPORTANT CORRECTION
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          setUploadedFiles(prev => prev.map(f => 
-            f.isLocal ? { ...f, uploadProgress: progress } : f
-          ));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadedFiles(prev => prev.map(f => 
+          f.isLocal ? { ...f, uploadProgress: progress } : f
+        ));
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status !== 200) {
+        toast.error("Upload failed");
+        return;
+      }
+
+      const data = JSON.parse(xhr.responseText);
+      const newFiles = data.urls.map(file => ({
+        ...file,
+        status: "Uploaded",
+        pesUrl: "",
+        taskId: "",
+        stage: "",
+        timestamp: Date.now(),
+      }));
+
+      setUploadedFiles(prev => [
+        ...newFiles,
+        ...prev.filter(f => !f.isLocal)
+      ]);
+      setFilteredFiles(prev => [
+        ...newFiles,
+        ...prev.filter(f => !f.isLocal)
+      ]);
+
+      setTimeout(() => {
+        const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
+        if (firstNewFile) {
+          firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
+          firstNewFile.classList.add("animate-bounce");
+          setTimeout(() => firstNewFile.classList.remove("animate-bounce"), 1000);
         }
-      };
+      }, 300);
 
-      xhr.onload = async () => {
-        if (xhr.status !== 200) {
-          toast.error("Upload failed");
-          return;
+      toast.success("Upload complete!");
+    };
+
+    xhr.onerror = () => {
+      toast.error("Upload error");
+      setUploadedFiles(prev =>
+        prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
+      );
+
+      setTimeout(() => {
+        const failedCard = document.querySelector(`[data-file-url="${localFiles[0].url}"]`);
+        if (failedCard) {
+          failedCard.classList.add("animate-bounce", "ring-4", "ring-red-500");
+          setTimeout(() => failedCard.classList.remove("animate-bounce", "ring-4", "ring-red-500"), 2000);
         }
+      }, 300);
+    };
 
-        const data = JSON.parse(xhr.responseText);
-        const newFiles = data.urls.map(file => ({
-          ...file,
-          status: "Uploaded",
-          pesUrl: "",
-          taskId: "",
-          stage: "",
-          timestamp: Date.now(),
-        }));
+    xhr.send(formData);
 
-        setUploadedFiles(prev => [
-          ...newFiles,
-          ...prev.filter(f => !f.isLocal)
-        ]);
-        setFilteredFiles(prev => [
-          ...newFiles,
-          ...prev.filter(f => !f.isLocal)
-        ]);
-
-        setTimeout(() => {
-          const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
-          if (firstNewFile) {
-            firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
-            firstNewFile.classList.add("animate-bounce");
-            setTimeout(() => firstNewFile.classList.remove("animate-bounce"), 1000);
-          }
-        }, 300);
-
-        toast.success("Upload complete!");
-      };
-
-      xhr.onerror = () => {
-        toast.error("Upload error");
-        setUploadedFiles(prev =>
-          prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
-        );
-
-        setTimeout(() => {
-          const failedCard = document.querySelector(`[data-file-url="${localFiles[0].url}"]`);
-          if (failedCard) {
-            failedCard.classList.add("animate-bounce", "ring-4", "ring-red-500");
-            setTimeout(() => failedCard.classList.remove("animate-bounce", "ring-4", "ring-red-500"), 2000);
-          }
-        }, 300);
-      };
-
-      xhr.send(formData);
-
-    } catch (err) {
-      console.error("[Upload Error]", err);
-      toast.error(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
+  } catch (err) {
+    console.error("[Upload Error]", err);
+    toast.error(err.message);
+  } finally {
+    setUploading(false);
+  }
+};
 
   const handleConvert = async (fileUrl) => {
     console.log(`[Convert] Starting conversion for: ${fileUrl}`);
