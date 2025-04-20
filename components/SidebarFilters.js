@@ -1,53 +1,56 @@
-import { useState, useEffect } from "react";
-
-export default function SidebarFilters({ filters = {}, onFilterChange }) {
-  const [status, setStatus] = useState(filters.status || "");
-  const [type, setType] = useState(filters.type || "");
-  const [query, setQuery] = useState(filters.query || "");
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (typeof onFilterChange === "function") {
-        onFilterChange({ status, type, query });
-      }
-    }, 150); // small debounce to avoid rapid calls
-
-    return () => clearTimeout(timeout);
-  }, [status, type, query]);
+export default function SidebarFilters({ filters, onFilterChange }) {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    onFilterChange((prev) => ({ ...prev, [name]: value }));
+  };
 
   return (
-    <div className="w-full p-4 space-y-4 bg-white rounded-xl shadow-md border">
-      <h2 className="text-lg font-semibold text-gray-700">Filters</h2>
-      <div className="space-y-2">
-        <input
-          type="text"
-          placeholder="Search by name..."
-          className="w-full p-2 border rounded"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select
-          className="w-full p-2 border rounded"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">All Statuses</option>
-          <option value="Uploaded">Uploaded</option>
-          <option value="Converting">Converting</option>
-          <option value="Converted">Converted</option>
-          <option value="Error">Error</option>
-        </select>
-        <select
-          className="w-full p-2 border rounded"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
-          <option value="">All Types</option>
-          <option value="png">PNG</option>
-          <option value="jpg">JPG</option>
-          <option value="svg">SVG</option>
-          <option value="pes">PES</option>
-        </select>
+    <div className="mb-6">
+      <h3 className="text-lg font-semibold mb-4">Filters</h3>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-gray-700 text-sm mb-2">Status</label>
+          <select
+            name="status"
+            value={filters.status}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded p-2"
+          >
+            <option value="">All</option>
+            <option value="Uploaded">Uploaded</option>
+            <option value="Converting">Converting</option>
+            <option value="Converted">Converted</option>
+            <option value="Error">Error</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 text-sm mb-2">File Type</label>
+          <select
+            name="type"
+            value={filters.type}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded p-2"
+          >
+            <option value="">All Types</option>
+            <option value=".png">PNG</option>
+            <option value=".jpg">JPG</option>
+            <option value=".svg">SVG</option>
+            <option value=".pes">PES</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-gray-700 text-sm mb-2">Search</label>
+          <input
+            type="text"
+            name="query"
+            value={filters.query}
+            onChange={handleChange}
+            placeholder="Search by name..."
+            className="w-full border border-gray-300 rounded p-2"
+          />
+        </div>
       </div>
     </div>
   );
