@@ -102,34 +102,37 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
-  console.log(`[Polling] Task ID: ${taskId}`);
+  console.log(`[Polling] Starting for Task ID: ${taskId}`);
   const interval = setInterval(async () => {
     try {
-      const res = await fetch(`/api/progress?taskId=${taskId}`);
-      if (!res.ok) throw new Error(`Progress API error: ${res.status}`);
+      const res = await fetch(`/api/progress?taskId=${encodeURIComponent(taskId)}`);
+      const statusData = await res.json();
 
-      const data = await res.json();
-      console.log("[Polling Response]", data);
+      if (!res.ok || !statusData) {
+        console.error("[Polling] Bad response from progress API:", res.status, statusData);
+        updateFileStatus(fileUrl, "Error", "poll-failed");
+        clearInterval(interval);
+        return;
+      }
 
-      if (data.state === "done" && data.pesUrl) {
-        updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
+      if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
+        updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
+        toast.success("Conversion complete");
         clearInterval(interval);
-        toast.success("Conversion complete!");
-      } else if (data.state === "error" || data.status?.startsWith("Error")) {
-        updateFileStatus(fileUrl, "Error", "failed");
+      } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
+        updateFileStatus(fileUrl, "Error", "conversion-error");
+        toast.error("Conversion failed");
         clearInterval(interval);
-        toast.error("Conversion failed.");
       } else {
-        // Still processing - update intermediate stage if available
-        updateFileStatus(fileUrl, "Converting", data.stage || "processing");
+        updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
       }
     } catch (err) {
       console.error("[Polling Error]", err);
       updateFileStatus(fileUrl, "Error", "poll-failed");
-      clearInterval(interval);
       toast.error("Polling error");
+      clearInterval(interval);
     }
-  }, 3000); // you can change to 1500 if you want faster
+  }, 3000);
 };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
