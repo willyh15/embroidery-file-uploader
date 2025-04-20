@@ -1,7 +1,7 @@
 // pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast"; // <- Only import `toast`
 import FileCard from "../components/FileCard";
 import UploadBox from "../components/UploadBox";
 import SidebarFilters from "../components/SidebarFilters";
