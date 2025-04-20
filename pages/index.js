@@ -1,7 +1,6 @@
-// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { toast } from "react-hot-toast"; // <- Only import `toast`
+import { toast } from "react-hot-toast";
 import FileCard from "../components/FileCard";
 import UploadBox from "../components/UploadBox";
 import SidebarFilters from "../components/SidebarFilters";
@@ -10,6 +9,7 @@ import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditor from "../components/StitchEditor";
+import { CustomToaster } from "../components/CustomToaster"; // << Don't forget this!
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -27,7 +27,6 @@ function Home() {
   const [editFileUrl, setEditFileUrl] = useState(null);
 
   useEffect(() => {
-    console.log("[Home] Component mounted");
     setIsClient(true);
   }, []);
 
@@ -39,92 +38,100 @@ function Home() {
   }, []);
 
   const handleUpload = async (files) => {
-  if (!files.length) return;
-  setUploading(true);
+    if (!files.length) return;
+    setUploading(true);
 
-  const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
 
-  const localFiles = files.map(file => ({
-    name: file.name,
-    url: URL.createObjectURL(file),
-    status: "Uploading",
-    stage: "uploading",
-    uploadProgress: 0,
-    isLocal: true,
-  }));
+    const localFiles = files.map(file => ({
+      name: file.name,
+      url: URL.createObjectURL(file),
+      status: "Uploading",
+      stage: "uploading",
+      uploadProgress: 0,
+      isLocal: true,
+      timestamp: Date.now(),
+    }));
 
-  setUploadedFiles(prev => [...localFiles, ...prev]);
-  setFilteredFiles(prev => [...localFiles, ...prev]);
-  setCurrentPage(1);
+    setUploadedFiles(prev => [...localFiles, ...prev]);
+    setFilteredFiles(prev => [...localFiles, ...prev]);
+    setCurrentPage(1);
 
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/upload", true);
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload", true);
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadedFiles(prev => prev.map(f => 
-          f.isLocal ? { ...f, uploadProgress: progress } : f
-        ));
-      }
-    };
-
-    xhr.onload = async () => {
-      if (xhr.status !== 200) {
-        toast.error("Upload failed");
-        return;
-      }
-
-      const data = JSON.parse(xhr.responseText);
-      const newFiles = data.urls.map(file => ({
-        ...file,
-        status: "Uploaded",
-        pesUrl: "",
-        taskId: "",
-        stage: "",
-      }));
-
-      console.log("[Upload] Server uploaded files:", newFiles);
-
-      setUploadedFiles(prev => [
-        ...newFiles,
-        ...prev.filter(f => !f.isLocal)
-      ]);
-
-      setFilteredFiles(prev => [
-        ...newFiles,
-        ...prev.filter(f => !f.isLocal)
-      ]);
-
-      setTimeout(() => {
-        const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
-        if (firstNewFile) {
-          firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
-          firstNewFile.classList.add("animate-bounce");
-          setTimeout(() => {
-            firstNewFile.classList.remove("animate-bounce");
-          }, 1000);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadedFiles(prev => prev.map(f => 
+            f.isLocal ? { ...f, uploadProgress: progress } : f
+          ));
         }
-      }, 300);
+      };
 
-      toast.success("Upload complete!");
-    };
+      xhr.onload = async () => {
+        if (xhr.status !== 200) {
+          toast.error("Upload failed");
+          return;
+        }
 
-    xhr.onerror = () => {
-      toast.error("Upload error");
-    };
+        const data = JSON.parse(xhr.responseText);
+        const newFiles = data.urls.map(file => ({
+          ...file,
+          status: "Uploaded",
+          pesUrl: "",
+          taskId: "",
+          stage: "",
+          timestamp: Date.now(),
+        }));
 
-    xhr.send(formData);
+        setUploadedFiles(prev => [
+          ...newFiles,
+          ...prev.filter(f => !f.isLocal)
+        ]);
+        setFilteredFiles(prev => [
+          ...newFiles,
+          ...prev.filter(f => !f.isLocal)
+        ]);
 
-  } catch (err) {
-    console.error("[Upload Error]", err);
-    toast.error(err.message);
-  } finally {
-    setUploading(false);
-  }
-};
+        setTimeout(() => {
+          const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
+          if (firstNewFile) {
+            firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
+            firstNewFile.classList.add("animate-bounce");
+            setTimeout(() => firstNewFile.classList.remove("animate-bounce"), 1000);
+          }
+        }, 300);
+
+        toast.success("Upload complete!");
+      };
+
+      xhr.onerror = () => {
+        toast.error("Upload error");
+        setUploadedFiles(prev =>
+          prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
+        );
+
+        setTimeout(() => {
+          const failedCard = document.querySelector(`[data-file-url="${localFiles[0].url}"]`);
+          if (failedCard) {
+            failedCard.classList.add("animate-bounce", "ring-4", "ring-red-500");
+            setTimeout(() => failedCard.classList.remove("animate-bounce", "ring-4", "ring-red-500"), 2000);
+          }
+        }, 300);
+      };
+
+      xhr.send(formData);
+
+    } catch (err) {
+      console.error("[Upload Error]", err);
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleConvert = async (fileUrl) => {
     console.log(`[Convert] Starting conversion for: ${fileUrl}`);
@@ -150,70 +157,64 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
-  console.log(`[Polling] Starting for Task ID: ${taskId}`);
-  const interval = setInterval(async () => {
-    try {
-      const res = await fetch(`/api/progress?taskId=${encodeURIComponent(taskId)}`);
-      const statusData = await res.json();
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/progress?taskId=${encodeURIComponent(taskId)}`);
+        const statusData = await res.json();
 
-      if (!res.ok || !statusData) {
-        console.error("[Polling] Bad response from progress API:", res.status, statusData);
+        if (!res.ok || !statusData) {
+          console.error("[Polling] Bad response from progress API:", res.status, statusData);
+          updateFileStatus(fileUrl, "Error", "poll-failed");
+          clearInterval(interval);
+          return;
+        }
+
+        if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
+          updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
+          toast.success("Conversion complete");
+          clearInterval(interval);
+        } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
+          updateFileStatus(fileUrl, "Error", "conversion-error");
+          toast.error("Conversion failed");
+          clearInterval(interval);
+        } else {
+          updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
+        }
+      } catch (err) {
+        console.error("[Polling Error]", err);
         updateFileStatus(fileUrl, "Error", "poll-failed");
+        toast.error("Polling error");
         clearInterval(interval);
-        return;
       }
-
-      if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
-        updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
-        toast.success("Conversion complete");
-        clearInterval(interval);
-      } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
-        updateFileStatus(fileUrl, "Error", "conversion-error");
-        toast.error("Conversion failed");
-        clearInterval(interval);
-      } else {
-        updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
-      }
-    } catch (err) {
-      console.error("[Polling Error]", err);
-      updateFileStatus(fileUrl, "Error", "poll-failed");
-      toast.error("Polling error");
-      clearInterval(interval);
-    }
-  }, 3000);
-};
+    }, 3000);
+  };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-  if (!fileUrl || !status) {
-    console.warn("[updateFileStatus] Skipping invalid update:", { fileUrl, status });
-    return;
-  }
+    if (!fileUrl || !status) return;
 
-  setUploadedFiles(prev => {
-    const updated = prev.map(f => {
-      if (!f || !f.url) return f;
-      if (f.url === fileUrl) {
-        console.log("[updateFileStatus] Updating:", { fileUrl, status, stage });
-        return { ...f, status, stage, convertedPes: pesUrl };
-      }
-      return f;
-    });
-
-    // If the file was successfully converted, scroll to it
-    if (status === "Converted") {
-      setTimeout(() => {
-        const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
-        if (card) {
-          card.scrollIntoView({ behavior: "smooth", block: "center" });
-          card.classList.add("ring-4", "ring-green-400");
-          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+    setUploadedFiles(prev => {
+      const updated = prev.map(f => {
+        if (!f || !f.url) return f;
+        if (f.url === fileUrl) {
+          return { ...f, status, stage, convertedPes: pesUrl };
         }
-      }, 300);
-    }
+        return f;
+      });
 
-    return updated;
-  });
-};
+      if (status === "Converted") {
+        setTimeout(() => {
+          const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.classList.add("ring-4", "ring-green-400");
+            setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+          }
+        }, 300);
+      }
+
+      return updated;
+    });
+  };
 
   const handleDownload = async (fileUrl, format) => {
     try {
@@ -233,20 +234,19 @@ function Home() {
   const closeEditor = () => setEditFileUrl(null);
 
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-  console.log("[Render] paginatedFiles:", paginatedFiles);
 
   if (!isClient) return null;
 
   return (
     <div className="container">
-      <h2>Welcome</h2>
+      <CustomToaster />
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">Welcome</h2>
 
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       <SidebarFilters
         filters={{ status: "", type: "", query: "" }}
         onFilterChange={(results) => {
-          console.log("[SidebarFilters] Filtered results:", results);
           setFilteredFiles(results.filter(r => r && r.status));
           setCurrentPage(1);
         }}
@@ -256,13 +256,8 @@ function Home() {
 
       <div className="file-grid">
         {Array.isArray(paginatedFiles)
-          ? paginatedFiles.map((file, i) => {
-              if (!file || !file.url) {
-                console.warn(`[Render] Skipping null/undefined file at index ${i}`, file);
-                return null;
-              }
-
-              return (
+          ? paginatedFiles.map((file, i) => (
+              file && file.url ? (
                 <FileCard
                   key={file.url}
                   file={file}
@@ -271,9 +266,9 @@ function Home() {
                   onPreview={() => handlePreview(file.url)}
                   onEdit={() => handleEdit(file.url)}
                 />
-              );
-            })
-          : "[Render] paginatedFiles not array!"}
+              ) : null
+            ))
+          : "[Render] paginatedFiles not array"}
       </div>
 
       <PaginationControls
