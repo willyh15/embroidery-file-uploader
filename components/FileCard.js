@@ -4,7 +4,8 @@ import toast from "react-hot-toast";
 
 export default function FileCard({ file, onConvert, onDownload, onPreview, onEdit }) {
   const [retrying, setRetrying] = useState(false);
-  const [countdown, setCountdown] = useState(3); // Countdown seconds after retry
+  const [countdown, setCountdown] = useState(3);
+  const [cooldownActive, setCooldownActive] = useState(false);
 
   useEffect(() => {
     let timer;
@@ -18,16 +19,23 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
   const handleRetry = async () => {
     setRetrying(true);
-    setCountdown(3); // Reset countdown
+    setCountdown(3);
     try {
       await onConvert(file.url);
       toast.success("Retry started!");
       setTimeout(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 100);
+      // Start cooldown after countdown finishes
+      setTimeout(() => {
+        setRetrying(false);
+        setCooldownActive(true);
+        setTimeout(() => setCooldownActive(false), 5000); // 5 seconds cooldown
+      }, 3000);
     } catch (err) {
       console.error("[Retry Error]", err);
       toast.error("Retry failed.");
+      setRetrying(false);
     }
   };
 
@@ -103,9 +111,11 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         {file.status === "Error" && (
           <button
             onClick={handleRetry}
-            disabled={retrying}
+            disabled={retrying || cooldownActive}
             className={`px-4 py-1 rounded ${
-              retrying ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600"
+              retrying ? "bg-gray-400 cursor-not-allowed" :
+              cooldownActive ? "bg-gray-300 cursor-not-allowed" :
+              "bg-red-500 hover:bg-red-600"
             } text-white`}
           >
             {retrying ? (
@@ -113,6 +123,8 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
                 <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
                 Polling... ({countdown}s)
               </>
+            ) : cooldownActive ? (
+              "Cooldown..."
             ) : (
               <>
                 <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
