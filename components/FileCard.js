@@ -24,13 +24,17 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       await onConvert(file.url);
       toast.success("Retry started!");
       setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        const card = document.querySelector(`[data-file-url="${file.url}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          card.classList.add("ring-4", "ring-blue-400");
+          setTimeout(() => card.classList.remove("ring-4", "ring-blue-400"), 3000);
+        }
       }, 100);
-      // Start cooldown after countdown finishes
       setTimeout(() => {
         setRetrying(false);
         setCooldownActive(true);
-        setTimeout(() => setCooldownActive(false), 5000); // 5 seconds cooldown
+        setTimeout(() => setCooldownActive(false), 5000);
       }, 3000);
     } catch (err) {
       console.error("[Retry Error]", err);
@@ -61,6 +65,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
   return (
     <div
+      data-file-url={file.url}
       className={`bg-white shadow rounded p-4 mb-4 border border-gray-200 transition-all duration-500 ${
         retrying ? "ring-2 ring-blue-400 animate-pulse" : ""
       }`}
