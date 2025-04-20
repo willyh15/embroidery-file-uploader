@@ -17,7 +17,8 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       console.error("[Retry Error]", err);
       toast.error("Retry failed. Please try again.");
     } finally {
-      setRetrying(false);
+      // Keep retrying true until next polling or manual change
+      setTimeout(() => setRetrying(false), 5000); // Just in case no update
     }
   };
 
@@ -42,7 +43,11 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   };
 
   return (
-    <div className="bg-white shadow rounded p-4 mb-4 border border-gray-200">
+    <div
+      className={`bg-white shadow rounded p-4 mb-4 border border-gray-200 transition-all duration-500 ${
+        retrying ? "ring-2 ring-blue-400 animate-pulse" : ""
+      }`}
+    >
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
           <strong>{file.name}</strong>
