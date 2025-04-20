@@ -1,42 +1,63 @@
-// /pages/api/progress.js
-import { Redis } from "@upstash/redis";
+// pages/api/progress.js
+import fetch from "node-fetch";
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+export const config = {
+  runtime: "edge", // use Vercel Edge Runtime for faster polling
+};
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return new Response(
+      JSON.stringify({ error: "Method Not Allowed" }),
+      { status: 405, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  const { fileUrl } = req.query;
-  if (!fileUrl) return res.status(400).json({ error: "Missing fileUrl" });
-
   try {
-    const [progress, rawStatus] = await Promise.all([
-      redis.get(`progress:${fileUrl}`),
-      redis.get(`status:${fileUrl}`),
-    ]);
+    const { searchParams } = new URL(req.url);
+    const taskId = searchParams.get("taskId");
 
-    let parsedStatus = { status: "Pending", stage: "pending", timestamp: null };
-    if (typeof rawStatus === "string") {
-      try {
-        parsedStatus = JSON.parse(rawStatus);
-      } catch (err) {
-        parsedStatus = { status: rawStatus, stage: "unknown", timestamp: null };
-      }
+    if (!taskId) {
+      return new Response(
+        JSON.stringify({ error: "Missing taskId parameter" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    return res.status(200).json({
-      progress: progress !== null ? Number(progress) : 0,
-      status: parsedStatus.status,
-      stage: parsedStatus.stage,
-      timestamp: parsedStatus.timestamp,
+    const flaskStatusUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/status/${taskId}`;
+
+    const flaskResponse = await fetch(flaskStatusUrl, {
+      method: "GET",
     });
-  } catch (err) {
-    console.error("Redis polling error:", err);
-    return res.status(500).json({ error: "Redis polling failed" });
+
+    const text = await flaskResponse.text();
+    if (!text.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Empty response from Flask server" }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      console.error("[Progress API] Failed to parse Flask response:", text);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON from Flask", raw: text }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify(data),
+      { status: flaskResponse.ok ? 200 : 500, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("[Progress API] Unexpected error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
