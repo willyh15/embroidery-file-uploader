@@ -138,8 +138,8 @@ function Home() {
     return;
   }
 
-  setUploadedFiles(prev =>
-    prev.map(file => {
+  setUploadedFiles(prev => {
+    const updatedFiles = prev.map(file => {
       if (!file || !file.url) return file;
       if (file.url !== fileUrl) return file;
 
@@ -149,10 +149,32 @@ function Home() {
         ...file,
         status,
         stage: stage || "processing",
-        convertedPes: pesUrl || file.convertedPes || "", // Keep old pesUrl if not new one
+        convertedPes: pesUrl || file.convertedPes || "",
+        updatedAt: Date.now(), // Track update timestamp
       };
-    })
-  );
+    });
+
+    // Auto-sort: newest updated files first
+    return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  });
+
+  // Also update the filtered list so pagination stays correct
+  setFilteredFiles(prev => {
+    const updatedFiles = prev.map(file => {
+      if (!file || !file.url) return file;
+      if (file.url !== fileUrl) return file;
+
+      return {
+        ...file,
+        status,
+        stage: stage || "processing",
+        convertedPes: pesUrl || file.convertedPes || "",
+        updatedAt: Date.now(),
+      };
+    });
+
+    return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  });
 };
 
   const handleDownload = async (fileUrl, format) => {
