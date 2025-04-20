@@ -1,11 +1,18 @@
-import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle, Sparkles } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
 export default function FileCard({ file, onConvert, onDownload, onPreview, onEdit }) {
   const [retrying, setRetrying] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [cooldownActive, setCooldownActive] = useState(false);
+  const [isNew, setIsNew] = useState(true);
+  const cardRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsNew(false), 10000); // New badge disappears after 10 seconds
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -23,18 +30,20 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     try {
       await onConvert(file.url);
       toast.success("Retry started!");
+
       setTimeout(() => {
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: "center" });
-          card.classList.add("ring-4", "ring-blue-400");
-          setTimeout(() => card.classList.remove("ring-4", "ring-blue-400"), 3000);
+          card.classList.add("ring-4", "ring-green-400");
+          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
         }
       }, 100);
+
       setTimeout(() => {
         setRetrying(false);
         setCooldownActive(true);
-        setTimeout(() => setCooldownActive(false), 5000);
+        setTimeout(() => setCooldownActive(false), 5000); // 5 sec cooldown
       }, 3000);
     } catch (err) {
       console.error("[Retry Error]", err);
@@ -65,6 +74,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
   return (
     <div
+      ref={cardRef}
       data-file-url={file.url}
       className={`bg-white shadow rounded p-4 mb-4 border border-gray-200 transition-all duration-500 ${
         retrying ? "ring-2 ring-blue-400 animate-pulse" : ""
@@ -73,6 +83,11 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
           <strong>{file.name}</strong>
+          {isNew && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-pulse flex items-center">
+              <Sparkles className="w-3 h-3 mr-1" /> NEW
+            </span>
+          )}
           {renderStatusIcon()}
         </div>
         <div className="text-sm text-gray-600">{file.status}</div>
