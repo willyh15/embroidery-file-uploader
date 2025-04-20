@@ -46,9 +46,15 @@ function Home() {
   files.forEach((file) => formData.append("files", file));
 
   try {
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const flaskUploadUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
+
+    const res = await fetch(flaskUploadUrl, {
+      method: "POST",
+      body: formData,
+    });
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
+    if (!res.ok || !data.urls) throw new Error(data.error || "Upload failed");
 
     const newFiles = data.urls.map(file => ({
       ...file,
@@ -60,15 +66,13 @@ function Home() {
 
     console.log("[Upload] Received files:", newFiles);
     setUploadedFiles(prev => [...prev, ...newFiles]);
-
-    // **Fix**
     setFilteredFiles(prev => [...prev, ...newFiles]);
     setCurrentPage(1);
 
     toast.success("Upload complete");
   } catch (err) {
     console.error("[Upload Error]", err);
-    toast.error(err.message);
+    toast.error(err.message || "Upload failed");
   } finally {
     setUploading(false);
   }
