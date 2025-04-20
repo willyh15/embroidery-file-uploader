@@ -5,15 +5,18 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = async () => {
-    setRetrying(true);
-    try {
-      await onConvert(file.url);
-    } catch (err) {
-      console.error("[Retry Error]", err);
-    } finally {
-      setRetrying(false);
-    }
-  };
+  setRetrying(true);
+  try {
+    await onConvert(file.url);
+    toast.success("Retry started successfully!");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (err) {
+    console.error("[Retry Error]", err);
+    toast.error("Retry failed. Please try again.");
+  } finally {
+    setRetrying(false);
+  }
+};
 
   const renderStatusBadge = () => {
     switch (file.status) {
