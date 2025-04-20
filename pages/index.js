@@ -102,30 +102,35 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
-    console.log(`[Polling] Task ID: ${taskId}`);
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
-        const statusData = await res.json();
+  console.log(`[Polling] Task ID: ${taskId}`);
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/progress?taskId=${taskId}`);
+      if (!res.ok) throw new Error(`Progress API error: ${res.status}`);
 
-        if (statusData.state === "done") {
-          updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
-          clearInterval(interval);
-          toast.success("Conversion complete");
-        } else if (statusData.state === "error") {
-          updateFileStatus(fileUrl, "Error", "failed");
-          clearInterval(interval);
-          toast.error("Conversion failed");
-        } else {
-          updateFileStatus(fileUrl, "Converting", statusData.state);
-        }
-      } catch (err) {
-        console.error("[Polling Error]", err);
-        toast.error("Polling error");
+      const data = await res.json();
+      console.log("[Polling Response]", data);
+
+      if (data.state === "done" && data.pesUrl) {
+        updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
         clearInterval(interval);
+        toast.success("Conversion complete!");
+      } else if (data.state === "error" || data.status?.startsWith("Error")) {
+        updateFileStatus(fileUrl, "Error", "failed");
+        clearInterval(interval);
+        toast.error("Conversion failed.");
+      } else {
+        // Still processing - update intermediate stage if available
+        updateFileStatus(fileUrl, "Converting", data.stage || "processing");
       }
-    }, 3000);
-  };
+    } catch (err) {
+      console.error("[Polling Error]", err);
+      updateFileStatus(fileUrl, "Error", "poll-failed");
+      clearInterval(interval);
+      toast.error("Polling error");
+    }
+  }, 3000); // you can change to 1500 if you want faster
+};
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
     if (!fileUrl || !status) {
