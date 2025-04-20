@@ -133,22 +133,27 @@ function Home() {
 };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-    if (!fileUrl || !status) {
-      console.warn("[updateFileStatus] Skipping invalid update:", { fileUrl, status });
-      return;
-    }
+  if (!fileUrl || !status) {
+    console.warn("[updateFileStatus] Skipping invalid update:", { fileUrl, status });
+    return;
+  }
 
-    setUploadedFiles(prev =>
-      prev.map(f => {
-        if (!f || !f.url) return f;
-        if (f.url === fileUrl) {
-          console.log("[updateFileStatus] Updating:", { fileUrl, status, stage });
-          return { ...f, status, stage, convertedPes: pesUrl };
-        }
-        return f;
-      })
-    );
-  };
+  setUploadedFiles(prev =>
+    prev.map(file => {
+      if (!file || !file.url) return file;
+      if (file.url !== fileUrl) return file;
+
+      console.log("[updateFileStatus] Updating file:", { fileUrl, status, stage, pesUrl });
+
+      return {
+        ...file,
+        status,
+        stage: stage || "processing",
+        convertedPes: pesUrl || file.convertedPes || "", // Keep old pesUrl if not new one
+      };
+    })
+  );
+};
 
   const handleDownload = async (fileUrl, format) => {
     try {
