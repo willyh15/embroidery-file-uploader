@@ -32,7 +32,10 @@ export default async function handler(req, res) {
       for (const file of fileArray) {
         const buffer = fs.readFileSync(file.filepath);
         const safeName = path.basename(file.originalFilename || "upload");
-        formData.append("files", buffer, safeName);
+        formData.append("files", buffer, {
+          filename: safeName,
+          contentType: file.mimetype || "application/octet-stream",
+        });
       }
 
       const flaskUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
