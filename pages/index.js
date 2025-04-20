@@ -142,42 +142,33 @@ function Home() {
   }
 
   setUploadedFiles(prev => {
-    const updatedFiles = prev.map(file => {
+    const updated = prev.map(file => {
       if (!file || !file.url) return file;
-      if (file.url !== fileUrl) return file;
-
-      console.log("[updateFileStatus] Updating file:", { fileUrl, status, stage, pesUrl });
-
-      return {
-        ...file,
-        status,
-        stage: stage || "processing",
-        convertedPes: pesUrl || file.convertedPes || "",
-        updatedAt: Date.now(),
-      };
+      if (file.url === fileUrl) {
+        console.log("[updateFileStatus] Updating:", { fileUrl, status, stage });
+        return {
+          ...file,
+          status,
+          stage,
+          convertedPes: pesUrl || file.convertedPes || "",
+          updatedAt: new Date().toISOString(), // optional: for smarter sorting
+        };
+      }
+      return file;
     });
 
-    return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  });
-
-  setFilteredFiles(prev => {
-    const updatedFiles = prev.map(file => {
-      if (!file || !file.url) return file;
-      if (file.url !== fileUrl) return file;
-
-      return {
-        ...file,
-        status,
-        stage: stage || "processing",
-        convertedPes: pesUrl || file.convertedPes || "",
-        updatedAt: Date.now(),
-      };
+    // **Auto-sort most recently updated files to top**
+    updated.sort((a, b) => {
+      const timeA = new Date(a.updatedAt || 0).getTime();
+      const timeB = new Date(b.updatedAt || 0).getTime();
+      return timeB - timeA;
     });
 
-    return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    return updated;
   });
 
-  setCurrentPage(1); // <== This line resets pagination to page 1 after any update
+  // **Optional: Reset pagination after status changes**
+  setCurrentPage(1);
 };
 
   const handleDownload = async (fileUrl, format) => {
