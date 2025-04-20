@@ -239,7 +239,6 @@ function Home() {
 
   return (
     <div className="container">
-      <Toaster position="top-right" />
       <h2>Welcome</h2>
 
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
