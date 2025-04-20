@@ -7,28 +7,19 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const [countdown, setCountdown] = useState(3);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [isNew, setIsNew] = useState(true);
-  const [uploadDone, setUploadDone] = useState(false);
   const cardRef = useRef(null);
 
-  // New file badge timeout
   useEffect(() => {
     const timer = setTimeout(() => setIsNew(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Upload completion detection
-  useEffect(() => {
-    if (file.uploadProgress === 100) {
-      const timeout = setTimeout(() => setUploadDone(true), 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [file.uploadProgress]);
-
-  // Retry countdown
   useEffect(() => {
     let timer;
     if (retrying && countdown > 0) {
-      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+      timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
     }
     return () => clearTimeout(timer);
   }, [retrying, countdown]);
@@ -39,7 +30,10 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
     try {
       await onConvert(file.url);
-      toast.success("Retry started!");
+      toast.success("Retry started!", {
+        icon: "✅",
+        className: "animate-bounce",
+      });
 
       setTimeout(() => {
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
@@ -48,7 +42,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           card.classList.add("ring-4", "ring-green-400", "animate-bounce");
           setTimeout(() => {
             card.classList.remove("ring-4", "ring-green-400", "animate-bounce");
-          }, 3000);
+          }, 2000);
         }
       }, 100);
 
@@ -57,9 +51,13 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         setCooldownActive(true);
         setTimeout(() => setCooldownActive(false), 5000);
       }, 3000);
+
     } catch (err) {
       console.error("[Retry Error]", err);
-      toast.error("Retry failed.");
+      toast.error("Retry failed!", {
+        icon: "❌",
+        className: "animate-bounce",
+      });
 
       const card = document.querySelector(`[data-file-url="${file.url}"]`);
       if (card) {
@@ -75,6 +73,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
   const getStageColor = (stage) => {
     switch (stage) {
+      case "uploading": return "bg-blue-300";
       case "downloading": return "bg-blue-500";
       case "resizing": return "bg-yellow-500";
       case "vectorizing": return "bg-orange-500";
@@ -87,6 +86,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   };
 
   const renderStatusIcon = () => {
+    if (file.status === "Uploading") return <Loader2 className="animate-spin text-blue-400 w-5 h-5" />;
     if (file.status === "Converting") return <Loader2 className="animate-spin text-blue-500 w-5 h-5" />;
     if (file.status === "Converted") return <CheckCircle className="text-green-500 w-5 h-5" />;
     if (file.status === "Error") return <XCircle className="text-red-500 w-5 h-5" />;
@@ -101,47 +101,31 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         retrying ? "ring-2 ring-blue-400 animate-pulse" : ""
       }`}
     >
-      {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
           <strong>{file.name}</strong>
-          {isNew && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-fade">
-              <Sparkles className="w-3 h-3 mr-1" /> NEW
+
+          {file.status === "Uploading" && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full animate-pulse flex items-center space-x-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Uploading...</span>
             </span>
           )}
+
+          {isNew && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-fade flex items-center space-x-1">
+              <Sparkles className="w-3 h-3" />
+              NEW
+            </span>
+          )}
+
           {renderStatusIcon()}
         </div>
         <div className="text-sm text-gray-600">{file.status}</div>
       </div>
 
-      {/* Upload Progress */}
-      {(file.status === "Uploading" && !uploadDone) && (
-        <span
-          className={`
-            px-3 py-1 rounded-full text-xs font-semibold transition-all duration-700
-            ${file.uploadProgress < 50 ? "bg-red-100 text-red-700" :
-              file.uploadProgress < 90 ? "bg-orange-100 text-orange-700" :
-              "bg-green-100 text-green-700"}
-            animate-pulse
-          `}
-        >
-          Uploading {file.uploadProgress}%
-        </span>
-      )}
-
-      {/* Upload Complete Badge */}
-      {uploadDone && (
-        <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs flex items-center space-x-1 animate-bounce transition-all duration-500">
-          <CheckCircle className="w-4 h-4" />
-          <span>Uploaded!</span>
-          <Sparkles className="w-3 h-3 text-yellow-400 animate-ping" />
-        </span>
-      )}
-
-      {/* Stage Progress Bar */}
       {file.stage && (
-        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden mb-3 mt-2">
+        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden mb-3">
           <div
             className={`h-2 transition-all duration-700 ease-in-out ${getStageColor(file.stage)} animate-pulse`}
             style={{ width: "100%" }}
@@ -149,8 +133,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center space-x-4 flex-wrap mt-2">
+      <div className="flex items-center space-x-4 flex-wrap">
         {file.status === "Uploaded" && (
           <button
             onClick={() => onConvert(file.url)}
@@ -180,24 +163,35 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           <button
             onClick={handleRetry}
             disabled={retrying || cooldownActive}
-            className={`px-4 py-1 rounded ${
+            className={`px-4 py-1 rounded relative overflow-hidden ${
               retrying ? "bg-gray-400 cursor-not-allowed" :
               cooldownActive ? "bg-gray-300 cursor-not-allowed" :
               "bg-red-500 hover:bg-red-600"
             } text-white`}
           >
-            {retrying ? (
-              <>
-                <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
-                Polling... ({countdown}s)
-              </>
-            ) : cooldownActive ? (
-              "Cooldown..."
-            ) : (
-              <>
-                <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
-              </>
+            {retrying && (
+              <div
+                className="absolute top-0 left-0 h-full bg-blue-300 opacity-30"
+                style={{
+                  width: `${(1 - countdown / 3) * 100}%`,
+                  transition: "width 1s linear",
+                }}
+              />
             )}
+            <span className="relative z-10">
+              {retrying ? (
+                <>
+                  <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
+                  Retrying... ({countdown}s)
+                </>
+              ) : cooldownActive ? (
+                "Cooldown..."
+              ) : (
+                <>
+                  <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
+                </>
+              )}
+            </span>
           </button>
         )}
 
