@@ -45,28 +45,79 @@ function Home() {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
 
+  const localFiles = files.map(file => ({
+    name: file.name,
+    url: URL.createObjectURL(file),
+    status: "Uploading",
+    stage: "uploading",
+    uploadProgress: 0,
+    isLocal: true,
+  }));
+
+  setUploadedFiles(prev => [...localFiles, ...prev]);
+  setFilteredFiles(prev => [...localFiles, ...prev]);
+  setCurrentPage(1);
+
   try {
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload", true);
 
-    const now = Date.now();
-    const newFiles = data.urls.map(file => ({
-      ...file,
-      uploadedAt: now,
-      status: "Uploaded",
-      pesUrl: "",
-      taskId: "",
-      stage: "",
-    }));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadedFiles(prev => prev.map(f => 
+          f.isLocal ? { ...f, uploadProgress: progress } : f
+        ));
+      }
+    };
 
-    console.log("[Upload] Received files:", newFiles);
+    xhr.onload = async () => {
+      if (xhr.status !== 200) {
+        toast.error("Upload failed");
+        return;
+      }
 
-    setUploadedFiles(prev => [...newFiles, ...prev]);
-    setFilteredFiles(prev => [...newFiles, ...prev]);
-    setCurrentPage(1);
+      const data = JSON.parse(xhr.responseText);
+      const newFiles = data.urls.map(file => ({
+        ...file,
+        status: "Uploaded",
+        pesUrl: "",
+        taskId: "",
+        stage: "",
+      }));
 
-    toast.success("Upload complete");
+      console.log("[Upload] Server uploaded files:", newFiles);
+
+      setUploadedFiles(prev => [
+        ...newFiles,
+        ...prev.filter(f => !f.isLocal)
+      ]);
+
+      setFilteredFiles(prev => [
+        ...newFiles,
+        ...prev.filter(f => !f.isLocal)
+      ]);
+
+      setTimeout(() => {
+        const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
+        if (firstNewFile) {
+          firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
+          firstNewFile.classList.add("animate-bounce");
+          setTimeout(() => {
+            firstNewFile.classList.remove("animate-bounce");
+          }, 1000);
+        }
+      }, 300);
+
+      toast.success("Upload complete!");
+    };
+
+    xhr.onerror = () => {
+      toast.error("Upload error");
+    };
+
+    xhr.send(formData);
+
   } catch (err) {
     console.error("[Upload Error]", err);
     toast.error(err.message);
