@@ -11,14 +11,14 @@ export function CustomToaster() {
           fontSize: '14px',
           padding: '12px 16px',
           boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
-          animation: 'bounceIn 0.5s',
+          animation: 'bounceIn 0.5s ease',
         },
         success: {
           duration: 5000,
           style: {
             background: '#dcfce7',
             color: '#166534',
-            animation: 'bounceIn 0.5s',
+            animation: 'bounceIn 0.5s ease',
           },
           iconTheme: {
             primary: '#22c55e',
@@ -30,7 +30,7 @@ export function CustomToaster() {
           style: {
             background: '#fee2e2',
             color: '#991b1b',
-            animation: 'shake 0.5s',
+            animation: 'shake 0.5s ease',
           },
           iconTheme: {
             primary: '#ef4444',
@@ -42,7 +42,7 @@ export function CustomToaster() {
           style: {
             background: '#e0f2fe',
             color: '#0369a1',
-            animation: 'pulse 1s infinite',
+            animation: 'pulse 1s infinite ease',
           },
         },
       }}
