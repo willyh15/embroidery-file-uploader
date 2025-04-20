@@ -10,7 +10,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const cardRef = useRef(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsNew(false), 10000); // New badge disappears after 10 seconds
+    const timer = setTimeout(() => setIsNew(false), 10000); // New badge fades after 10s
     return () => clearTimeout(timer);
   }, []);
 
@@ -27,6 +27,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const handleRetry = async () => {
     setRetrying(true);
     setCountdown(3);
+
     try {
       await onConvert(file.url);
       toast.success("Retry started!");
@@ -35,19 +36,32 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: "center" });
-          card.classList.add("ring-4", "ring-green-400");
-          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+
+          card.classList.add("ring-4", "ring-green-400", "animate-bounce");
+          setTimeout(() => {
+            card.classList.remove("ring-4", "ring-green-400", "animate-bounce");
+          }, 3000);
         }
       }, 100);
 
       setTimeout(() => {
         setRetrying(false);
         setCooldownActive(true);
-        setTimeout(() => setCooldownActive(false), 5000); // 5 sec cooldown
+        setTimeout(() => setCooldownActive(false), 5000);
       }, 3000);
+
     } catch (err) {
       console.error("[Retry Error]", err);
       toast.error("Retry failed.");
+
+      const card = document.querySelector(`[data-file-url="${file.url}"]`);
+      if (card) {
+        card.classList.add("ring-4", "ring-red-400", "animate-pulse");
+        setTimeout(() => {
+          card.classList.remove("ring-4", "ring-red-400", "animate-pulse");
+        }, 2000);
+      }
+
       setRetrying(false);
     }
   };
@@ -84,7 +98,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         <div className="flex items-center space-x-2">
           <strong>{file.name}</strong>
           {isNew && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-pulse flex items-center">
+            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-fade">
               <Sparkles className="w-3 h-3 mr-1" /> NEW
             </span>
           )}
