@@ -10,12 +10,15 @@ export function CustomToaster() {
           fontWeight: '500',
           fontSize: '14px',
           padding: '12px 16px',
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.12)',
+          animation: 'bounceIn 0.5s',
         },
         success: {
+          duration: 5000, // Longer for success
           style: {
             background: '#dcfce7',
             color: '#166534',
+            animation: 'bounceIn 0.5s',
           },
           iconTheme: {
             primary: '#22c55e',
@@ -23,9 +26,11 @@ export function CustomToaster() {
           },
         },
         error: {
+          duration: 4000, // Shorter for errors
           style: {
             background: '#fee2e2',
             color: '#991b1b',
+            animation: 'shake 0.5s',
           },
           iconTheme: {
             primary: '#ef4444',
@@ -33,9 +38,11 @@ export function CustomToaster() {
           },
         },
         loading: {
+          duration: Infinity, // Loading stays until updated
           style: {
             background: '#e0f2fe',
             color: '#0369a1',
+            animation: 'pulse 1s infinite',
           },
         },
       }}
