@@ -1,58 +1,47 @@
+import fetch from "node-fetch";
+
 export const config = {
-  runtime: "edge",
+  api: {
+    bodyParser: true,
+  },
 };
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    res.setHeader("Allow", ["GET"]);
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { searchParams } = new URL(req.url);
-  const taskId = searchParams.get("taskId");
+  const { taskId, fileUrl } = req.query;
 
-  if (!taskId) {
-    return new Response(JSON.stringify({ error: "Missing taskId" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (!taskId || !fileUrl) {
+    return res.status(400).json({ error: "Missing taskId or fileUrl" });
   }
 
   try {
-    const flaskBase = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
-    const statusUrl = `${flaskBase}/status/${taskId}`;
+    const flaskUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/status/${taskId}`;
 
-    const res = await fetch(statusUrl);
-    const text = await res.text();
+    const flaskResponse = await fetch(flaskUrl);
 
-    if (!text.trim()) {
-      return new Response(JSON.stringify({ error: "Empty response from Flask" }), {
-        status: 502,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!flaskResponse.ok) {
+      const text = await flaskResponse.text();
+      console.error("[Progress] Flask status error:", text);
+      return res.status(502).json({ error: "Failed to fetch status from Flask", raw: text });
     }
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Invalid JSON from Flask", raw: text }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const data = await flaskResponse.json();
 
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+    // Standardize return format for frontend
+    return res.status(200).json({
+      taskId,
+      fileUrl,
+      state: data.state || "unknown",
+      status: data.status || "",
+      stage: data.stage || "",
+      pesUrl: data.pesUrl || "",
     });
   } catch (err) {
-    console.error("[Progress API Error]", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("[Progress] API error:", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
