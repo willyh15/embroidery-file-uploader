@@ -1,4 +1,12 @@
+@keyframes fade {
+  0% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
 
+.animate-fade {
+  animation: fade 10s ease-in-out forwards;
+}
 /* Toast container */
 .react-hot-toast {
   z-index: 9999;
