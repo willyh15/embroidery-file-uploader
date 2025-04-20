@@ -150,15 +150,13 @@ function Home() {
         status,
         stage: stage || "processing",
         convertedPes: pesUrl || file.convertedPes || "",
-        updatedAt: Date.now(), // Track update timestamp
+        updatedAt: Date.now(),
       };
     });
 
-    // Auto-sort: newest updated files first
     return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   });
 
-  // Also update the filtered list so pagination stays correct
   setFilteredFiles(prev => {
     const updatedFiles = prev.map(file => {
       if (!file || !file.url) return file;
@@ -175,6 +173,8 @@ function Home() {
 
     return updatedFiles.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   });
+
+  setCurrentPage(1); // <== This line resets pagination to page 1 after any update
 };
 
   const handleDownload = async (fileUrl, format) => {
