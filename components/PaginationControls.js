@@ -6,19 +6,23 @@ export default function PaginationControls({ currentPage, totalItems, itemsPerPa
   const handlePrev = () => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 100);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
       onPageChange(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 100);
     }
   };
 
   return (
-    <div className="flex justify-center items-center space-x-4 mt-6 mb-4">
+    <div className="flex justify-center items-center space-x-4 mt-8 mb-4">
       <button
         onClick={handlePrev}
         disabled={currentPage === 1}
@@ -31,7 +35,7 @@ export default function PaginationControls({ currentPage, totalItems, itemsPerPa
         Previous
       </button>
 
-      <span className="text-gray-700 font-medium">
+      <span className="text-gray-700 font-semibold">
         Page {currentPage} of {totalPages}
       </span>
 
