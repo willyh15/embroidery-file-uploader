@@ -1,19 +1,18 @@
 import { useCallback } from "react";
-import toast from "react-hot-toast";
 
-export default function UploadBox({ uploading, dropRef, onUpload, setUploadedFiles }) {
+export default function UploadBox({ uploading, dropRef, onUpload }) {
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      onUpload(files, setUploadedFiles);
+      onUpload(files);
     }
-  }, [onUpload, setUploadedFiles]);
+  }, [onUpload]);
 
   const handleSelectFiles = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      onUpload(files, setUploadedFiles);
+      onUpload(files);
     }
   };
 
