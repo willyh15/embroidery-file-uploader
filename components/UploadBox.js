@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import toast from "react-hot-toast";
 
 export default function UploadBox({ uploading, dropRef, onUpload }) {
   const handleDrop = useCallback((e) => {
