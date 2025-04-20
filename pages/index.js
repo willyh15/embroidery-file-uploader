@@ -46,18 +46,14 @@ function Home() {
   files.forEach((file) => formData.append("files", file));
 
   try {
-    const flaskUploadUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
-
-    const res = await fetch(flaskUploadUrl, {
-      method: "POST",
-      body: formData,
-    });
-
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
     const data = await res.json();
-    if (!res.ok || !data.urls) throw new Error(data.error || "Upload failed");
+    if (!res.ok) throw new Error(data.error || "Upload failed");
 
+    const now = Date.now();
     const newFiles = data.urls.map(file => ({
       ...file,
+      uploadedAt: now,
       status: "Uploaded",
       pesUrl: "",
       taskId: "",
@@ -65,14 +61,15 @@ function Home() {
     }));
 
     console.log("[Upload] Received files:", newFiles);
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-    setFilteredFiles(prev => [...prev, ...newFiles]);
+
+    setUploadedFiles(prev => [...newFiles, ...prev]);
+    setFilteredFiles(prev => [...newFiles, ...prev]);
     setCurrentPage(1);
 
     toast.success("Upload complete");
   } catch (err) {
     console.error("[Upload Error]", err);
-    toast.error(err.message || "Upload failed");
+    toast.error(err.message);
   } finally {
     setUploading(false);
   }
@@ -142,33 +139,29 @@ function Home() {
   }
 
   setUploadedFiles(prev => {
-    const updated = prev.map(file => {
-      if (!file || !file.url) return file;
-      if (file.url === fileUrl) {
+    const updated = prev.map(f => {
+      if (!f || !f.url) return f;
+      if (f.url === fileUrl) {
         console.log("[updateFileStatus] Updating:", { fileUrl, status, stage });
-        return {
-          ...file,
-          status,
-          stage,
-          convertedPes: pesUrl || file.convertedPes || "",
-          updatedAt: new Date().toISOString(), // optional: for smarter sorting
-        };
+        return { ...f, status, stage, convertedPes: pesUrl };
       }
-      return file;
+      return f;
     });
 
-    // **Auto-sort most recently updated files to top**
-    updated.sort((a, b) => {
-      const timeA = new Date(a.updatedAt || 0).getTime();
-      const timeB = new Date(b.updatedAt || 0).getTime();
-      return timeB - timeA;
-    });
+    // If the file was successfully converted, scroll to it
+    if (status === "Converted") {
+      setTimeout(() => {
+        const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          card.classList.add("ring-4", "ring-green-400");
+          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+        }
+      }, 300);
+    }
 
     return updated;
   });
-
-  // **Optional: Reset pagination after status changes**
-  setCurrentPage(1);
 };
 
   const handleDownload = async (fileUrl, format) => {
