@@ -36,7 +36,6 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: "center" });
-
           card.classList.add("ring-4", "ring-green-400", "animate-bounce");
           setTimeout(() => {
             card.classList.remove("ring-4", "ring-green-400", "animate-bounce");
@@ -117,6 +116,14 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       )}
 
       <div className="flex items-center space-x-4 flex-wrap">
+        {/* === Upload Progress Badge === */}
+        {file.uploadProgress !== undefined && file.status === "Uploading" && (
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs animate-pulse">
+            Uploading {file.uploadProgress}%
+          </span>
+        )}
+
+        {/* === Upload Completed Actions === */}
         {file.status === "Uploaded" && (
           <button
             onClick={() => onConvert(file.url)}
