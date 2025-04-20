@@ -7,19 +7,28 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const [countdown, setCountdown] = useState(3);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [isNew, setIsNew] = useState(true);
+  const [uploadDone, setUploadDone] = useState(false);
   const cardRef = useRef(null);
 
+  // New file badge timeout
   useEffect(() => {
-    const timer = setTimeout(() => setIsNew(false), 10000); // New badge fades after 10s
+    const timer = setTimeout(() => setIsNew(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
+  // Upload completion detection
+  useEffect(() => {
+    if (file.uploadProgress === 100) {
+      const timeout = setTimeout(() => setUploadDone(true), 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [file.uploadProgress]);
+
+  // Retry countdown
   useEffect(() => {
     let timer;
     if (retrying && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
+      timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
     }
     return () => clearTimeout(timer);
   }, [retrying, countdown]);
@@ -48,7 +57,6 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         setCooldownActive(true);
         setTimeout(() => setCooldownActive(false), 5000);
       }, 3000);
-
     } catch (err) {
       console.error("[Retry Error]", err);
       toast.error("Retry failed.");
@@ -93,6 +101,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         retrying ? "ring-2 ring-blue-400 animate-pulse" : ""
       }`}
     >
+      {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
           <strong>{file.name}</strong>
@@ -106,8 +115,33 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         <div className="text-sm text-gray-600">{file.status}</div>
       </div>
 
+      {/* Upload Progress */}
+      {(file.status === "Uploading" && !uploadDone) && (
+        <span
+          className={`
+            px-3 py-1 rounded-full text-xs font-semibold transition-all duration-700
+            ${file.uploadProgress < 50 ? "bg-red-100 text-red-700" :
+              file.uploadProgress < 90 ? "bg-orange-100 text-orange-700" :
+              "bg-green-100 text-green-700"}
+            animate-pulse
+          `}
+        >
+          Uploading {file.uploadProgress}%
+        </span>
+      )}
+
+      {/* Upload Complete Badge */}
+      {uploadDone && (
+        <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs flex items-center space-x-1 animate-bounce transition-all duration-500">
+          <CheckCircle className="w-4 h-4" />
+          <span>Uploaded!</span>
+          <Sparkles className="w-3 h-3 text-yellow-400 animate-ping" />
+        </span>
+      )}
+
+      {/* Stage Progress Bar */}
       {file.stage && (
-        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden mb-3">
+        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden mb-3 mt-2">
           <div
             className={`h-2 transition-all duration-700 ease-in-out ${getStageColor(file.stage)} animate-pulse`}
             style={{ width: "100%" }}
@@ -115,15 +149,8 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         </div>
       )}
 
-      <div className="flex items-center space-x-4 flex-wrap">
-        {/* === Upload Progress Badge === */}
-        {file.uploadProgress !== undefined && file.status === "Uploading" && (
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs animate-pulse">
-            Uploading {file.uploadProgress}%
-          </span>
-        )}
-
-        {/* === Upload Completed Actions === */}
+      {/* Action Buttons */}
+      <div className="flex items-center space-x-4 flex-wrap mt-2">
         {file.status === "Uploaded" && (
           <button
             onClick={() => onConvert(file.url)}
