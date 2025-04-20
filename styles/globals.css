@@ -1,3 +1,8 @@
+
+/* Toast container */
+.react-hot-toast {
+  z-index: 9999;
+}
 /* 🌸 Dark Pink Theme (Single Mode) */
 :root {
   --primary-bg: #33202E;       /* Dark, muted pink/purple */
