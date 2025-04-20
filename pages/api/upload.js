@@ -1,9 +1,9 @@
 // pages/api/upload.js
 import { IncomingForm } from "formidable";
 import fs from "fs";
+import path from "path";
 import fetch from "node-fetch";
 import FormData from "form-data";
-import path from "path";
 
 export const config = {
   api: {
@@ -17,12 +17,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const form = new IncomingForm({ multiples: true });
+  const form = new IncomingForm({ multiples: true, keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error("Formidable error:", err);
-      return res.status(500).json({ error: "Error parsing upload" });
+      console.error("[Upload API] Formidable parse error:", err);
+      return res.status(500).json({ error: "Form parsing failed" });
     }
 
     try {
@@ -31,37 +31,40 @@ export default async function handler(req, res) {
 
       for (const file of fileArray) {
         const buffer = fs.readFileSync(file.filepath);
-        const safeName = path.basename(file.originalFilename || "upload");
-        formData.append("files", buffer, {
-          filename: safeName,
-          contentType: file.mimetype || "application/octet-stream",
-        });
+        const safeFilename = path.basename(file.originalFilename || "uploaded_file");
+        formData.append("files", buffer, safeFilename);
       }
 
-      const flaskUrl = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
+      const flaskUploadEndpoint = `${process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org"}/upload`;
 
-      const response = await fetch(flaskUrl, {
+      const flaskResponse = await fetch(flaskUploadEndpoint, {
         method: "POST",
         body: formData,
         headers: formData.getHeaders(),
       });
 
-      const text = await response.text();
-      if (!text.trim()) return res.status(502).json({ error: "Empty response from Flask" });
+      const text = await flaskResponse.text();
+      if (!text.trim()) {
+        return res.status(502).json({ error: "Empty response from Flask server" });
+      }
 
       let data;
       try {
         data = JSON.parse(text);
       } catch (err) {
+        console.error("[Upload API] Failed to parse Flask response:", text);
         return res.status(500).json({ error: "Invalid JSON from Flask", raw: text });
       }
 
-      if (!response.ok) throw new Error(data.error || "Flask upload failed");
+      if (!flaskResponse.ok) {
+        console.error("[Upload API] Flask returned error:", data);
+        return res.status(500).json({ error: "Flask upload failed", raw: data });
+      }
 
       return res.status(200).json(data);
-    } catch (err) {
-      console.error("Upload API error:", err);
-      return res.status(500).json({ error: err.message });
+    } catch (error) {
+      console.error("[Upload API] Unexpected error:", error);
+      return res.status(500).json({ error: error.message });
     }
   });
 }
