@@ -14,7 +14,7 @@ export function CustomToaster() {
           animation: 'bounceIn 0.5s',
         },
         success: {
-          duration: 5000, // Longer for success
+          duration: 5000,
           style: {
             background: '#dcfce7',
             color: '#166534',
@@ -26,7 +26,7 @@ export function CustomToaster() {
           },
         },
         error: {
-          duration: 4000, // Shorter for errors
+          duration: 4000,
           style: {
             background: '#fee2e2',
             color: '#991b1b',
@@ -38,7 +38,7 @@ export function CustomToaster() {
           },
         },
         loading: {
-          duration: Infinity, // Loading stays until updated
+          duration: Infinity,
           style: {
             background: '#e0f2fe',
             color: '#0369a1',
