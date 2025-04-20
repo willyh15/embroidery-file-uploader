@@ -27,22 +27,16 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const handleRetry = async () => {
     setRetrying(true);
     setCountdown(3);
-
     try {
       await onConvert(file.url);
-      toast.success("Retry started!", {
-        icon: "✅",
-        className: "animate-bounce",
-      });
+      toast.success("Retry started!");
 
       setTimeout(() => {
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: "center" });
           card.classList.add("ring-4", "ring-green-400", "animate-bounce");
-          setTimeout(() => {
-            card.classList.remove("ring-4", "ring-green-400", "animate-bounce");
-          }, 2000);
+          setTimeout(() => card.classList.remove("ring-4", "ring-green-400", "animate-bounce"), 3000);
         }
       }, 100);
 
@@ -54,19 +48,13 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
     } catch (err) {
       console.error("[Retry Error]", err);
-      toast.error("Retry failed!", {
-        icon: "❌",
-        className: "animate-bounce",
-      });
+      toast.error("Retry failed.");
 
       const card = document.querySelector(`[data-file-url="${file.url}"]`);
       if (card) {
         card.classList.add("ring-4", "ring-red-400", "animate-pulse");
-        setTimeout(() => {
-          card.classList.remove("ring-4", "ring-red-400", "animate-pulse");
-        }, 2000);
+        setTimeout(() => card.classList.remove("ring-4", "ring-red-400", "animate-pulse"), 2000);
       }
-
       setRetrying(false);
     }
   };
@@ -103,22 +91,12 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     >
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
-          <strong>{file.name}</strong>
-
-          {file.status === "Uploading" && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full animate-pulse flex items-center space-x-1">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Uploading...</span>
-            </span>
-          )}
-
+          <strong className="truncate max-w-[250px]">{file.name}</strong>
           {isNew && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-fade flex items-center space-x-1">
-              <Sparkles className="w-3 h-3" />
-              NEW
+            <span className="ml-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full animate-fade-in">
+              <Sparkles className="w-3 h-3 mr-1 inline" /> NEW
             </span>
           )}
-
           {renderStatusIcon()}
         </div>
         <div className="text-sm text-gray-600">{file.status}</div>
@@ -134,6 +112,12 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       )}
 
       <div className="flex items-center space-x-4 flex-wrap">
+        {file.uploadProgress !== undefined && file.status === "Uploading" && (
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs animate-pulse">
+            Uploading {file.uploadProgress}%
+          </span>
+        )}
+
         {file.status === "Uploaded" && (
           <button
             onClick={() => onConvert(file.url)}
@@ -163,35 +147,24 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           <button
             onClick={handleRetry}
             disabled={retrying || cooldownActive}
-            className={`px-4 py-1 rounded relative overflow-hidden ${
+            className={`px-4 py-1 rounded ${
               retrying ? "bg-gray-400 cursor-not-allowed" :
               cooldownActive ? "bg-gray-300 cursor-not-allowed" :
               "bg-red-500 hover:bg-red-600"
             } text-white`}
           >
-            {retrying && (
-              <div
-                className="absolute top-0 left-0 h-full bg-blue-300 opacity-30"
-                style={{
-                  width: `${(1 - countdown / 3) * 100}%`,
-                  transition: "width 1s linear",
-                }}
-              />
+            {retrying ? (
+              <>
+                <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
+                Polling... ({countdown}s)
+              </>
+            ) : cooldownActive ? (
+              "Cooldown..."
+            ) : (
+              <>
+                <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
+              </>
             )}
-            <span className="relative z-10">
-              {retrying ? (
-                <>
-                  <Loader2 className="animate-spin inline-block w-4 h-4 mr-1" />
-                  Retrying... ({countdown}s)
-                </>
-              ) : cooldownActive ? (
-                "Cooldown..."
-              ) : (
-                <>
-                  <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
-                </>
-              )}
-            </span>
           </button>
         )}
 
