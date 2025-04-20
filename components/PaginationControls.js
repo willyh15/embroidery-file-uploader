@@ -22,27 +22,27 @@ export default function PaginationControls({ currentPage, totalItems, itemsPerPa
       <button
         onClick={handlePrev}
         disabled={currentPage === 1}
-        className={`px-4 py-2 rounded ${
+        className={`px-4 py-2 rounded transition-all ${
           currentPage === 1
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
             : "bg-blue-500 text-white hover:bg-blue-600"
-        } transition-all`}
+        }`}
       >
         Previous
       </button>
 
-      <span className="text-gray-700 font-medium">
+      <span className="text-gray-700 font-semibold">
         Page {currentPage} of {totalPages}
       </span>
 
       <button
         onClick={handleNext}
         disabled={currentPage === totalPages}
-        className={`px-4 py-2 rounded ${
+        className={`px-4 py-2 rounded transition-all ${
           currentPage === totalPages
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
             : "bg-blue-500 text-white hover:bg-blue-600"
-        } transition-all`}
+        }`}
       >
         Next
       </button>
