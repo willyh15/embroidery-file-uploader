@@ -1,80 +1,64 @@
-import React from "react";
-import { ArrowDownCircle, RotateCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
+// components/FileCard.js
+import { useState } from "react";
 
 export default function FileCard({ file, onConvert, onDownload, onPreview, onEdit }) {
-  if (!file || typeof file !== "object" || !file.url || !file.name || !file.status) {
-    console.warn("Invalid file passed to FileCard:", file);
-    return null;
-  }
+  const [retrying, setRetrying] = useState(false);
 
-  const getStageColor = (stage) => {
-    switch (stage) {
-      case "downloading": return "bg-blue-500";
-      case "resizing": return "bg-yellow-500";
-      case "vectorizing": return "bg-orange-500";
-      case "converting-pes": return "bg-purple-500";
-      case "done": return "bg-green-600";
-      case "failed":
-      case "error": return "bg-red-600";
-      default: return "bg-gray-400";
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await onConvert(file.url);
+    } catch (err) {
+      console.error("[Retry Error]", err);
+    } finally {
+      setRetrying(false);
     }
   };
 
-  const renderStatusIcon = () => {
-    if (file.status === "Converting") return <Loader2 className="animate-spin text-blue-500 w-5 h-5" />;
-    if (file.status === "Converted") return <CheckCircle className="text-green-500 w-5 h-5" />;
-    if (file.status === "Error") return <XCircle className="text-red-500 w-5 h-5" />;
-    return null;
+  const renderStatusBadge = () => {
+    switch (file.status) {
+      case "Uploaded":
+        return <span className="badge uploaded">Uploaded</span>;
+      case "Converting":
+        return <span className="badge converting">Converting ({file.stage})</span>;
+      case "Converted":
+        return <span className="badge converted">Converted</span>;
+      case "Error":
+        return <span className="badge error">Error ({file.stage})</span>;
+      default:
+        return <span className="badge unknown">Unknown</span>;
+    }
   };
 
   return (
-    <div className="bg-white shadow rounded p-4 mb-4 border border-gray-200">
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center space-x-2">
-          <strong>{file.name}</strong>
-          {renderStatusIcon()}
-        </div>
-        <div className="text-sm text-gray-600">{file.status}</div>
+    <div className="file-card">
+      <div className="file-header">
+        <strong>{file.name || "Unnamed file"}</strong>
+        {renderStatusBadge()}
       </div>
 
-      {file.stage && (
-        <div className="h-2 w-full rounded bg-gray-200 overflow-hidden mb-3">
-          <div
-            className={`h-2 transition-all duration-700 ease-in-out ${getStageColor(file.stage)} animate-pulse`}
-            style={{ width: "100%" }}
-          />
-        </div>
-      )}
-
-      <div className="flex items-center space-x-4 flex-wrap">
+      <div className="file-actions">
         {file.status === "Uploaded" && (
-          <button onClick={onConvert} className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
-            <RotateCw className="inline-block w-4 h-4 mr-1" /> Convert
+          <button onClick={() => onConvert(file.url)} className="action-button convert">
+            Convert
           </button>
         )}
-        {file.status === "Converting" && <span className="text-sm text-blue-600">Conversion in progress...</span>}
-        {file.status === "Converted" && file.convertedPes && (
-          <a
-            href={file.convertedPes}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onDownload}
-            className="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            <ArrowDownCircle className="inline-block w-4 h-4 mr-1" /> Download PES
-          </a>
-        )}
+
         {file.status === "Error" && (
-          <button onClick={onConvert} className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600">
-            <RotateCw className="inline-block w-4 h-4 mr-1" /> Retry
+          <button onClick={handleRetry} className="action-button retry" disabled={retrying}>
+            {retrying ? "Retrying..." : "Retry"}
           </button>
         )}
+
         {file.status === "Converted" && (
           <>
-            <button onClick={onPreview} className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+            <button onClick={() => onDownload(file.url, "pes")} className="action-button download">
+              Download PES
+            </button>
+            <button onClick={() => onPreview(file.url)} className="action-button preview">
               Preview
             </button>
-            <button onClick={onEdit} className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500">
+            <button onClick={() => onEdit(file.url)} className="action-button edit">
               Edit
             </button>
           </>
