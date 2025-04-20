@@ -8,8 +8,10 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   setRetrying(true);
   try {
     await onConvert(file.url);
-    toast.success("Retry started successfully!");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+toast.success("Retry started successfully!");
+setTimeout(() => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}, 100);
   } catch (err) {
     console.error("[Retry Error]", err);
     toast.error("Retry failed. Please try again.");
