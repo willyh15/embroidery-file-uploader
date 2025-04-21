@@ -60,20 +60,24 @@ function Home() {
 
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "https://embroideryfiles.duckdns.org/upload", true); // <<<<< IMPORTANT CORRECTION
+    xhr.open("POST", `${FLASK_BASE}/upload`, true); // <-- Correct: upload directly to Flask
+    xhr.withCredentials = false;
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
         const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadedFiles(prev => prev.map(f => 
-          f.isLocal ? { ...f, uploadProgress: progress } : f
-        ));
+        setUploadedFiles(prev =>
+          prev.map(f => f.isLocal ? { ...f, uploadProgress: progress } : f)
+        );
       }
     };
 
     xhr.onload = async () => {
       if (xhr.status !== 200) {
         toast.error("Upload failed");
+        setUploadedFiles(prev =>
+          prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
+        );
         return;
       }
 
@@ -91,6 +95,7 @@ function Home() {
         ...newFiles,
         ...prev.filter(f => !f.isLocal)
       ]);
+
       setFilteredFiles(prev => [
         ...newFiles,
         ...prev.filter(f => !f.isLocal)
@@ -134,60 +139,68 @@ function Home() {
 };
 
   const handleConvert = async (fileUrl) => {
-    console.log(`[Convert] Starting conversion for: ${fileUrl}`);
-    updateFileStatus(fileUrl, "Converting", "initiating");
+  console.log(`[Convert] Starting conversion for: ${fileUrl}`);
+  updateFileStatus(fileUrl, "Converting", "initiating");
 
-    try {
-      const res = await fetch("/api/convert-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
+  try {
+    const res = await fetch(`${FLASK_BASE}/convert`, { // <-- Call Flask directly
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl }),
+    });
 
-      const data = await res.json();
-      if (!res.ok || !data.taskId) throw new Error("Conversion failed to start");
-
-      updateFileStatus(fileUrl, "Converting", "processing");
-      pollConversionStatus(data.taskId, fileUrl);
-    } catch (err) {
-      console.error("[Convert Error]", err);
-      toast.error(err.message);
-      updateFileStatus(fileUrl, "Error", "failed");
+    const data = await res.json();
+    if (!res.ok || !data.task_id) {  // <-- Flask returns `task_id`, not `taskId`
+      throw new Error("Conversion failed to start");
     }
-  };
+
+    updateFileStatus(fileUrl, "Converting", "processing");
+
+    // Start polling with Flask task ID
+    pollConversionStatus(data.task_id, fileUrl);
+
+  } catch (err) {
+    console.error("[Convert Error]", err);
+    toast.error(err.message || "Conversion failed");
+    updateFileStatus(fileUrl, "Error", "failed");
+  }
+};
 
   const pollConversionStatus = (taskId, fileUrl) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/progress?taskId=${encodeURIComponent(taskId)}`);
-        const statusData = await res.json();
+  console.log(`[Polling] Starting for Task ID: ${taskId}`);
+  
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`${FLASK_BASE}/status/${encodeURIComponent(taskId)}`); // <-- Use Flask /status/:taskId
+      const statusData = await res.json();
 
-        if (!res.ok || !statusData) {
-          console.error("[Polling] Bad response from progress API:", res.status, statusData);
-          updateFileStatus(fileUrl, "Error", "poll-failed");
-          clearInterval(interval);
-          return;
-        }
-
-        if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
-          updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
-          toast.success("Conversion complete");
-          clearInterval(interval);
-        } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
-          updateFileStatus(fileUrl, "Error", "conversion-error");
-          toast.error("Conversion failed");
-          clearInterval(interval);
-        } else {
-          updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
-        }
-      } catch (err) {
-        console.error("[Polling Error]", err);
+      if (!res.ok || !statusData) {
+        console.error("[Polling] Bad response:", res.status, statusData);
         updateFileStatus(fileUrl, "Error", "poll-failed");
-        toast.error("Polling error");
         clearInterval(interval);
+        return;
       }
-    }, 3000);
-  };
+
+      if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
+        updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
+        toast.success("Conversion complete!");
+        clearInterval(interval);
+      } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
+        updateFileStatus(fileUrl, "Error", "conversion-error");
+        toast.error("Conversion failed");
+        clearInterval(interval);
+      } else {
+        updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
+      }
+
+    } catch (err) {
+      console.error("[Polling Error]", err);
+      updateFileStatus(fileUrl, "Error", "poll-failed");
+      toast.error("Polling error");
+      clearInterval(interval);
+    }
+  }, 3000);
+};
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
     if (!fileUrl || !status) return;
