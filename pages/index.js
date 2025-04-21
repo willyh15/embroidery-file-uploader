@@ -42,16 +42,19 @@ function Home() {
   setUploading(true);
 
   const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
+  files.forEach((file) => {
+    formData.append("files", file); // append the real file object
+  });
 
   const localFiles = files.map(file => ({
     name: file.name,
-    url: URL.createObjectURL(file),
+    url: "", // no URL.createObjectURL
     status: "Uploading",
     stage: "uploading",
     uploadProgress: 0,
     isLocal: true,
     timestamp: Date.now(),
+    realFile: file, // save real file object temporarily
   }));
 
   setUploadedFiles(prev => [...localFiles, ...prev]);
@@ -60,24 +63,20 @@ function Home() {
 
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${FLASK_BASE}/upload`, true); // <-- Correct: upload directly to Flask
-    xhr.withCredentials = false;
+    xhr.open("POST", `${FLASK_BASE}/upload`, true); // IMPORTANT: Post directly to Flask server
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
         const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadedFiles(prev =>
-          prev.map(f => f.isLocal ? { ...f, uploadProgress: progress } : f)
-        );
+        setUploadedFiles(prev => prev.map(f => 
+          f.isLocal ? { ...f, uploadProgress: progress } : f
+        ));
       }
     };
 
     xhr.onload = async () => {
       if (xhr.status !== 200) {
         toast.error("Upload failed");
-        setUploadedFiles(prev =>
-          prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
-        );
         return;
       }
 
@@ -95,7 +94,6 @@ function Home() {
         ...newFiles,
         ...prev.filter(f => !f.isLocal)
       ]);
-
       setFilteredFiles(prev => [
         ...newFiles,
         ...prev.filter(f => !f.isLocal)
@@ -118,14 +116,6 @@ function Home() {
       setUploadedFiles(prev =>
         prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
       );
-
-      setTimeout(() => {
-        const failedCard = document.querySelector(`[data-file-url="${localFiles[0].url}"]`);
-        if (failedCard) {
-          failedCard.classList.add("animate-bounce", "ring-4", "ring-red-500");
-          setTimeout(() => failedCard.classList.remove("animate-bounce", "ring-4", "ring-red-500"), 2000);
-        }
-      }, 300);
     };
 
     xhr.send(formData);
