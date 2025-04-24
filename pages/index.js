@@ -9,7 +9,7 @@ import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditor from "../components/StitchEditor";
-import { CustomToaster } from "../components/CustomToaster"; // << Don't forget this!
+import { CustomToaster } from "../components/CustomToaster";
 
 const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -38,186 +38,180 @@ function Home() {
   }, []);
 
   const handleUpload = async (files) => {
-  if (!files.length) return;
-  setUploading(true);
+    if (!files.length) return;
+    setUploading(true);
 
-  const formData = new FormData();
-  files.forEach((file) => {
-    formData.append("files", file); // append the real file object
-  });
-
-  const localFiles = files.map(file => ({
-    name: file.name,
-    url: "", // no URL.createObjectURL
-    status: "Uploading",
-    stage: "uploading",
-    uploadProgress: 0,
-    isLocal: true,
-    timestamp: Date.now(),
-    realFile: file, // save real file object temporarily
-  }));
-
-  setUploadedFiles(prev => [...localFiles, ...prev]);
-  setFilteredFiles(prev => [...localFiles, ...prev]);
-  setCurrentPage(1);
-
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${FLASK_BASE}/upload`, true); // IMPORTANT: Post directly to Flask server
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadedFiles(prev => prev.map(f => 
-          f.isLocal ? { ...f, uploadProgress: progress } : f
-        ));
-      }
-    };
-
-    xhr.onload = async () => {
-      if (xhr.status !== 200) {
-        toast.error("Upload failed");
-        return;
-      }
-
-      const data = JSON.parse(xhr.responseText);
-      const newFiles = data.urls.map(file => ({
-        ...file,
-        status: "Uploaded",
-        pesUrl: "",
-        taskId: "",
-        stage: "",
-        timestamp: Date.now(),
-      }));
-
-      setUploadedFiles(prev => [
-        ...newFiles,
-        ...prev.filter(f => !f.isLocal)
-      ]);
-      setFilteredFiles(prev => [
-        ...newFiles,
-        ...prev.filter(f => !f.isLocal)
-      ]);
-
-      setTimeout(() => {
-        const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
-        if (firstNewFile) {
-          firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
-          firstNewFile.classList.add("animate-bounce");
-          setTimeout(() => firstNewFile.classList.remove("animate-bounce"), 1000);
-        }
-      }, 300);
-
-      toast.success("Upload complete!");
-    };
-
-    xhr.onerror = () => {
-      toast.error("Upload error");
-      setUploadedFiles(prev =>
-        prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
-      );
-    };
-
-    xhr.send(formData);
-
-  } catch (err) {
-    console.error("[Upload Error]", err);
-    toast.error(err.message);
-  } finally {
-    setUploading(false);
-  }
-};
-
-  const handleConvert = async (fileUrl) => {
-  console.log(`[Convert] Starting conversion for: ${fileUrl}`);
-  updateFileStatus(fileUrl, "Converting", "initiating");
-
-  try {
-    const res = await fetch(`${FLASK_BASE}/convert`, { // <-- Call Flask directly
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl }),
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.task_id) {  // <-- Flask returns `task_id`, not `taskId`
-      throw new Error("Conversion failed to start");
-    }
+    const localFiles = files.map(file => ({
+      name: file.name,
+      url: "",
+      status: "Uploading",
+      stage: "uploading",
+      uploadProgress: 0,
+      isLocal: true,
+      timestamp: Date.now(),
+      realFile: file,
+    }));
 
-    updateFileStatus(fileUrl, "Converting", "processing");
+    setUploadedFiles(prev => [...localFiles, ...prev]);
+    setFilteredFiles(prev => [...localFiles, ...prev]);
+    setCurrentPage(1);
 
-    // Start polling with Flask task ID
-    pollConversionStatus(data.task_id, fileUrl);
-
-  } catch (err) {
-    console.error("[Convert Error]", err);
-    toast.error(err.message || "Conversion failed");
-    updateFileStatus(fileUrl, "Error", "failed");
-  }
-};
-
-  const pollConversionStatus = (taskId, fileUrl) => {
-  console.log(`[Polling] Starting for Task ID: ${taskId}`);
-  
-  const interval = setInterval(async () => {
     try {
-      const res = await fetch(`${FLASK_BASE}/status/${encodeURIComponent(taskId)}`); // <-- Use Flask /status/:taskId
-      const statusData = await res.json();
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${FLASK_BASE}/upload`, true);
 
-      if (!res.ok || !statusData) {
-        console.error("[Polling] Bad response:", res.status, statusData);
-        updateFileStatus(fileUrl, "Error", "poll-failed");
-        clearInterval(interval);
-        return;
-      }
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadedFiles(prev => prev.map(f =>
+            f.isLocal ? { ...f, uploadProgress: progress } : f
+          ));
+        }
+      };
 
-      if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
-        updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
-        toast.success("Conversion complete!");
-        clearInterval(interval);
-      } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
-        updateFileStatus(fileUrl, "Error", "conversion-error");
-        toast.error("Conversion failed");
-        clearInterval(interval);
-      } else {
-        updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
-      }
+      xhr.onload = async () => {
+        if (xhr.status !== 200) {
+          toast.error("Upload failed");
+          return;
+        }
+
+        const data = JSON.parse(xhr.responseText);
+        const newFiles = data.urls.map(file => ({
+          ...file,
+          status: "Uploaded",
+          stage: "",
+          timestamp: Date.now(),
+        }));
+
+        setUploadedFiles(prev => [
+          ...newFiles,
+          ...prev.filter(f => !f.isLocal)
+        ]);
+        setFilteredFiles(prev => [
+          ...newFiles,
+          ...prev.filter(f => !f.isLocal)
+        ]);
+
+        setTimeout(() => {
+          const firstNewFile = document.querySelector(`[data-file-url="${newFiles[0].url}"]`);
+          if (firstNewFile) {
+            firstNewFile.scrollIntoView({ behavior: "smooth", block: "center" });
+            firstNewFile.classList.add("animate-bounce");
+            setTimeout(() => firstNewFile.classList.remove("animate-bounce"), 1000);
+          }
+        }, 300);
+
+        toast.success("Upload complete!");
+      };
+
+      xhr.onerror = () => {
+        toast.error("Upload error");
+        setUploadedFiles(prev =>
+          prev.map(f => f.isLocal ? { ...f, status: "Error", uploadProgress: undefined } : f)
+        );
+      };
+
+      xhr.send(formData);
 
     } catch (err) {
-      console.error("[Polling Error]", err);
-      updateFileStatus(fileUrl, "Error", "poll-failed");
-      toast.error("Polling error");
-      clearInterval(interval);
+      console.error("[Upload Error]", err);
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
     }
-  }, 3000);
-};
+  };
+
+  const handleConvert = async (fileUrl) => {
+    updateFileStatus(fileUrl, "Converting", "initiating");
+
+    try {
+      const res = await fetch(`${FLASK_BASE}/convert`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.task_id) {
+        throw new Error("Conversion failed to start");
+      }
+
+      updateFileStatus(fileUrl, "Converting", "processing");
+      pollConversionStatus(data.task_id, fileUrl);
+
+    } catch (err) {
+      console.error("[Convert Error]", err);
+      toast.error(err.message || "Conversion failed");
+      updateFileStatus(fileUrl, "Error", "failed");
+    }
+  };
+
+  const pollConversionStatus = (taskId, fileUrl) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${FLASK_BASE}/status/${encodeURIComponent(taskId)}`);
+        const statusData = await res.json();
+
+        if (!res.ok || !statusData) {
+          updateFileStatus(fileUrl, "Error", "poll-failed");
+          clearInterval(interval);
+          return;
+        }
+
+        if (statusData.state === "SUCCESS" || statusData.status === "Conversion complete") {
+          updateFileStatus(fileUrl, "Converted", "done", statusData.pesUrl);
+          toast.success("Conversion complete!");
+          clearInterval(interval);
+        } else if (statusData.state === "FAILURE" || statusData.status?.startsWith("Error")) {
+          updateFileStatus(fileUrl, "Error", "conversion-error");
+          toast.error("Conversion failed");
+          clearInterval(interval);
+        } else {
+          updateFileStatus(fileUrl, "Converting", statusData.stage || "processing");
+        }
+
+      } catch (err) {
+        console.error("[Polling Error]", err);
+        updateFileStatus(fileUrl, "Error", "poll-failed");
+        toast.error("Polling error");
+        clearInterval(interval);
+      }
+    }, 3000);
+  };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-  if (!fileUrl || !status) return;
+    if (!fileUrl || !status) return;
 
-  setUploadedFiles(prev => {
-    const updated = prev.map(f => {
-      if (!f || !f.url) return f;
-      if (f.url === fileUrl) {
-        return { ...f, status, stage, pesUrl }; // <- was `convertedPes` before
-      }
-      return f;
-    });
-
-    if (status === "Converted") {
-      setTimeout(() => {
-        const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
-        if (card) {
-          card.scrollIntoView({ behavior: "smooth", block: "center" });
-          card.classList.add("ring-4", "ring-green-400");
-          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+    setUploadedFiles(prev => {
+      const updated = prev.map(f => {
+        if (!f || !f.url) return f;
+        if (f.url === fileUrl) {
+          const updatedFile = { ...f, status, stage };
+          if (pesUrl) updatedFile.pesUrl = pesUrl;
+          return updatedFile;
         }
-      }, 300);
-    }
+        return f;
+      });
 
-    return updated;
-  });
-};
+      if (status === "Converted") {
+        setTimeout(() => {
+          const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.classList.add("ring-4", "ring-green-400");
+            setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+          }
+        }, 300);
+      }
+
+      return updated;
+    });
+  };
 
   const handleDownload = async (fileUrl, format) => {
     try {
@@ -266,7 +260,7 @@ function Home() {
                   file={file}
                   onConvert={() => handleConvert(file.url)}
                   onDownload={() => handleDownload(file.url, "pes")}
-                  onPreview={() => handlePreview(file.url)}
+                  onPreview={() => handlePreview(file.pesUrl)}
                   onEdit={() => handleEdit(file.url)}
                 />
               ) : null
