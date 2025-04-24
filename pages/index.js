@@ -193,31 +193,31 @@ function Home() {
 };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-    if (!fileUrl || !status) return;
+  if (!fileUrl || !status) return;
 
-    setUploadedFiles(prev => {
-      const updated = prev.map(f => {
-        if (!f || !f.url) return f;
-        if (f.url === fileUrl) {
-          return { ...f, status, stage, convertedPes: pesUrl };
-        }
-        return f;
-      });
-
-      if (status === "Converted") {
-        setTimeout(() => {
-          const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
-          if (card) {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            card.classList.add("ring-4", "ring-green-400");
-            setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
-          }
-        }, 300);
+  setUploadedFiles(prev => {
+    const updated = prev.map(f => {
+      if (!f || !f.url) return f;
+      if (f.url === fileUrl) {
+        return { ...f, status, stage, pesUrl }; // <- was `convertedPes` before
       }
-
-      return updated;
+      return f;
     });
-  };
+
+    if (status === "Converted") {
+      setTimeout(() => {
+        const card = document.querySelector(`[data-file-url="${fileUrl}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          card.classList.add("ring-4", "ring-green-400");
+          setTimeout(() => card.classList.remove("ring-4", "ring-green-400"), 3000);
+        }
+      }, 300);
+    }
+
+    return updated;
+  });
+};
 
   const handleDownload = async (fileUrl, format) => {
     try {
