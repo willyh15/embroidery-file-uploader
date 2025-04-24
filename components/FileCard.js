@@ -1,12 +1,4 @@
-import {
-  Loader2,
-  RotateCw,
-  CheckCircle,
-  XCircle,
-  ArrowDownCircle,
-  Sparkles,
-  Eye,
-} from "lucide-react";
+import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle, Sparkles, Eye } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -26,7 +18,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     let timer;
     if (retrying && countdown > 0) {
       timer = setTimeout(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown(prev => prev - 1);
       }, 1000);
     }
     return () => clearTimeout(timer);
@@ -38,6 +30,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     try {
       await onConvert(file.url);
       toast.success("Retry started!");
+
       setTimeout(() => {
         const card = document.querySelector(`[data-file-url="${file.url}"]`);
         if (card) {
@@ -46,14 +39,17 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           setTimeout(() => card.classList.remove("ring-4", "ring-green-400", "animate-bounce"), 3000);
         }
       }, 100);
+
       setTimeout(() => {
         setRetrying(false);
         setCooldownActive(true);
         setTimeout(() => setCooldownActive(false), 5000);
       }, 3000);
+
     } catch (err) {
       console.error("[Retry Error]", err);
       toast.error("Retry failed.");
+
       const card = document.querySelector(`[data-file-url="${file.url}"]`);
       if (card) {
         card.classList.add("ring-4", "ring-red-400", "animate-pulse");
