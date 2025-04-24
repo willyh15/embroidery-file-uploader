@@ -1,4 +1,4 @@
-import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle, Sparkles } from "lucide-react";
+import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle, Sparkles, Eye } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -132,15 +132,23 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         )}
 
         {file.status === "Converted" && file.convertedPes && (
-          <a
-            href={file.convertedPes}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onDownload(file.url, "pes")}
-            className="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            <ArrowDownCircle className="inline-block w-4 h-4 mr-1" /> Download PES
-          </a>
+          <>
+            <a
+              href={file.convertedPes}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onDownload(file.url, "pes")}
+              className="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              <ArrowDownCircle className="inline-block w-4 h-4 mr-1" /> Download PES
+            </a>
+            <button
+              onClick={() => onPreview(file.convertedPes)}
+              className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            >
+              <Eye className="w-4 h-4 inline mr-1" /> Preview
+            </button>
+          </>
         )}
 
         {file.status === "Error" && (
@@ -169,20 +177,12 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         )}
 
         {file.status === "Converted" && (
-          <>
-            <button
-              onClick={() => onPreview(file.url)}
-              className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-            >
-              Preview
-            </button>
-            <button
-              onClick={() => onEdit(file.url)}
-              className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
-            >
-              Edit
-            </button>
-          </>
+          <button
+            onClick={() => onEdit(file.url)}
+            className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500"
+          >
+            Edit
+          </button>
         )}
       </div>
     </div>
