@@ -24,6 +24,12 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     return () => clearTimeout(timer);
   }, [retrying, countdown]);
 
+  useEffect(() => {
+    if (file.status === "Converted") {
+      console.log("[FileCard Debug] Converted file object:", file);
+    }
+  }, [file]);
+
   const handleRetry = async () => {
     setRetrying(true);
     setCountdown(3);
@@ -185,6 +191,16 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           </button>
         )}
       </div>
+
+      {file.status === "Converted" && (
+        <div className="w-full mt-2 text-xs text-gray-500">
+          <strong>Debug Info:</strong><br />
+          pesUrl: {file.pesUrl || "N/A"}
+          {file.status === "Converted" && !file.pesUrl && (
+            <div className="text-red-500 font-bold">[Missing pesUrl despite Converted status]</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
