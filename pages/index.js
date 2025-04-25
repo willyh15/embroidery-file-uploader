@@ -1,3 +1,4 @@
+// index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
@@ -127,6 +128,7 @@ function Home() {
         if (!res.ok) throw new Error("Polling failed");
 
         if (data.state === "SUCCESS") {
+          console.log("[Polling Complete]", data);
           updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
           toast.success("Conversion complete!");
           clearInterval(interval);
@@ -150,6 +152,18 @@ function Home() {
       ? { ...file, status, stage, ...(pesUrl && { pesUrl }) }
       : file
     ));
+  };
+
+  const handleDownload = async (fileUrl, format) => {
+    try {
+      await fetch("/api/log-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileUrl, format }),
+      });
+    } catch (err) {
+      console.error("[Download Log Error]", err);
+    }
   };
 
   const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
