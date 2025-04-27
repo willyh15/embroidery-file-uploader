@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 
-const FLASK_BASE = "https://embroideryfiles.duckdns.org"; // <-- Hardcoded here too!
+const FLASK_BASE = "https://embroideryfiles.duckdns.org"; // <- hardcoded
 
 export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
   const handleDrop = useCallback(async (e) => {
@@ -24,7 +24,7 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
 
-      const response = await fetch(`${FLASK_BASE}/upload`, {
+      const response = await fetch(`${FLASK_BASE}/upload-async`, {  // <<< HERE
         method: "POST",
         body: formData,
       });
