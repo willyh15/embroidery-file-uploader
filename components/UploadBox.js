@@ -1,19 +1,47 @@
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 
-export default function UploadBox({ uploading, dropRef, onUpload }) {
-  const handleDrop = useCallback((e) => {
+const FLASK_BASE = "https://embroideryfiles.duckdns.org"; // <-- Hardcoded here too!
+
+export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
+  const handleDrop = useCallback(async (e) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      onUpload(files);
+      await uploadFiles(files);
     }
-  }, [onUpload]);
+  }, []);
 
-  const handleSelectFiles = (e) => {
+  const handleSelectFiles = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      onUpload(files);
+      await uploadFiles(files);
+    }
+  };
+
+  const uploadFiles = async (files) => {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const response = await fetch(`${FLASK_BASE}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const data = await response.json();
+      if (onUploadSuccess) {
+        onUploadSuccess(data.urls);
+      }
+      toast.success("Upload complete!");
+    } catch (err) {
+      console.error("[Upload Error]", err);
+      toast.error(`Upload failed: ${err.message}`);
     }
   };
 
