@@ -48,13 +48,6 @@ function Home() {
 
   const handleConvert = async (fileUrl) => {
   console.log("[Convert] Attempting to convert fileUrl:", fileUrl);
-
-  if (!fileUrl || typeof fileUrl !== "string") {
-    console.error("[Convert Error] Invalid fileUrl:", fileUrl);
-    toast.error("Invalid file URL for conversion.");
-    return;
-  }
-
   updateFileStatus(fileUrl, "Converting", "initiating");
 
   try {
@@ -66,17 +59,7 @@ function Home() {
 
     console.log("[Convert] Raw response:", res);
 
-    const text = await res.text();
-    console.log("[Convert] Raw text response:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseError) {
-      console.error("[Convert] Failed to parse JSON:", parseError);
-      throw new Error("Server returned invalid JSON.");
-    }
-
+    const data = await res.json();
     console.log("[Convert] Parsed data:", data);
 
     if (!res.ok || !data.task_id) {
@@ -88,11 +71,42 @@ function Home() {
 
   } catch (err) {
     console.error("[Convert Error]", err);
-    toast.error(err.message || "Unknown convert error");
+    toast.error(err.message);
     updateFileStatus(fileUrl, "Error", "failed");
   }
 };
 
+const pollConversionStatus = (taskId, fileUrl) => {
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
+      const data = await res.json();
+
+      if (!res.ok || !data) {
+        updateFileStatus(fileUrl, "Error", "poll-failed");
+        clearInterval(interval);
+        return;
+      }
+
+      if (data.state === "SUCCESS" && data.pesUrl) {
+        updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
+        toast.success("Conversion complete!");
+        clearInterval(interval);
+      } else if (data.state === "FAILURE" || data.status?.startsWith("Error")) {
+        updateFileStatus(fileUrl, "Error", "conversion-error");
+        toast.error("Conversion failed");
+        clearInterval(interval);
+      } else {
+        updateFileStatus(fileUrl, "Converting", data.stage || "processing");
+      }
+    } catch (err) {
+      console.error("[Polling Error]", err);
+      updateFileStatus(fileUrl, "Error", "poll-failed");
+      toast.error("Polling error");
+      clearInterval(interval);
+    }
+  }, 3000);
+};
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
