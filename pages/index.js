@@ -121,31 +121,40 @@ function Home() {
   };
 
   const pollConversionStatus = (taskId, fileUrl) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error("Polling failed");
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
+      const data = await res.json();
 
-        if (data.state === "SUCCESS") {
-          console.log("[Polling Complete]", data);
-          updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
-          toast.success("Conversion complete!");
-          clearInterval(interval);
-        } else if (data.state === "FAILURE") {
-          updateFileStatus(fileUrl, "Error", "conversion-error");
-          toast.error("Conversion failed");
-          clearInterval(interval);
-        } else {
-          updateFileStatus(fileUrl, "Converting", data.stage || "processing");
-        }
-      } catch (err) {
-        toast.error("Polling error");
+      console.log("[Polling Response]", data); // <- Debug log
+
+      if (!res.ok || !data) {
         updateFileStatus(fileUrl, "Error", "poll-failed");
         clearInterval(interval);
+        return;
       }
-    }, 3000);
-  };
+
+      if (data.state === "SUCCESS" && data.pesUrl) {
+        console.log("[Success] pesUrl:", data.pesUrl); // <- Confirm pesUrl
+        updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
+        toast.success("Conversion complete!");
+        clearInterval(interval);
+      } else if (data.state === "FAILURE" || data.status?.startsWith("Error")) {
+        updateFileStatus(fileUrl, "Error", "conversion-error");
+        toast.error("Conversion failed");
+        clearInterval(interval);
+      } else {
+        updateFileStatus(fileUrl, "Converting", data.stage || "processing");
+      }
+
+    } catch (err) {
+      console.error("[Polling Error]", err);
+      updateFileStatus(fileUrl, "Error", "poll-failed");
+      toast.error("Polling error");
+      clearInterval(interval);
+    }
+  }, 3000);
+};
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
     setUploadedFiles(prev => prev.map(file => file.url === fileUrl
