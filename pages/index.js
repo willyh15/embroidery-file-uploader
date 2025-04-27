@@ -47,25 +47,34 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
-    updateFileStatus(fileUrl, "Converting", "initiating");
-    try {
-      const res = await fetch(`${FLASK_BASE}/convert`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
-      });
+  console.log("[Convert] Attempting to convert fileUrl:", fileUrl); // << add this
+  updateFileStatus(fileUrl, "Converting", "initiating");
 
-      const data = await res.json();
-      if (!res.ok || !data.task_id) throw new Error("Conversion failed to start");
+  try {
+    const res = await fetch(`${FLASK_BASE}/convert`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl: fileUrl }),
+    });
 
-      updateFileStatus(fileUrl, "Converting", "processing");
-      pollConversionStatus(data.task_id, fileUrl);
-    } catch (err) {
-      console.error("[Convert Error]", err);
-      toast.error(err.message);
-      updateFileStatus(fileUrl, "Error", "failed");
+    console.log("[Convert] Raw response:", res); // << add this
+
+    const data = await res.json();
+    console.log("[Convert] Parsed data:", data); // << add this
+
+    if (!res.ok || !data.task_id) {
+      throw new Error("Conversion failed to start");
     }
-  };
+
+    updateFileStatus(fileUrl, "Converting", "processing");
+    pollConversionStatus(data.task_id, fileUrl);
+
+  } catch (err) {
+    console.error("[Convert Error]", err);
+    toast.error(err.message);
+    updateFileStatus(fileUrl, "Error", "failed");
+  }
+};
 
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
