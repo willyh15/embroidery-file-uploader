@@ -47,20 +47,37 @@ function Home() {
   };
 
   const handleConvert = async (fileUrl) => {
-  console.log("[Convert] Attempting to convert fileUrl:", fileUrl); // << add this
+  console.log("[Convert] Attempting to convert fileUrl:", fileUrl);
+
+  if (!fileUrl || typeof fileUrl !== "string") {
+    console.error("[Convert Error] Invalid fileUrl:", fileUrl);
+    toast.error("Invalid file URL for conversion.");
+    return;
+  }
+
   updateFileStatus(fileUrl, "Converting", "initiating");
 
   try {
     const res = await fetch(`${FLASK_BASE}/convert`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fileUrl: fileUrl }),
+      body: JSON.stringify({ fileUrl }),
     });
 
-    console.log("[Convert] Raw response:", res); // << add this
+    console.log("[Convert] Raw response:", res);
 
-    const data = await res.json();
-    console.log("[Convert] Parsed data:", data); // << add this
+    const text = await res.text();
+    console.log("[Convert] Raw text response:", text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseError) {
+      console.error("[Convert] Failed to parse JSON:", parseError);
+      throw new Error("Server returned invalid JSON.");
+    }
+
+    console.log("[Convert] Parsed data:", data);
 
     if (!res.ok || !data.task_id) {
       throw new Error("Conversion failed to start");
@@ -71,7 +88,7 @@ function Home() {
 
   } catch (err) {
     console.error("[Convert Error]", err);
-    toast.error(err.message);
+    toast.error(err.message || "Unknown convert error");
     updateFileStatus(fileUrl, "Error", "failed");
   }
 };
