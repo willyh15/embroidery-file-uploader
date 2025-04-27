@@ -1,11 +1,18 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
 export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
-  const handleDrop = useCallback(async (e) => {
+  const [localUploading, setLocalUploading] = useState(false);
+
+  const preventDefaults = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = useCallback(async (e) => {
+    preventDefaults(e);
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       await uploadFiles(files);
@@ -20,10 +27,13 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
   };
 
   const uploadFiles = async (files) => {
-    try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
 
+    setLocalUploading(true);
+    toast.loading("Uploading files...", { id: "uploading" });
+
+    try {
       const response = await fetch(`${FLASK_BASE}/upload`, {
         method: "POST",
         body: formData,
@@ -31,24 +41,31 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Upload failed: ${errorText}`);
+        throw new Error(errorText || "Upload failed");
       }
 
-      const data = await response.json();
-      if (onUploadSuccess) {
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error("Failed to parse server response");
+      }
+
+      if (onUploadSuccess && data?.urls) {
         onUploadSuccess(data.urls);
       }
-      toast.success("Upload complete!");
+      toast.success("Upload complete!", { id: "uploading" });
+
     } catch (err) {
       console.error("[Upload Error]", err);
-      toast.error(`Upload failed: ${err.message}`);
+      toast.error(`Upload failed: ${err.message}`, { id: "uploading" });
+
+    } finally {
+      setLocalUploading(false);
     }
   };
 
-  const preventDefaults = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  const uploadingState = uploading || localUploading;
 
   return (
     <div
@@ -58,21 +75,21 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       onDragLeave={preventDefaults}
       onDrop={handleDrop}
       className={`flex flex-col items-center justify-center border-4 border-dashed rounded-lg p-8 transition-all duration-300 ${
-        uploading
+        uploadingState
           ? "border-blue-400 bg-blue-50 animate-pulse"
           : "border-gray-300 hover:border-blue-500 hover:bg-blue-50"
       }`}
     >
       <label className="flex flex-col items-center cursor-pointer">
-        <span className="text-lg font-semibold text-gray-600">
-          {uploading ? "Uploading..." : "Drag & drop files here or click to select"}
+        <span className="text-lg font-semibold text-gray-600 mb-2">
+          {uploadingState ? "Uploading..." : "Drag & drop files here or click to select"}
         </span>
         <input
           type="file"
           multiple
           className="hidden"
           onChange={handleSelectFiles}
-          disabled={uploading}
+          disabled={uploadingState}
         />
       </label>
     </div>
