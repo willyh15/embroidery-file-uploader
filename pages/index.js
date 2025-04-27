@@ -76,37 +76,6 @@ function Home() {
   }
 };
 
-const pollConversionStatus = (taskId, fileUrl) => {
-  const interval = setInterval(async () => {
-    try {
-      const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
-      const data = await res.json();
-
-      if (!res.ok || !data) {
-        updateFileStatus(fileUrl, "Error", "poll-failed");
-        clearInterval(interval);
-        return;
-      }
-
-      if (data.state === "SUCCESS" && data.pesUrl) {
-        updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
-        toast.success("Conversion complete!");
-        clearInterval(interval);
-      } else if (data.state === "FAILURE" || data.status?.startsWith("Error")) {
-        updateFileStatus(fileUrl, "Error", "conversion-error");
-        toast.error("Conversion failed");
-        clearInterval(interval);
-      } else {
-        updateFileStatus(fileUrl, "Converting", data.stage || "processing");
-      }
-    } catch (err) {
-      console.error("[Polling Error]", err);
-      updateFileStatus(fileUrl, "Error", "poll-failed");
-      toast.error("Polling error");
-      clearInterval(interval);
-    }
-  }, 3000);
-};
   const pollConversionStatus = (taskId, fileUrl) => {
     const interval = setInterval(async () => {
       try {
