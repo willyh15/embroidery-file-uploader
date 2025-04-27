@@ -11,7 +11,7 @@ import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditor from "../components/StitchEditor";
 import { CustomToaster } from "../components/CustomToaster";
 
-const FLASK_BASE = "https://embroideryfiles.duckdns.org";
+const FLASK_BASE = "https://embroideryfiles.duckdns.org"; // <- Hardcoded endpoint
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
@@ -49,7 +49,7 @@ function Home() {
       uploadProgress: 0,
       isLocal: true,
       timestamp: Date.now(),
-      realFile: file
+      realFile: file,
     }));
 
     setUploadedFiles(prev => [...localFiles, ...prev]);
@@ -77,11 +77,10 @@ function Home() {
 
       setUploadedFiles(prev => [...newFiles, ...prev.filter(f => !f.isLocal)]);
       setFilteredFiles(prev => [...newFiles, ...prev.filter(f => !f.isLocal)]);
-
       toast.success("Upload complete!");
     } catch (err) {
       console.error("[Upload Error]", err);
-      toast.error(err.message);
+      toast.error(err.message || "Upload error");
       setUploadedFiles(prev => prev.map(f => f.isLocal ? { ...f, status: "Error" } : f));
     } finally {
       setUploading(false);
@@ -114,8 +113,6 @@ function Home() {
       try {
         const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
         const data = await res.json();
-
-        console.log("[Polling]", data);
 
         if (!res.ok || !data) {
           updateFileStatus(fileUrl, "Error", "poll-failed");
