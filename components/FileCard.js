@@ -25,6 +25,9 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   }, [retrying, countdown]);
 
   useEffect(() => {
+    if (file?.url === undefined) {
+      console.error("[FileCard Error] file.url is missing!", file);
+    }
     if (file.status === "Converted") {
       console.log("[FileCard Debug] Converted file object:", file);
     }
@@ -33,7 +36,10 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   const handleRetry = async () => {
     setRetrying(true);
     setCountdown(3);
+
     try {
+      if (!file.url) throw new Error("Missing file.url for retry.");
+
       await onConvert(file.url);
       toast.success("Retry started!");
 
