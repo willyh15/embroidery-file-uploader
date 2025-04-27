@@ -157,11 +157,19 @@ function Home() {
 };
 
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-    setUploadedFiles(prev => prev.map(file => file.url === fileUrl
-      ? { ...file, status, stage, ...(pesUrl && { pesUrl }) }
-      : file
-    ));
-  };
+  setUploadedFiles(prev => prev.map(file => {
+    if (file.url !== fileUrl) return file;
+    const updatedFile = { ...file, status, stage };
+    if (pesUrl) updatedFile.pesUrl = pesUrl;
+    return updatedFile;
+  }));
+  setFilteredFiles(prev => prev.map(file => {
+    if (file.url !== fileUrl) return file;
+    const updatedFile = { ...file, status, stage };
+    if (pesUrl) updatedFile.pesUrl = pesUrl;
+    return updatedFile;
+  }));
+};
 
   const handleDownload = async (fileUrl, format) => {
     try {
