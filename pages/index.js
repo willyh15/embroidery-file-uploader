@@ -11,7 +11,7 @@ import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditor from "../components/StitchEditor";
 import { CustomToaster } from "../components/CustomToaster";
 
-const FLASK_BASE = process.env.NEXT_PUBLIC_FLASK_BASE_URL || "https://embroideryfiles.duckdns.org";
+const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
