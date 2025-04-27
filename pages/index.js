@@ -11,7 +11,7 @@ import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditor from "../components/StitchEditor";
 import { CustomToaster } from "../components/CustomToaster";
 
-const FLASK_BASE = "https://embroideryfiles.duckdns.org"; // <- Hardcoded endpoint
+const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
@@ -34,57 +34,16 @@ function Home() {
     }
   }, []);
 
-  const handleUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
-
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
-
-    const localFiles = files.map(file => ({
-      name: file.name,
-      url: "",
-      status: "Uploading",
-      stage: "uploading",
-      uploadProgress: 0,
-      isLocal: true,
+  const handleUploadSuccess = (newFiles) => {
+    const uploaded = newFiles.map(file => ({
+      ...file,
+      status: "Uploaded",
+      stage: "",
       timestamp: Date.now(),
-      realFile: file,
     }));
-
-    setUploadedFiles(prev => [...localFiles, ...prev]);
-    setFilteredFiles(prev => [...localFiles, ...prev]);
+    setUploadedFiles(prev => [...uploaded, ...prev]);
+    setFilteredFiles(prev => [...uploaded, ...prev]);
     setCurrentPage(1);
-
-    try {
-      const res = await fetch(`${FLASK_BASE}/upload-async`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.urls) {
-        throw new Error(data.error || "Upload failed");
-      }
-
-      const newFiles = data.urls.map(file => ({
-        ...file,
-        status: "Uploaded",
-        stage: "",
-        timestamp: Date.now(),
-      }));
-
-      setUploadedFiles(prev => [...newFiles, ...prev.filter(f => !f.isLocal)]);
-      setFilteredFiles(prev => [...newFiles, ...prev.filter(f => !f.isLocal)]);
-      toast.success("Upload complete!");
-    } catch (err) {
-      console.error("[Upload Error]", err);
-      toast.error(err.message || "Upload error");
-      setUploadedFiles(prev => prev.map(f => f.isLocal ? { ...f, status: "Error" } : f));
-    } finally {
-      setUploading(false);
-    }
   };
 
   const handleConvert = async (fileUrl) => {
@@ -174,7 +133,7 @@ function Home() {
         }}
       />
 
-      <UploadBox uploading={uploading} dropRef={dropRef} onUpload={handleUpload} />
+      <UploadBox uploading={uploading} dropRef={dropRef} onUploadSuccess={handleUploadSuccess} />
 
       <div className="file-grid">
         {paginatedFiles.map(file => (
