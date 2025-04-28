@@ -27,43 +27,44 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
   };
 
   const uploadFiles = async (files) => {
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
 
-    setLocalUploading(true);
-    toast.loading("Uploading files...", { id: "uploading" });
+  setLocalUploading(true);
+  toast.loading("Uploading files...", { id: "uploading" });
 
-    try {
-      const response = await fetch(`${FLASK_BASE}/upload`, {
-        method: "POST",
-        body: formData,
-      });
+  try {
+    const response = await fetch(`${FLASK_BASE}/upload`, {
+      method: "POST",
+      body: formData,
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Upload failed");
-      }
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        throw new Error("Failed to parse server response");
-      }
-
-      if (onUploadSuccess && data?.urls) {
-        onUploadSuccess(data.urls);
-      }
-      toast.success("Upload complete!", { id: "uploading" });
-
-    } catch (err) {
-      console.error("[Upload Error]", err);
-      toast.error(`Upload failed: ${err.message}`, { id: "uploading" });
-
-    } finally {
-      setLocalUploading(false);
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Server response not readable");
+      throw new Error(`Server error ${response.status}: ${errorText}`);
     }
-  };
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonErr) {
+      throw new Error("Failed to parse server JSON response");
+    }
+
+    if (onUploadSuccess && data?.urls) {
+      onUploadSuccess(data.urls);
+    }
+    toast.success("Upload complete!", { id: "uploading" });
+
+  } catch (err) {
+    const extractedMessage = err?.message || "Unknown upload error";
+    console.error("[Upload Error]", extractedMessage, err);
+    toast.error(`Upload failed: ${extractedMessage}`, { id: "uploading" });
+
+  } finally {
+    setLocalUploading(false);
+  }
+};
 
   const uploadingState = uploading || localUploading;
 
