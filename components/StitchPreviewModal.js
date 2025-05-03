@@ -5,89 +5,70 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
-
   const canvasRef = useRef(null);
   const [scale, setScale] = useState(5);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!fileUrl) return;
+
     const filename = fileUrl.split("/").pop();
     fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(
-          "[Preview API Response] segments:",
-          data?.segments?.length ?? 0,
-          "colors:",
-          data?.colors?.length ?? 0
-        );
-        if (data?.segments && !isEqual(data.segments, segments)) {
-          setSegments(data.segments);
-        }
-        if (data?.colors && !isEqual(data.colors, colors)) {
-          setColors(data.colors);
+        if (Array.isArray(data?.segments) && Array.isArray(data?.colors)) {
+          if (!isEqual(data.segments, segments)) setSegments(data.segments);
+          if (!isEqual(data.colors, colors)) setColors(data.colors);
         }
       })
-      .catch((err) => {
-        console.error("[Preview Fetch Error]", err);
-      });
+      .catch(console.error);
   }, [fileUrl]);
 
   useEffect(() => {
-    if (!canvasRef.current || segments.length === 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas || segments.length === 0) return;
 
     try {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.save();
+      const ctx = canvas.getContext("2d");
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.restore();
 
-      const allPoints = segments.flat().filter(([x, y]) => isFinite(x) && isFinite(y));
-      if (allPoints.length === 0) return;
+      const allPoints = segments.flat();
+      if (!allPoints.length) return;
 
-      const xs = allPoints.map((p) => p[0]);
-      const ys = allPoints.map((p) => p[1]);
+      const xs = allPoints.map(([x]) => x);
+      const ys = allPoints.map(([, y]) => y);
       const minX = Math.min(...xs);
       const minY = Math.min(...ys);
       const maxX = Math.max(...xs);
       const maxY = Math.max(...ys);
-
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
       const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
       segments.forEach((segment, i) => {
-        if (!Array.isArray(segment) || segment.length === 0) return;
-
-        ctx.strokeStyle =
-          selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
+        const color = selectedIndex === i ? "black" : colors[i] || `hsl(${i * 37}, 70%, 60%)`;
+        ctx.strokeStyle = color;
         ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
-
         ctx.beginPath();
         segment.forEach(([x, y], idx) => {
-          if (!isFinite(x) || !isFinite(y)) return;
           const px = x * scale + baseOffsetX + offset.x;
           const py = y * scale + baseOffsetY + offset.y;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
+          idx === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
         });
         ctx.stroke();
       });
-    } catch (error) {
-      console.error("[Canvas Draw Error]", error);
+    } catch (err) {
+      console.error("[Canvas Draw Error]", err);
     }
   }, [segments, colors, scale, offset, selectedIndex]);
 
   const handleWheel = (e) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -1 : 1;
-    setScale((prev) => Math.max(1, prev + delta));
+    setScale((prev) => Math.max(1, prev + (e.deltaY > 0 ? -1 : 1)));
   };
 
   const handleMouseDown = (e) => {
@@ -111,11 +92,9 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const validPoints = segments.flat().filter(([x, y]) => isFinite(x) && isFinite(y));
-    if (validPoints.length === 0) return;
-
-    const xs = validPoints.map((p) => p[0]);
-    const ys = validPoints.map((p) => p[1]);
+    const allPoints = segments.flat();
+    const xs = allPoints.map(([x]) => x);
+    const ys = allPoints.map(([, y]) => y);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -126,9 +105,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
     for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      for (let [x, y] of seg) {
-        if (!isFinite(x) || !isFinite(y)) continue;
+      for (let [x, y] of segments[i]) {
         const px = x * scale + baseOffsetX + offset.x;
         const py = y * scale + baseOffsetY + offset.y;
         if (Math.abs(px - mouseX) < 5 && Math.abs(py - mouseY) < 5) {
