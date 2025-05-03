@@ -14,13 +14,17 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
 
   useEffect(() => {
     if (!fileUrl) return;
-
     const filename = fileUrl.split("/").pop();
     fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
       .then((res) => res.json())
-      .then(data => {
-        // Avoid crashing on circular objects
-        console.log("[Preview API Response] segments:", data?.segments?.length, "colors:", data?.colors?.length);
+      .then((data) => {
+        // Log minimal info to avoid circular structure issues
+        console.log(
+          "[Preview API Response] segments:",
+          data?.segments ? data.segments.length : 0,
+          "colors:",
+          data?.colors ? data.colors.length : 0
+        );
         if (data?.segments && !isEqual(data.segments, segments)) {
           setSegments(data.segments);
         }
@@ -34,41 +38,60 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   }, [fileUrl]);
 
   useEffect(() => {
-    if (!canvasRef.current || segments.length === 0) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
+    if (!canvasRef.current || segments.length === 0) {
+      console.log("Canvas not ready or no segments available");
+      return;
+    }
+    try {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      // Reset transforms
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
-    const allPoints = segments.flat();
-    const xs = allPoints.map((p) => p[0]);
-    const ys = allPoints.map((p) => p[1]);
-    const minX = Math.min(...xs);
-    const minY = Math.min(...ys);
-    const maxX = Math.max(...xs);
-    const maxY = Math.max(...ys);
+      // Flatten segments and check if there are points
+      const allPoints = segments.flat();
+      if (allPoints.length === 0) {
+        console.warn("No points found in segments");
+        return;
+      }
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
-    const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
+      // Calculate bounding box
+      const xs = allPoints.map((p) => p[0]);
+      const ys = allPoints.map((p) => p[1]);
+      const minX = Math.min(...xs);
+      const minY = Math.min(...ys);
+      const maxX = Math.max(...xs);
+      const maxY = Math.max(...ys);
 
-    segments.forEach((segment, i) => {
-      ctx.strokeStyle =
-        selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
-      ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
+      const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
-      ctx.beginPath();
-      segment.forEach(([x, y], idx) => {
-        const px = x * scale + baseOffsetX + offset.x;
-        const py = y * scale + baseOffsetY + offset.y;
-        if (idx === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+      console.log("Canvas dimensions:", canvas.width, canvas.height);
+      console.log("Bounding box:", { minX, minY, maxX, maxY });
+      console.log("Base offset:", { baseOffsetX, baseOffsetY });
+
+      segments.forEach((segment, i) => {
+        ctx.strokeStyle =
+          selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
+        ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
+
+        ctx.beginPath();
+        segment.forEach(([x, y], idx) => {
+          const px = x * scale + baseOffsetX + offset.x;
+          const py = y * scale + baseOffsetY + offset.y;
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
       });
-      ctx.stroke();
-    });
+    } catch (error) {
+      console.error("[Canvas Draw Error]", error);
+    }
   }, [segments, colors, scale, offset, selectedIndex]);
 
   const handleWheel = (e) => {
@@ -99,6 +122,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const mouseY = e.clientY - rect.top;
 
     const allPoints = segments.flat();
+    if (allPoints.length === 0) return;
     const xs = allPoints.map((p) => p[0]);
     const ys = allPoints.map((p) => p[1]);
     const minX = Math.min(...xs);
@@ -151,7 +175,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
         <div className="text-sm mt-4">
           <strong>Zoom:</strong> Scroll | <strong>Pan:</strong> Drag | <strong>Select:</strong> Click segment
         </div>
-
         {colors.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {colors.map((color, idx) => (
@@ -167,7 +190,6 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             ))}
           </div>
         )}
-
         <div className="mt-4 flex justify-between items-center">
           <button
             onClick={handleExport}
