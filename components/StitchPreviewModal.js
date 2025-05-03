@@ -11,20 +11,25 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  // Fetch stitch preview data
   useEffect(() => {
-    if (!fileUrl) return;
+  if (!fileUrl) return;
 
-    const filename = fileUrl.split("/").pop();
-    fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data?.segments) {
-          setSegments(data.segments);
-          setColors(data.colors || []);
-        }
-      });
-  }, [fileUrl]);
+  const filename = fileUrl.split("/").pop();
+  fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
+    .then(res => res.json())
+    .then(data => {
+      console.log("[Preview API Response]", data); // <--- LOG IT
+      if (data?.segments) {
+        setSegments(data.segments);
+        setColors(data.colors || []);
+      } else {
+        console.warn("[Preview] No segments returned");
+      }
+    })
+    .catch(err => {
+      console.error("[Preview Fetch Error]", err);
+    });
+}, [fileUrl]);
 
   // Redraw canvas
   useEffect(() => {
