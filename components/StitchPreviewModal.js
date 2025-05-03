@@ -36,7 +36,10 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     if (!canvasRef.current || segments.length === 0) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform matrix
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const allPoints = segments.flat();
