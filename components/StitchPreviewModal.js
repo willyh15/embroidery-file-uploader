@@ -18,8 +18,9 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const filename = fileUrl.split("/").pop();
     fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
       .then((res) => res.json())
-      .then((data) => {
-        console.log("[Preview API Response]", data);
+      .then(data => {
+        // Avoid crashing on circular objects
+        console.log("[Preview API Response] segments:", data?.segments?.length, "colors:", data?.colors?.length);
         if (data?.segments && !isEqual(data.segments, segments)) {
           setSegments(data.segments);
         }
