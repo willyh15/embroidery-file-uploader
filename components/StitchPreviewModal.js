@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import isEqual from "lodash.isequal";
 
 export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [segments, setSegments] = useState([]);
@@ -12,39 +13,37 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const dragStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-  if (!fileUrl) return;
+    if (!fileUrl) return;
 
-  const filename = fileUrl.split("/").pop();
-  fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
-    .then(res => res.json())
-    .then(data => {
-      console.log("[Preview API Response]", data); // <--- LOG IT
-      if (data?.segments) {
-        setSegments(data.segments);
-        setColors(data.colors || []);
-      } else {
-        console.warn("[Preview] No segments returned");
-      }
-    })
-    .catch(err => {
-      console.error("[Preview Fetch Error]", err);
-    });
-}, [fileUrl]);
+    const filename = fileUrl.split("/").pop();
+    fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("[Preview API Response]", data);
+        if (data?.segments && !isEqual(data.segments, segments)) {
+          setSegments(data.segments);
+        }
+        if (data?.colors && !isEqual(data.colors, colors)) {
+          setColors(data.colors);
+        }
+      })
+      .catch((err) => {
+        console.error("[Preview Fetch Error]", err);
+      });
+  }, [fileUrl]);
 
-  // Redraw canvas
   useEffect(() => {
     if (!canvasRef.current || segments.length === 0) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform matrix
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const allPoints = segments.flat();
-    const xs = allPoints.map(p => p[0]);
-    const ys = allPoints.map(p => p[1]);
+    const xs = allPoints.map((p) => p[0]);
+    const ys = allPoints.map((p) => p[1]);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -56,7 +55,8 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
     segments.forEach((segment, i) => {
-      ctx.strokeStyle = selectedIndex === i ? "black" : (colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`);
+      ctx.strokeStyle =
+        selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
       ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
 
       ctx.beginPath();
@@ -73,7 +73,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const handleWheel = (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -1 : 1;
-    setScale(prev => Math.max(1, prev + delta));
+    setScale((prev) => Math.max(1, prev + delta));
   };
 
   const handleMouseDown = (e) => {
@@ -85,7 +85,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     if (!isDragging) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
 
@@ -98,8 +98,8 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const mouseY = e.clientY - rect.top;
 
     const allPoints = segments.flat();
-    const xs = allPoints.map(p => p[0]);
-    const ys = allPoints.map(p => p[1]);
+    const xs = allPoints.map((p) => p[0]);
+    const ys = allPoints.map((p) => p[1]);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
