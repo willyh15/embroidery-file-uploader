@@ -1,63 +1,70 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import isEqual from "lodash.isequal";
 
 export default function StitchPreviewModal({ fileUrl, onClose }) {
-  const [segments, setSegments] = useState([]);
+  const [rawSegments, setRawSegments] = useState([]);
   const [colors, setColors] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
+
   const canvasRef = useRef(null);
   const [scale, setScale] = useState(5);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const dragStart = useRef({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!fileUrl) return;
-
     const filename = fileUrl.split("/").pop();
     fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data?.segments) && Array.isArray(data?.colors)) {
-          if (!isEqual(data.segments, segments)) setSegments(data.segments);
-          if (!isEqual(data.colors, colors)) setColors(data.colors);
+        if (data?.segments && !isEqual(data.segments, rawSegments)) {
+          setRawSegments(data.segments);
+        }
+        if (data?.colors && !isEqual(data.colors, colors)) {
+          setColors(data.colors);
         }
       })
-      .catch(console.error);
+      .catch((err) => console.error("[Preview Fetch Error]", err));
   }, [fileUrl]);
+
+  const segments = useMemo(() => rawSegments, [rawSegments]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || segments.length === 0) return;
 
     try {
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
 
       const allPoints = segments.flat();
-      if (!allPoints.length) return;
+      if (allPoints.length === 0) return;
 
-      const xs = allPoints.map(([x]) => x);
-      const ys = allPoints.map(([, y]) => y);
+      const xs = allPoints.map((p) => p[0]);
+      const ys = allPoints.map((p) => p[1]);
       const minX = Math.min(...xs);
       const minY = Math.min(...ys);
       const maxX = Math.max(...xs);
       const maxY = Math.max(...ys);
+
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
       const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
       segments.forEach((segment, i) => {
-        const color = selectedIndex === i ? "black" : colors[i] || `hsl(${i * 37}, 70%, 60%)`;
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
         ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
         ctx.beginPath();
         segment.forEach(([x, y], idx) => {
           const px = x * scale + baseOffsetX + offset.x;
           const py = y * scale + baseOffsetY + offset.y;
-          idx === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
         });
         ctx.stroke();
       });
@@ -93,8 +100,8 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const mouseY = e.clientY - rect.top;
 
     const allPoints = segments.flat();
-    const xs = allPoints.map(([x]) => x);
-    const ys = allPoints.map(([, y]) => y);
+    const xs = allPoints.map((p) => p[0]);
+    const ys = allPoints.map((p) => p[1]);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -105,7 +112,8 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
     for (let i = 0; i < segments.length; i++) {
-      for (let [x, y] of segments[i]) {
+      const seg = segments[i];
+      for (let [x, y] of seg) {
         const px = x * scale + baseOffsetX + offset.x;
         const py = y * scale + baseOffsetY + offset.y;
         if (Math.abs(px - mouseX) < 5 && Math.abs(py - mouseY) < 5) {
