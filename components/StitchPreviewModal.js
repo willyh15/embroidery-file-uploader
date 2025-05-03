@@ -18,12 +18,11 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
       .then((res) => res.json())
       .then((data) => {
-        // Log minimal info to avoid circular structure issues
         console.log(
           "[Preview API Response] segments:",
-          data?.segments ? data.segments.length : 0,
+          data?.segments?.length ?? 0,
           "colors:",
-          data?.colors ? data.colors.length : 0
+          data?.colors?.length ?? 0
         );
         if (data?.segments && !isEqual(data.segments, segments)) {
           setSegments(data.segments);
@@ -38,27 +37,19 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   }, [fileUrl]);
 
   useEffect(() => {
-    if (!canvasRef.current || segments.length === 0) {
-      console.log("Canvas not ready or no segments available");
-      return;
-    }
+    if (!canvasRef.current || segments.length === 0) return;
+
     try {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      // Reset transforms
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Flatten segments and check if there are points
-      const allPoints = segments.flat();
-      if (allPoints.length === 0) {
-        console.warn("No points found in segments");
-        return;
-      }
+      const allPoints = segments.flat().filter(([x, y]) => isFinite(x) && isFinite(y));
+      if (allPoints.length === 0) return;
 
-      // Calculate bounding box
       const xs = allPoints.map((p) => p[0]);
       const ys = allPoints.map((p) => p[1]);
       const minX = Math.min(...xs);
@@ -71,17 +62,16 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
       const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
-      console.log("Canvas dimensions:", canvas.width, canvas.height);
-      console.log("Bounding box:", { minX, minY, maxX, maxY });
-      console.log("Base offset:", { baseOffsetX, baseOffsetY });
-
       segments.forEach((segment, i) => {
+        if (!Array.isArray(segment) || segment.length === 0) return;
+
         ctx.strokeStyle =
           selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
         ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
 
         ctx.beginPath();
         segment.forEach(([x, y], idx) => {
+          if (!isFinite(x) || !isFinite(y)) return;
           const px = x * scale + baseOffsetX + offset.x;
           const py = y * scale + baseOffsetY + offset.y;
           if (idx === 0) ctx.moveTo(px, py);
@@ -121,10 +111,11 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const allPoints = segments.flat();
-    if (allPoints.length === 0) return;
-    const xs = allPoints.map((p) => p[0]);
-    const ys = allPoints.map((p) => p[1]);
+    const validPoints = segments.flat().filter(([x, y]) => isFinite(x) && isFinite(y));
+    if (validPoints.length === 0) return;
+
+    const xs = validPoints.map((p) => p[0]);
+    const ys = validPoints.map((p) => p[1]);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -137,6 +128,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i];
       for (let [x, y] of seg) {
+        if (!isFinite(x) || !isFinite(y)) continue;
         const px = x * scale + baseOffsetX + offset.x;
         const py = y * scale + baseOffsetY + offset.y;
         if (Math.abs(px - mouseX) < 5 && Math.abs(py - mouseY) < 5) {
