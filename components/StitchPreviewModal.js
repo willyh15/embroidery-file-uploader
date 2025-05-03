@@ -3,15 +3,15 @@ import { useEffect, useRef, useState } from "react";
 export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
-  const canvasRef = useRef(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
-  // Zoom & pan state
+  const canvasRef = useRef(null);
   const [scale, setScale] = useState(5);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  // Load stitch data
+  // Fetch stitch preview data
   useEffect(() => {
     if (!fileUrl) return;
 
@@ -26,18 +26,17 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       });
   }, [fileUrl]);
 
-  // Draw
+  // Redraw canvas
   useEffect(() => {
     if (!canvasRef.current || segments.length === 0) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const allPoints = segments.flat();
     const xs = allPoints.map(p => p[0]);
     const ys = allPoints.map(p => p[1]);
-
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
@@ -45,12 +44,13 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
 
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-
     const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
     const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
 
     segments.forEach((segment, i) => {
-      ctx.strokeStyle = colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
+      ctx.strokeStyle = selectedIndex === i ? "black" : (colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`);
+      ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
+
       ctx.beginPath();
       segment.forEach(([x, y], idx) => {
         const px = x * scale + baseOffsetX + offset.x;
@@ -60,16 +60,14 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       });
       ctx.stroke();
     });
-  }, [segments, colors, scale, offset]);
+  }, [segments, colors, scale, offset, selectedIndex]);
 
-  // Zoom scroll
   const handleWheel = (e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -1 : 1;
     setScale(prev => Math.max(1, prev + delta));
   };
 
-  // Mouse drag for pan
   const handleMouseDown = (e) => {
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
@@ -83,8 +81,46 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleCanvasClick = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const allPoints = segments.flat();
+    const xs = allPoints.map(p => p[0]);
+    const ys = allPoints.map(p => p[1]);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
+    const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
+
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      for (let [x, y] of seg) {
+        const px = x * scale + baseOffsetX + offset.x;
+        const py = y * scale + baseOffsetY + offset.y;
+        if (Math.abs(px - mouseX) < 5 && Math.abs(py - mouseY) < 5) {
+          setSelectedIndex(i);
+          return;
+        }
+      }
+    }
+    setSelectedIndex(null);
+  };
+
+  const handleExport = () => {
+    const canvas = canvasRef.current;
+    const link = document.createElement("a");
+    link.download = "stitch-preview.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
@@ -93,28 +129,47 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
         <h3 className="text-lg font-bold mb-4">Stitch Preview</h3>
         <canvas
           ref={canvasRef}
-          width={400}
-          height={400}
+          width={450}
+          height={450}
           className="border shadow"
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onClick={handleCanvasClick}
         />
         <div className="text-sm mt-4">
-          <strong>Zoom:</strong> Scroll | <strong>Pan:</strong> Drag | <strong>Colors:</strong>
+          <strong>Zoom:</strong> Scroll | <strong>Pan:</strong> Drag | <strong>Select:</strong> Click segment
         </div>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {colors.map((color, idx) => (
-            <div key={idx} className="flex items-center space-x-2 text-xs">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }}></div>
-              <span>Thread {idx + 1}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 text-right">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-600">
+
+        {colors.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {colors.map((color, idx) => (
+              <div key={idx} className="flex items-center space-x-2 text-xs">
+                <div
+                  className={`w-4 h-4 rounded-full border ${
+                    selectedIndex === idx ? "ring-2 ring-black" : ""
+                  }`}
+                  style={{ backgroundColor: color }}
+                ></div>
+                <span>Thread {idx + 1}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-between items-center">
+          <button
+            onClick={handleExport}
+            className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Export PNG
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-600"
+          >
             Close
           </button>
         </div>
