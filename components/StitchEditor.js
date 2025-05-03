@@ -39,6 +39,10 @@ export default function StitchEditor({ fileUrl, onClose }) {
   useEffect(() => {
     if (!canvasRef.current || !svgPathData) return;
     const ctx = canvasRef.current.getContext("2d");
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform matrix
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     const parser = new DOMParser();
     const svgDoc = parser.parseFromString(svgPathData, "image/svg+xml");
