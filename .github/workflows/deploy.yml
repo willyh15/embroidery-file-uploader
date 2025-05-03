@@ -43,7 +43,8 @@ jobs:
             react-hot-toast \
             formidable \
             lucide-react \
-            @headlessui/react   # <- ADD THIS LINE
+            @headlessui/react \
+            lodash.isequal
 
       - name: "🏗️ Build Project"
         run: npm run build
