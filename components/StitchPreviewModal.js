@@ -1,182 +1,146 @@
+// components/StitchPreviewModal.js
 import { useEffect, useRef, useState, useMemo } from "react";
 import isEqual from "lodash.isequal";
 
 export default function StitchPreviewModal({ fileUrl, onClose }) {
-  const [rawSegments, setRawSegments] = useState([]);
+  const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-
-  const canvasRef = useRef(null);
+  const [selected, setSelected] = useState(null);
   const [scale, setScale] = useState(5);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef(null);
 
+  // fetch preview data
   useEffect(() => {
     if (!fileUrl) return;
-    const filename = fileUrl.split("/").pop();
-    fetch(`https://embroideryfiles.duckdns.org/api/preview-data/${filename}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.segments && !isEqual(data.segments, rawSegments)) {
-          setRawSegments(data.segments);
-        }
-        if (data?.colors && !isEqual(data.colors, colors)) {
-          setColors(data.colors);
-        }
+    const name = fileUrl.split("/").pop();
+    fetch(`/api/preview-data/${name}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!isEqual(d.segments, segments)) setSegments(d.segments);
+        if (!isEqual(d.colors, colors)) setColors(d.colors);
       })
-      .catch((err) => console.error("[Preview Fetch Error]", err));
+      .catch(console.error);
   }, [fileUrl]);
 
-  const segments = useMemo(() => rawSegments, [rawSegments]);
-
+  // draw
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || segments.length === 0) return;
+    if (!canvas || !segments.length) return;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    try {
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.restore();
+    const pts = segments.flat();
+    if (!pts.length) return;
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const baseX = canvas.width / 2 - ((minX + maxX) / 2) * scale + offset.x;
+    const baseY = canvas.height / 2 - ((minY + maxY) / 2) * scale + offset.y;
 
-      const allPoints = segments.flat();
-      if (allPoints.length === 0) return;
-
-      const xs = allPoints.map((p) => p[0]);
-      const ys = allPoints.map((p) => p[1]);
-      const minX = Math.min(...xs);
-      const minY = Math.min(...ys);
-      const maxX = Math.max(...xs);
-      const maxY = Math.max(...ys);
-
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
-      const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
-
-      segments.forEach((segment, i) => {
-        ctx.strokeStyle = selectedIndex === i ? "black" : colors[i] || `hsl(${(i * 60) % 360}, 70%, 50%)`;
-        ctx.lineWidth = selectedIndex === i ? 2.5 : 1.2;
-        ctx.beginPath();
-        segment.forEach(([x, y], idx) => {
-          const px = x * scale + baseOffsetX + offset.x;
-          const py = y * scale + baseOffsetY + offset.y;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.stroke();
+    segments.forEach((seg, i) => {
+      ctx.strokeStyle = selected === i ? "#000" : colors[i] || "#888";
+      ctx.lineWidth = selected === i ? 2.5 : 1.2;
+      ctx.beginPath();
+      seg.forEach(([x, y], idx) => {
+        const px = x * scale + baseX;
+        const py = y * scale + baseY;
+        idx === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       });
-    } catch (err) {
-      console.error("[Canvas Draw Error]", err);
-    }
-  }, [segments, colors, scale, offset, selectedIndex]);
+      ctx.stroke();
+    });
+  }, [segments, colors, scale, offset, selected]);
 
-  const handleWheel = (e) => {
+  // handlers…
+  const onWheel = (e) => {
     e.preventDefault();
-    setScale((prev) => Math.max(1, prev + (e.deltaY > 0 ? -1 : 1)));
+    setScale((s) => Math.max(1, s + (e.deltaY > 0 ? -1 : 1)));
   };
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
+  const down = (e) => {
+    setDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
+  const move = (e) => {
+    if (!dragging) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    setOffset((o) => ({ x: o.x + dx, y: o.y + dy }));
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
+  const up = () => setDragging(false);
 
-  const handleMouseUp = () => setIsDragging(false);
-
-  const handleCanvasClick = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const allPoints = segments.flat();
-    const xs = allPoints.map((p) => p[0]);
-    const ys = allPoints.map((p) => p[1]);
-    const minX = Math.min(...xs);
-    const minY = Math.min(...ys);
-    const maxX = Math.max(...xs);
-    const maxY = Math.max(...ys);
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const baseOffsetX = centerX - ((minX + maxX) / 2) * scale;
-    const baseOffsetY = centerY - ((minY + maxY) / 2) * scale;
-
+  const clickSeg = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    // pick first close segment
     for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      for (let [x, y] of seg) {
-        const px = x * scale + baseOffsetX + offset.x;
-        const py = y * scale + baseOffsetY + offset.y;
-        if (Math.abs(px - mouseX) < 5 && Math.abs(py - mouseY) < 5) {
-          setSelectedIndex(i);
-          return;
-        }
+      if (segments[i].some(([x, y]) => {
+        const px = x * scale + rect.width/2 - ((Math.min(...segments.flat().map(p=>p[0])) + Math.max(...segments.flat().map(p=>p[0])))/2)*scale + offset.x;
+        const py = y * scale + rect.height/2 - ((Math.min(...segments.flat().map(p=>p[1])) + Math.max(...segments.flat().map(p=>p[1])))/2)*scale + offset.y;
+        return Math.hypot(px-mx, py-my) < 5;
+      })) {
+        setSelected(i);
+        return;
       }
     }
-    setSelectedIndex(null);
+    setSelected(null);
   };
 
-  const handleExport = () => {
-    const canvas = canvasRef.current;
+  const exportPNG = () => {
     const link = document.createElement("a");
-    link.download = "stitch-preview.png";
-    link.href = canvas.toDataURL("image/png");
+    link.download = "stitch.png";
+    link.href = canvasRef.current.toDataURL("image/png");
     link.click();
   };
 
   return (
-    <div className="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-lg max-w-xl w-full">
-        <h3 className="text-lg font-bold mb-4">Stitch Preview</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 overflow-auto">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800">Stitch Preview</h3>
         <canvas
           ref={canvasRef}
           width={450}
           height={450}
-          className="border shadow"
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onClick={handleCanvasClick}
+          className="w-full border rounded mb-4"
+          onWheel={onWheel}
+          onMouseDown={down}
+          onMouseMove={move}
+          onMouseUp={up}
+          onMouseLeave={up}
+          onClick={clickSeg}
         />
-        <div className="text-sm mt-4">
-          <strong>Zoom:</strong> Scroll | <strong>Pan:</strong> Drag | <strong>Select:</strong> Click segment
+        <div className="text-sm text-gray-600 mb-2">
+          <strong>Zoom:</strong> Scroll &nbsp;|&nbsp; <strong>Pan:</strong> Drag &nbsp;|&nbsp; <strong>Select:</strong> Click
         </div>
-        {colors.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {colors.map((color, idx) => (
-              <div key={idx} className="flex items-center space-x-2 text-xs">
+        {segments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {colors.map((clr, i) => (
+              <div key={i} className="flex items-center space-x-1 text-sm">
                 <div
-                  className={`w-4 h-4 rounded-full border ${
-                    selectedIndex === idx ? "ring-2 ring-black" : ""
-                  }`}
-                  style={{ backgroundColor: color }}
-                ></div>
-                <span>Thread {idx + 1}</span>
+                  className={`
+                    w-5 h-5 rounded-full border-2
+                    ${selected === i ? "ring-2 ring-black" : ""}
+                  `}
+                  style={{ backgroundColor: clr }}
+                />
+                <span>Thread {i + 1}</span>
               </div>
             ))}
           </div>
         )}
-        <div className="mt-4 flex justify-between items-center">
+        <div className="flex justify-between">
           <button
-            onClick={handleExport}
-            className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            onClick={exportPNG}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             Export PNG
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
           >
             Close
           </button>
