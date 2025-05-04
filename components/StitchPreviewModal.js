@@ -12,17 +12,26 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
-  // Fetch preview data whenever fileUrl changes
-  useEffect(() => {
+    useEffect(() => {
     if (!fileUrl) return;
     const name = fileUrl.split("/").pop();
-    fetch(`/api/preview-data/${name}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!isEqual(d.segments, segments)) setSegments(d.segments);
-        if (!isEqual(d.colors, colors)) setColors(d.colors);
+    const previewUrl = `/api/preview-data/${name}`;
+
+    console.log("[StitchPreviewModal] fetching preview data from:", previewUrl);
+    fetch(previewUrl)
+      .then((r) => {
+        console.log("[StitchPreviewModal] raw response:", r.status, r);
+        return r.json();
       })
-      .catch(console.error);
+      .then((d) => {
+        console.log("[StitchPreviewModal] json payload:", d);
+        if (d.error) throw new Error(d.error);
+        if (!isEqual(d.segments, segments)) setSegments(d.segments);
+        if (!isEqual(d.colors,   colors))   setColors(d.colors);
+      })
+      .catch((err) => {
+        console.error("[StitchPreviewModal] failed to load preview‐data:", err);
+      });
   }, [fileUrl]);
 
   // Draw segments on canvas
