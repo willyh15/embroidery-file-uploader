@@ -1,5 +1,5 @@
 // components/StitchPreviewModal.js
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import isEqual from "lodash.isequal";
 
 export default function StitchPreviewModal({ fileUrl, onClose }) {
@@ -12,7 +12,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
-  // fetch preview data
+  // Fetch preview data whenever fileUrl changes
   useEffect(() => {
     if (!fileUrl) return;
     const name = fileUrl.split("/").pop();
@@ -25,7 +25,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       .catch(console.error);
   }, [fileUrl]);
 
-  // draw
+  // Draw segments on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !segments.length) return;
@@ -54,7 +54,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     });
   }, [segments, colors, scale, offset, selected]);
 
-  // handlers…
+  // Handlers for zoom, pan, select
   const onWheel = (e) => {
     e.preventDefault();
     setScale((s) => Math.max(1, s + (e.deltaY > 0 ? -1 : 1)));
@@ -75,12 +75,11 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const clickSeg = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    // pick first close segment
     for (let i = 0; i < segments.length; i++) {
       if (segments[i].some(([x, y]) => {
         const px = x * scale + rect.width/2 - ((Math.min(...segments.flat().map(p=>p[0])) + Math.max(...segments.flat().map(p=>p[0])))/2)*scale + offset.x;
         const py = y * scale + rect.height/2 - ((Math.min(...segments.flat().map(p=>p[1])) + Math.max(...segments.flat().map(p=>p[1])))/2)*scale + offset.y;
-        return Math.hypot(px-mx, py-my) < 5;
+        return Math.hypot(px - mx, py - my) < 5;
       })) {
         setSelected(i);
         return;
@@ -120,10 +119,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             {colors.map((clr, i) => (
               <div key={i} className="flex items-center space-x-1 text-sm">
                 <div
-                  className={`
-                    w-5 h-5 rounded-full border-2
-                    ${selected === i ? "ring-2 ring-black" : ""}
-                  `}
+                  className={`w-5 h-5 rounded-full border-2 ${selected === i ? "ring-2 ring-black" : ""}`}
                   style={{ backgroundColor: clr }}
                 />
                 <span>Thread {i + 1}</span>
