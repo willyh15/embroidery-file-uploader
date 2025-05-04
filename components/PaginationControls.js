@@ -15,7 +15,7 @@ export default function PaginationControls({
   }, [currentPage]);
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg flex justify-center items-center space-x-4 my-6">
+    <div className="container flex justify-center items-center space-x-4 my-6">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
