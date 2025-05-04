@@ -6,7 +6,7 @@ export default function SidebarFilters({ filters, onFilterChange }) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-screen-lg mb-6">
+    <div className="container mb-6">
       <h3 className="text-xl font-semibold mb-4 text-white">Filters</h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
@@ -42,6 +42,7 @@ export default function SidebarFilters({ filters, onFilterChange }) {
         <div>
           <label className="block mb-1 text-white">Search</label>
           <input
+            type="text"
             name="query"
             value={filters.query}
             onChange={handle}
@@ -51,5 +52,5 @@ export default function SidebarFilters({ filters, onFilterChange }) {
         </div>
       </div>
     </div>
-);
+  );
 }
