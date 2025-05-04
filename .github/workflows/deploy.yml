@@ -47,22 +47,27 @@ jobs:
             @headlessui/react \
             lodash.isequal
 
-      # ─────────────────────────────────────────────────────────
-      # ✨  Tailwind setup (using v3 plugin model)
-      - name: "🎨 Install Tailwind CSS + PostCSS plugins"
+      - name: "🎨 Install Tailwind CSS dependencies"
         run: |
           npm install -D tailwindcss@^3 postcss autoprefixer
 
-      - name: "🛠️ Generate tailwind.config.js & postcss.config.js"
+      - name: "🛠️ Generate Tailwind & PostCSS config"
         run: |
           cat > tailwind.config.js << 'EOF'
+          const defaultTheme = require('tailwindcss/defaultTheme')
+
           module.exports = {
             content: [
               "./pages/**/*.{js,jsx,ts,tsx}",
               "./components/**/*.{js,jsx,ts,tsx}"
             ],
             theme: {
-              extend: {},
+              extend: {
+                fontFamily: {
+                  montserrat: ["Montserrat", ...defaultTheme.fontFamily.sans],
+                  quicksand:  ["Quicksand",  ...defaultTheme.fontFamily.sans],
+                },
+              },
             },
             plugins: [],
           }
@@ -127,7 +132,6 @@ jobs:
             }
           }
           EOF
-      # ─────────────────────────────────────────────────────────
 
       - name: "🏗️ Build Project"
         run: npm run build
