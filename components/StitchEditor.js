@@ -1,134 +1,122 @@
 // components/StitchEditor.js
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 export default function StitchEditor({ fileUrl, onClose }) {
   const canvasRef = useRef(null);
-  const [svgPathData, setSvgPathData] = useState(null);
-  const [socket, setSocket] = useState(null);
-  const [selectedPathIndex, setSelectedPathIndex] = useState(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [svg, setSvg] = useState("");
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [dragOff, setDragOff] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const wsRef = useRef(null);
 
+  // fetch initial SVG
   useEffect(() => {
     fetch(`/api/vector-data?fileUrl=${encodeURIComponent(fileUrl)}`)
-      .then((res) => res.json())
-      .then((data) => setSvgPathData(data.svg))
-      .catch((err) => console.error("Failed to fetch SVG:", err));
+      .then((r) => r.json())
+      .then((d) => setSvg(d.svg))
+      .catch(console.error);
   }, [fileUrl]);
 
+  // websocket setup
   useEffect(() => {
-    const ws = new WebSocket("wss://" + window.location.host + "/ws/edit");
-    ws.onopen = () => console.log("WebSocket connected");
-    ws.onclose = () => console.log("WebSocket closed");
-    ws.onerror = (err) => console.error("WebSocket error:", err);
-    ws.onmessage = (msg) => {
-      try {
-        const { type, fileUrl: incomingUrl, svg } = JSON.parse(msg.data);
-        if (type === "vector-update" && incomingUrl === fileUrl) {
-          setSvgPathData(svg);
-        }
-      } catch (e) {
-        console.error("Failed to parse WS message", e);
+    const ws = new WebSocket(`wss://${window.location.host}/ws/edit`);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "vector-update" && msg.fileUrl === fileUrl) {
+        setSvg(msg.svg);
       }
     };
-    setSocket(ws);
+    wsRef.current = ws;
     return () => ws.close();
   }, [fileUrl]);
 
+  // draw
   useEffect(() => {
-    if (!canvasRef.current || !svgPathData) return;
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform matrix
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgPathData, "image/svg+xml");
-    const paths = svgDoc.querySelectorAll("path");
-
-    paths.forEach((path, i) => {
-      const path2D = new Path2D(path.getAttribute("d"));
-      ctx.strokeStyle = i === selectedPathIndex ? "red" : "black";
+    const cnv = canvasRef.current;
+    if (!cnv || !svg) return;
+    const ctx = cnv.getContext("2d");
+    ctx.clearRect(0, 0, cnv.width, cnv.height);
+    const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+    const paths = doc.querySelectorAll("path");
+    paths.forEach((p, i) => {
+      const d = p.getAttribute("d");
+      const path2d = new Path2D(d);
+      ctx.strokeStyle = i === selectedIdx ? "red" : "black";
       ctx.lineWidth = 2;
-      ctx.stroke(path2D);
+      ctx.stroke(path2d);
     });
-  }, [svgPathData, selectedPathIndex]);
+  }, [svg, selectedIdx]);
 
-  const handleMouseDown = (e) => {
-    const bounds = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - bounds.left;
-    const y = e.clientY - bounds.top;
-    setSelectedPathIndex(0); // Simulated path selection
-    setDragOffset({ x, y });
-    setIsDragging(true);
+  // rudimentary drag-selection
+  const down = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    setSelectedIdx(0); // always pick first for now
+    setDragOff({ x, y });
+    setDragging(true);
   };
+  const move = (e) => {
+    if (!dragging || selectedIdx == null) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const dx = x - dragOff.x, dy = y - dragOff.y;
+    setDragOff({ x, y });
 
-  const handleMouseMove = (e) => {
-    if (!isDragging || selectedPathIndex == null) return;
-    const bounds = canvasRef.current.getBoundingClientRect();
-    const dx = e.clientX - bounds.left - dragOffset.x;
-    const dy = e.clientY - bounds.top - dragOffset.y;
-    setDragOffset({ x: e.clientX - bounds.left, y: e.clientY - bounds.top });
+    // update svg transform
+    const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+    const paths = doc.querySelectorAll("path");
+    const p = paths[selectedIdx];
+    p.setAttribute("transform", `translate(${dx},${dy})`);
+    const newSvg = new XMLSerializer().serializeToString(doc);
+    setSvg(newSvg);
 
-    const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgPathData, "image/svg+xml");
-    const paths = svgDoc.querySelectorAll("path");
-    const path = paths[selectedPathIndex];
-    path.setAttribute("transform", `translate(${dx},${dy})`);
-    const updatedSvg = new XMLSerializer().serializeToString(svgDoc);
-    setSvgPathData(updatedSvg);
-
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({
-        type: "vector-update",
-        fileUrl,
-        svg: updatedSvg,
-      }));
-    }
+    // send update
+    wsRef.current?.send(
+      JSON.stringify({ type: "vector-update", fileUrl, svg: newSvg })
+    );
   };
+  const up = () => setDragging(false);
 
-  const handleMouseUp = () => setIsDragging(false);
-
-  const handleSave = async () => {
+  const save = async () => {
     try {
       const res = await fetch("/api/save-vector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl, svg: svgPathData }),
+        body: JSON.stringify({ fileUrl, svg }),
       });
-      if (!res.ok) throw new Error("Failed to save");
-      alert("Saved successfully");
+      if (!res.ok) throw new Error("Save failed");
+      alert("Saved!");
     } catch (e) {
-      console.error("Save failed:", e);
-      alert("Failed to save changes");
+      console.error(e);
+      alert("Save error");
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-4xl relative">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-700 hover:text-black"
+          className="absolute top-4 right-4 text-gray-600 hover:text-black"
         >
           <X className="w-6 h-6" />
         </button>
-        <h3 className="text-xl font-semibold mb-4">Stitch Editor</h3>
+        <h3 className="text-2xl font-semibold mb-4">Stitch Editor</h3>
         <canvas
           ref={canvasRef}
           width={800}
           height={500}
-          className="border border-gray-300 rounded"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+          className="w-full border rounded mb-4"
+          onMouseDown={down}
+          onMouseMove={move}
+          onMouseUp={up}
+          onMouseLeave={up}
         />
-        <div className="mt-4 text-right">
+        <div className="flex justify-end space-x-2">
           <button
-            onClick={handleSave}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            onClick={save}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             Save Changes
           </button>
