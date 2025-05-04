@@ -6,111 +6,149 @@ import isEqual from "lodash.isequal";
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
 export default function StitchPreviewModal({ fileUrl, onClose }) {
-  const [segments, setSegments] = useState([]);
-  const [colors, setColors] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [scale, setScale] = useState(5);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
-  // Fetch preview data whenever fileUrl changes
+  const [segments, setSegments] = useState([]);
+  const [colors, setColors]     = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  // this is our dynamic "zoom" factor
+  const [scale, setScale]       = useState(1);
+  // pan offset
+  const [offset, setOffset]     = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  // 1) fetch preview-data
   useEffect(() => {
     if (!fileUrl) {
       setSegments([]);
       setColors([]);
       return;
     }
-
     const name = fileUrl.split("/").pop();
     const previewUrl = `${FLASK_BASE}/api/preview-data/${name}`;
 
-    console.log("[StitchPreviewModal] fetching preview data from:", previewUrl);
     fetch(previewUrl)
       .then((res) => res.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
         if (!isEqual(data.segments, segments)) setSegments(data.segments);
-        if (!isEqual(data.colors, colors)) setColors(data.colors);
+        if (!isEqual(data.colors,   colors))   setColors(data.colors);
       })
-      .catch((err) => {
-        console.error("[StitchPreviewModal] failed to load preview‑data:", err);
-      });
+      .catch((err) => console.error("[StitchPreviewModal] preview-data error:", err));
   }, [fileUrl]);
 
-  // Draw segments on canvas
+  // 2) once we have segments, auto‑fit them into the canvas
+  useEffect(() => {
+    if (!segments.length) return;
+    const canvas = canvasRef.current;
+    const pts    = segments.flat();
+    const xs     = pts.map((p) => p[0]);
+    const ys     = pts.map((p) => p[1]);
+    const minX   = Math.min(...xs), maxX = Math.max(...xs);
+    const minY   = Math.min(...ys), maxY = Math.max(...ys);
+
+    // how big is the shape?
+    const shapeW = maxX - minX;
+    const shapeH = maxY - minY;
+
+    // compute the scale that fits both dimensions
+    const scaleX = canvas.width  / shapeW;
+    const scaleY = canvas.height / shapeH;
+    const fit    = Math.min(scaleX, scaleY) * 0.9;  // 90% of the canvas
+
+    setScale(fit);
+    setOffset({ x: 0, y: 0 });   // reset any pan
+    setSelected(null);
+  }, [segments]);
+
+  // 3) draw everything
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || segments.length === 0) return;
+    if (!canvas || !segments.length) return;
 
     const ctx = canvas.getContext("2d");
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const pts = segments.flat();
-    if (pts.length === 0) return;
-
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
+    const xs  = pts.map((p) => p[0]);
+    const ys  = pts.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const baseX = canvas.width / 2 - ((minX + maxX) / 2) * scale + offset.x;
-    const baseY = canvas.height / 2 - ((minY + maxY) / 2) * scale + offset.y;
+    const shapeW = maxX - minX;
+    const shapeH = maxY - minY;
 
     segments.forEach((seg, i) => {
-      ctx.strokeStyle = selected === i ? "#000" : colors[i] || "#888";
-      ctx.lineWidth = selected === i ? 2.5 : 1.2;
       ctx.beginPath();
+      ctx.strokeStyle = selected === i ? "#000" : (colors[i] || "#888");
+      ctx.lineWidth   = selected === i ? 2.5   : 1.2;
+
       seg.forEach(([x, y], idx) => {
-        const px = x * scale + baseX;
-        const py = y * scale + baseY;
-        idx === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        // normalize coords so 0→minX..maxX→canvas width, similarly for y
+        const px = (x - minX) * scale + (canvas.width  - shapeW*scale)/2 + offset.x;
+        // invert Y so positive stitch-Y goes up
+        const py = canvas.height - ((y - minY) * scale + (canvas.height - shapeH*scale)/2) + offset.y;
+
+        if (idx === 0) ctx.moveTo(px, py);
+        else           ctx.lineTo(px, py);
       });
+
       ctx.stroke();
     });
   }, [segments, colors, scale, offset, selected]);
 
-  // Zoom, pan & select handlers
+  // wheel = zoom
   const onWheel = (e) => {
     e.preventDefault();
-    setScale((s) => Math.max(1, s + (e.deltaY > 0 ? -1 : 1)));
+    setScale((s) => Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1)));
   };
-  const down = (e) => {
+
+  // pan start
+  const handleDown = (e) => {
     setDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
-  const move = (e) => {
+
+  // pan move
+  const handleMove = (e) => {
     if (!dragging) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     setOffset((o) => ({ x: o.x + dx, y: o.y + dy }));
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
-  const up = () => setDragging(false);
 
-  const clickSeg = (e) => {
+  const handleUp = () => setDragging(false);
+
+  // segment selection on click
+  const handleClick = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const mx   = e.clientX - rect.left;
+    const my   = e.clientY - rect.top;
 
+    // find if any segment point is within 5px
     for (let i = 0; i < segments.length; i++) {
       if (segments[i].some(([x, y]) => {
-        const px = x * scale + rect.width/2 - ((Math.min(...segments.flat().map(p=>p[0])) + Math.max(...segments.flat().map(p=>p[0])))/2)*scale + offset.x;
-        const py = y * scale + rect.height/2 - ((Math.min(...segments.flat().map(p=>p[1])) + Math.max(...segments.flat().map(p=>p[1])))/2)*scale + offset.y;
+        const px = (x - Math.min(...segments.flat().map(p=>p[0]))) * scale
+                   + (canvasRef.current.width - (Math.max(...segments.flat().map(p=>p[0])) - Math.min(...segments.flat().map(p=>p[0])))*scale)/2
+                   + offset.x;
+        const py = canvasRef.current.height - ((y - Math.min(...segments.flat().map(p=>p[1]))) * scale
+                   + (canvasRef.current.height - (Math.max(...segments.flat().map(p=>p[1])) - Math.min(...segments.flat().map(p=>p[1])))*scale)/2)
+                   + offset.y;
         return Math.hypot(px - mx, py - my) < 5;
       })) {
         setSelected(i);
         return;
       }
     }
-
     setSelected(null);
   };
 
   const exportPNG = () => {
     const link = document.createElement("a");
     link.download = "stitch.png";
-    link.href = canvasRef.current.toDataURL("image/png");
+    link.href     = canvasRef.current.toDataURL();
     link.click();
   };
 
@@ -118,21 +156,24 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 overflow-auto">
         <h3 className="text-2xl font-semibold mb-4 text-gray-800">Stitch Preview</h3>
+
         <canvas
           ref={canvasRef}
           width={450}
           height={450}
           className="w-full border rounded mb-4"
           onWheel={onWheel}
-          onMouseDown={down}
-          onMouseMove={move}
-          onMouseUp={up}
-          onMouseLeave={up}
-          onClick={clickSeg}
+          onMouseDown={handleDown}
+          onMouseMove={handleMove}
+          onMouseUp={handleUp}
+          onMouseLeave={handleUp}
+          onClick={handleClick}
         />
+
         <div className="text-sm text-gray-600 mb-2">
           <strong>Zoom:</strong> Scroll &nbsp;|&nbsp; <strong>Pan:</strong> Drag &nbsp;|&nbsp; <strong>Select:</strong> Click
         </div>
+
         {segments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {colors.map((clr, i) => (
@@ -146,6 +187,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             ))}
           </div>
         )}
+
         <div className="flex justify-between">
           <button
             onClick={exportPNG}
