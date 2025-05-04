@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import isEqual from "lodash.isequal";
 
+// ← your real Flask base URL
+const FLASK_BASE = "https://embroideryfiles.duckdns.org";
+
 export default function StitchPreviewModal({ fileUrl, onClose }) {
   const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
@@ -12,10 +15,11 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const dragStart = useRef({ x: 0, y: 0 });
   const canvasRef = useRef(null);
 
-    useEffect(() => {
+  // Fetch preview data whenever fileUrl changes
+  useEffect(() => {
     if (!fileUrl) return;
     const name = fileUrl.split("/").pop();
-    const previewUrl = `/api/preview-data/${name}`;
+    const previewUrl = `${FLASK_BASE}/api/preview-data/${name}`;
 
     console.log("[StitchPreviewModal] fetching preview data from:", previewUrl);
     fetch(previewUrl)
@@ -30,7 +34,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
         if (!isEqual(d.colors,   colors))   setColors(d.colors);
       })
       .catch((err) => {
-        console.error("[StitchPreviewModal] failed to load preview‐data:", err);
+        console.error("[StitchPreviewModal] failed to load preview‑data:", err);
       });
   }, [fileUrl]);
 
@@ -63,7 +67,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     });
   }, [segments, colors, scale, offset, selected]);
 
-  // Handlers for zoom, pan, select
+  // Zoom, pan & select handlers
   const onWheel = (e) => {
     e.preventDefault();
     setScale((s) => Math.max(1, s + (e.deltaY > 0 ? -1 : 1)));
