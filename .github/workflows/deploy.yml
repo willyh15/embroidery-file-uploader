@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
 
 on:
@@ -12,10 +13,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
+      KV_REST_API_URL:   ${{ secrets.KV_REST_API_URL }}
       KV_REST_API_TOKEN: ${{ secrets.KV_REST_API_TOKEN }}
-      NEXTAUTH_URL:       ${{ secrets.NEXTAUTH_URL }}
-      NEXTAUTH_SECRET:    ${{ secrets.NEXTAUTH_SECRET }}
+      NEXTAUTH_URL:      ${{ secrets.NEXTAUTH_URL }}
+      NEXTAUTH_SECRET:   ${{ secrets.NEXTAUTH_SECRET }}
 
     steps:
       - name: "⬇️ Checkout Repository"
@@ -46,49 +47,54 @@ jobs:
             @headlessui/react \
             lodash.isequal
 
-      # ─────────────────────────────────────────────────────────
-      # ✨  NEW: Install & initialize Tailwind + PostCSS
-      - name: "🎨 Install & Init Tailwind CSS"
+      - name: "🎨 Install Tailwind CSS dependencies"
         run: |
           npm install -D tailwindcss@latest postcss@latest autoprefixer@latest
-          npx tailwindcss init -p
 
-      - name: "📝 Generate postcss.config.js & styles/globals.css"
+      - name: "🛠️ Generate Tailwind & PostCSS config"
         run: |
-          # overwrite postcss.config.js
+          cat > tailwind.config.js << 'EOF'
+          module.exports = {
+            content: [
+              "./pages/**/*.{js,jsx,ts,tsx}",
+              "./components/**/*.{js,jsx,ts,tsx}"
+            ],
+            theme: { extend: {} },
+            plugins: [],
+          }
+          EOF
+
           cat > postcss.config.js << 'EOF'
           module.exports = {
             plugins: {
               tailwindcss: {},
               autoprefixer: {},
-            }
+            },
           }
           EOF
 
-          # ensure styles folder exists
+      - name: "🎨 Generate styles/globals.css"
+        run: |
           mkdir -p styles
 
-          # overwrite your globals.css with Tailwind directives + your custom layers
           cat > styles/globals.css << 'EOF'
-          /* ─── CSS Variables ─── */
-          :root {
-            --primary-bg:      #33202E;
-            --primary-text:    #FBD3E0;
-            --secondary-bg:    #44303D;
-            --accent:          #F4A9A8;
-            --accent-alt:      #C1D7C3;
-            --border-color:    rgba(255,255,255,0.2);
-            --shadow-color:    rgba(0,0,0,0.5);
-            --radius:          12px;
-          }
-
-          /* ─── Tailwind Layers ─── */
+          /* ─── Tailwind Directives ─── */
           @tailwind base;
           @tailwind components;
           @tailwind utilities;
 
           /* ─── Base Resets & Typography ─── */
           @layer base {
+            :root {
+              --primary-bg:      #33202E;
+              --primary-text:    #FBD3E0;
+              --secondary-bg:    #44303D;
+              --accent:          #F4A9A8;
+              --accent-alt:      #C1D7C3;
+              --border-color:    rgba(255,255,255,0.2);
+              --shadow-color:    rgba(0,0,0,0.5);
+              --radius:          12px;
+            }
             body {
               @apply bg-[var(--primary-bg)] text-[var(--primary-text)] font-montserrat;
             }
@@ -117,7 +123,6 @@ jobs:
             }
           }
           EOF
-      # ─────────────────────────────────────────────────────────
 
       - name: "🏗️ Build Project"
         run: npm run build
