@@ -17,21 +17,22 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
 
   // Fetch preview data whenever fileUrl changes
   useEffect(() => {
-    if (!fileUrl) return;
+    if (!fileUrl) {
+      setSegments([]);
+      setColors([]);
+      return;
+    }
+
     const name = fileUrl.split("/").pop();
     const previewUrl = `${FLASK_BASE}/api/preview-data/${name}`;
 
     console.log("[StitchPreviewModal] fetching preview data from:", previewUrl);
     fetch(previewUrl)
-      .then((r) => {
-        console.log("[StitchPreviewModal] raw response:", r.status, r);
-        return r.json();
-      })
-      .then((d) => {
-        console.log("[StitchPreviewModal] json payload:", d);
-        if (d.error) throw new Error(d.error);
-        if (!isEqual(d.segments, segments)) setSegments(d.segments);
-        if (!isEqual(d.colors,   colors))   setColors(d.colors);
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        if (!isEqual(data.segments, segments)) setSegments(data.segments);
+        if (!isEqual(data.colors, colors)) setColors(data.colors);
       })
       .catch((err) => {
         console.error("[StitchPreviewModal] failed to load preview‑data:", err);
@@ -41,14 +42,17 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   // Draw segments on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !segments.length) return;
+    if (!canvas || segments.length === 0) return;
+
     const ctx = canvas.getContext("2d");
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const pts = segments.flat();
-    if (!pts.length) return;
-    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    if (pts.length === 0) return;
+
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
     const baseX = canvas.width / 2 - ((minX + maxX) / 2) * scale + offset.x;
@@ -88,6 +92,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
   const clickSeg = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
     for (let i = 0; i < segments.length; i++) {
       if (segments[i].some(([x, y]) => {
         const px = x * scale + rect.width/2 - ((Math.min(...segments.flat().map(p=>p[0])) + Math.max(...segments.flat().map(p=>p[0])))/2)*scale + offset.x;
@@ -98,6 +103,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
         return;
       }
     }
+
     setSelected(null);
   };
 
