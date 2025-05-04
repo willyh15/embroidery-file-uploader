@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
@@ -26,7 +27,6 @@ function Home() {
   const [editFileUrl, setEditFileUrl] = useState(null);
 
   useEffect(() => setIsClient(true), []);
-
   useEffect(() => {
     if (!localStorage.getItem("onboardingShown")) {
       setShowOnboarding(true);
@@ -35,14 +35,14 @@ function Home() {
   }, []);
 
   const handleUploadSuccess = (newFiles) => {
-    const uploaded = newFiles.map(file => ({
+    const uploaded = newFiles.map((file) => ({
       ...file,
       status: "Uploaded",
       stage: "",
       timestamp: Date.now(),
     }));
-    setUploadedFiles(prev => [...uploaded, ...prev]);
-    setFilteredFiles(prev => [...uploaded, ...prev]);
+    setUploadedFiles((prev) => [...uploaded, ...prev]);
+    setFilteredFiles((prev) => [...uploaded, ...prev]);
     setCurrentPage(1);
   };
 
@@ -123,53 +123,85 @@ function Home() {
     }));
   };
 
-  const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedFiles = filteredFiles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   if (!isClient) return null;
 
   return (
-    <div className="container">
+    <div
+      className="
+        min-h-screen 
+        bg-gradient-to-br from-purple-700 to-indigo-900 
+        py-8 
+        px-4
+      "
+    >
       <CustomToaster />
-      <h2 className="text-2xl font-bold text-gray-700 mb-6">Welcome</h2>
 
-      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
+      <div className="mx-auto w-full max-w-screen-lg">
+        <h2 className="text-3xl lg:text-4xl font-bold text-white text-center mb-8">
+          Welcome
+        </h2>
 
-      <SidebarFilters
-        filters={{ status: "", type: "", query: "" }}
-        onFilterChange={(results) => {
-          setFilteredFiles(results.filter(r => r && r.status));
-          setCurrentPage(1);
-        }}
-      />
+        {showOnboarding && (
+          <OnboardingModal onClose={() => setShowOnboarding(false)} />
+        )}
 
-      <UploadBox uploading={uploading} dropRef={dropRef} onUploadSuccess={handleUploadSuccess} />
+        <div className="mb-6">
+          <SidebarFilters
+            filters={{ status: "", type: "", query: "" }}
+            onFilterChange={(results) => {
+              setFilteredFiles(results.filter((r) => r && r.status));
+              setCurrentPage(1);
+            }}
+          />
+        </div>
 
-      <div className="file-grid">
-        {paginatedFiles.map(file => (
-          file?.url && (
-            <FileCard
-              key={file.url}
-              file={file}
-              onConvert={() => handleConvert(file.url)}
-              onDownload={() => {}}
-              onPreview={() => setPreviewFileUrl(file.pesUrl)}
-              onEdit={() => setEditFileUrl(file.url)}
-            />
-          )
-        ))}
+        <div className="mb-8 w-full">
+          <UploadBox
+            uploading={uploading}
+            dropRef={dropRef}
+            onUploadSuccess={handleUploadSuccess}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-8">
+          {paginatedFiles.map((file) =>
+            file.url ? (
+              <FileCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onDownload={() => {}}
+                onPreview={() => setPreviewFileUrl(file.pesUrl)}
+                onEdit={() => setEditFileUrl(file.url)}
+              />
+            ) : null
+          )}
+        </div>
+
+        <PaginationControls
+          currentPage={currentPage}
+          totalItems={filteredFiles.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+
+        <RecentActivityPanel uploadedFiles={uploadedFiles} />
+
+        {previewFileUrl && (
+          <StitchPreviewModal
+            fileUrl={previewFileUrl}
+            onClose={() => setPreviewFileUrl(null)}
+          />
+        )}
+        {editFileUrl && (
+          <StitchEditor fileUrl={editFileUrl} onClose={() => setEditFileUrl(null)} />
+        )}
       </div>
-
-      <PaginationControls
-        currentPage={currentPage}
-        totalItems={filteredFiles.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        onPageChange={setCurrentPage}
-      />
-
-      <RecentActivityPanel uploadedFiles={uploadedFiles} />
-
-      {previewFileUrl && <StitchPreviewModal fileUrl={previewFileUrl} onClose={() => setPreviewFileUrl(null)} />}
-      {editFileUrl && <StitchEditor fileUrl={editFileUrl} onClose={() => setEditFileUrl(null)} />}
     </div>
   );
 }
