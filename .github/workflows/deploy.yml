@@ -49,29 +49,30 @@ jobs:
 
       - name: "🎨 Install Tailwind CSS dependencies"
         run: |
-          npm install -D tailwindcss@latest postcss@latest autoprefixer@latest
+          npm install -D tailwindcss@latest postcss@latest autoprefixer@latest @tailwindcss/postcss
 
       - name: "🛠️ Generate Tailwind & PostCSS config"
         run: |
-          cat > tailwind.config.js << 'EOF'
-          module.exports = {
-            content: [
-              "./pages/**/*.{js,jsx,ts,tsx}",
-              "./components/**/*.{js,jsx,ts,tsx}"
-            ],
-            theme: { extend: {} },
-            plugins: [],
-          }
-          EOF
-
-          cat > postcss.config.js << 'EOF'
-          module.exports = {
-            plugins: {
-              tailwindcss: {},
-              autoprefixer: {},
-            },
-          }
-          EOF
+          run: |
+           cat > tailwind.config.js << 'EOF'
+           module.exports = {
+             content: [
+               "./pages/**/*.{js,jsx,ts,tsx}",
+               "./components/**/*.{js,jsx,ts,tsx}"
+             ],
+             theme: { extend: {} },
+             plugins: [],
+           }
+           EOF
+ 
+           cat > postcss.config.js << 'EOF'
+           module.exports = {
+             plugins: {
+               "@tailwindcss/postcss": {},
+               autoprefixer: {},
+             },
+           }
+           EOF
 
       - name: "🎨 Generate styles/globals.css"
         run: |
