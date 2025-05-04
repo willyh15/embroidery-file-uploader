@@ -47,6 +47,7 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
     },
     []
   );
+
   const handleSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length) await uploadFiles(files);
@@ -61,15 +62,7 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       onDragOver={prevent}
       onDragLeave={prevent}
       onDrop={handleDrop}
-      className={`
-        mx-auto w-full max-w-screen-lg
-        border-4 border-dashed rounded-2xl p-8
-        flex flex-col items-center justify-center
-        transition-all duration-300
-        ${busy
-          ? "border-blue-400 bg-blue-50 animate-pulse"
-          : "border-gray-300 hover:border-blue-500 hover:bg-blue-50"}
-      `}
+      className={`upload-box ${busy ? "dragover" : ""}`}
     >
       <label className="flex flex-col items-center cursor-pointer">
         <span className="text-lg font-medium text-gray-700 mb-2">
