@@ -9,7 +9,7 @@ import PaginationControls from "../components/PaginationControls";
 import OnboardingModal from "../components/OnboardingModal";
 import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
-import StitchEditor from "../components/StitchEditor";
+import StitchEditorModal from "../components/StitchEditorModal";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -181,8 +181,12 @@ function Home() {
           />
         )}
         {editFileUrl && (
-          <StitchEditor fileUrl={editFileUrl} onClose={() => setEditFileUrl(null)} />
+          <StitchEditorModal
+            fileUrl={editFileUrl}
+            onClose={() => setEditFileUrl(null)}
+          />
         )}
+
       </div>
     </div>
   );
