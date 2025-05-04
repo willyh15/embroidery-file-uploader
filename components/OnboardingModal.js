@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 
 export default function OnboardingModal({ onClose }) {
   const [show, setShow] = useState(true);
+
   useEffect(() => {
     const t = setTimeout(() => setShow(false), 15_000);
     return () => clearTimeout(t);
   }, []);
+
   if (!show) return null;
 
   return (
