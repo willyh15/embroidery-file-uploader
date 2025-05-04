@@ -18,8 +18,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
 
   // countdown timer
   useEffect(() => {
-    if (!retrying) return;
-    if (countdown <= 0) return;
+    if (!retrying || countdown <= 0) return;
     const t = setTimeout(() => setCountdown(c => c - 1), 1_000);
     return () => clearTimeout(t);
   }, [retrying, countdown]);
@@ -32,7 +31,6 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       await onConvert(file.url);
       toast.success("Retry started!");
 
-      // highlight the card
       setTimeout(() => {
         const el = cardRef.current;
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -40,7 +38,6 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         setTimeout(() => el?.classList.remove("ring-4", "ring-green-400", "animate-bounce"), 3_000);
       }, 100);
 
-      // cooldown after
       setTimeout(() => {
         setRetrying(false);
         setCooldownActive(true);
@@ -69,32 +66,23 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   }[stage] || "bg-gray-400");
 
   const renderIcon = () => {
-    switch (file.status) {
-      case "Uploading":
-      case "Converting":
-        return <Loader2 className="animate-spin text-blue-500 w-5 h-5" />;
-      case "Converted":
-        return <CheckCircle className="text-green-500 w-5 h-5" />;
-      case "Error":
-        return <XCircle className="text-red-500 w-5 h-5" />;
-      default:
-        return null;
+    if (file.status === "Uploading" || file.status === "Converting") {
+      return <Loader2 className="animate-spin text-blue-500 w-5 h-5" />;
     }
+    if (file.status === "Converted") {
+      return <CheckCircle className="text-green-500 w-5 h-5" />;
+    }
+    if (file.status === "Error") {
+      return <XCircle className="text-red-500 w-5 h-5" />;
+    }
+    return null;
   };
 
   return (
     <div
       ref={cardRef}
       data-file-url={file.url}
-      className={`
-        w-full 
-        bg-white dark:bg-gray-800 
-        rounded-2xl shadow-lg 
-        border border-gray-200 dark:border-gray-700 
-        p-6 mb-6 
-        transition-all duration-300
-        ${retrying ? "ring-2 ring-blue-400 animate-pulse" : ""}
-      `}
+      className={`card ${retrying ? "ring-4 ring-blue-400 animate-pulse" : ""}`}
     >
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center space-x-2">
@@ -137,7 +125,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         )}
 
         {file.status === "Converting" && (
-          <span className="text-sm text-blue-600">Converting...</span>
+          <span className="text-sm text-blue-600">Converting…</span>
         )}
 
         {file.status === "Converted" && file.pesUrl && (
@@ -208,5 +196,5 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         </div>
       )}
     </div>
-);
+  );
 }
