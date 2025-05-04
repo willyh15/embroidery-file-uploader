@@ -1,9 +1,8 @@
 // pages/_app.js
-
 import "../styles/globals.css";
 import { CustomToaster } from "../components/CustomToaster";
 
-function MyApp({ Component, pageProps }) {
+export default function MyApp({ Component, pageProps }) {
   return (
     <>
       <CustomToaster />
@@ -11,5 +10,3 @@ function MyApp({ Component, pageProps }) {
     </>
   );
 }
-
-export default MyApp;
