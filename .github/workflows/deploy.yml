@@ -47,13 +47,87 @@ jobs:
             @headlessui/react \
             lodash.isequal
 
-      - name: "🎨 Install Tailwind CSS dependencies"
+      # ─────────────────────────────────────────────────────────
+      # ✨  Tailwind setup (using v3 plugin model)
+      - name: "🎨 Install Tailwind CSS + PostCSS plugins"
         run: |
-          npm install -D tailwindcss@latest postcss@latest autoprefixer@latest @tailwindcss/postcss
+          npm install -D tailwindcss@^3 postcss autoprefixer
 
-      # We no longer generate config or CSS at build time:
-      # tailwind.config.js, postcss.config.js, and styles/globals.css
-      # should already be committed in your repo.
+      - name: "🛠️ Generate tailwind.config.js & postcss.config.js"
+        run: |
+          cat > tailwind.config.js << 'EOF'
+          module.exports = {
+            content: [
+              "./pages/**/*.{js,jsx,ts,tsx}",
+              "./components/**/*.{js,jsx,ts,tsx}"
+            ],
+            theme: {
+              extend: {},
+            },
+            plugins: [],
+          }
+          EOF
+
+          cat > postcss.config.js << 'EOF'
+          module.exports = {
+            plugins: {
+              tailwindcss: {},
+              autoprefixer: {},
+            },
+          }
+          EOF
+
+      - name: "🎨 Generate styles/globals.css"
+        run: |
+          mkdir -p styles
+
+          cat > styles/globals.css << 'EOF'
+          /* ─── Tailwind Directives ─── */
+          @tailwind base;
+          @tailwind components;
+          @tailwind utilities;
+
+          /* ─── Base Resets & Typography ─── */
+          @layer base {
+            :root {
+              --primary-bg:      #33202E;
+              --primary-text:    #FBD3E0;
+              --secondary-bg:    #44303D;
+              --accent:          #F4A9A8;
+              --accent-alt:      #C1D7C3;
+              --border-color:    rgba(255,255,255,0.2);
+              --shadow-color:    rgba(0,0,0,0.5);
+              --radius:          12px;
+            }
+            body {
+              @apply bg-[var(--primary-bg)] text-[var(--primary-text)] font-montserrat;
+            }
+            h1,h2,h3,h4,h5,h6 {
+              @apply font-quicksand font-semibold text-[var(--primary-text)];
+            }
+          }
+
+          /* ─── Component Utilities ─── */
+          @layer components {
+            .container {
+              @apply mx-auto w-full max-w-screen-lg px-4 text-center;
+            }
+            .card {
+              @apply bg-[var(--secondary-bg)] rounded-2xl shadow-lg p-6 mb-6 transition-all duration-200;
+            }
+            .card:hover {
+              @apply translate-y-[-2px] shadow-xl;
+            }
+            .upload-box {
+              @apply mx-auto w-full max-w-screen-lg border-4 border-dashed rounded-2xl
+                     p-8 flex flex-col items-center justify-center transition-all duration-300;
+            }
+            .upload-box:hover {
+              @apply border-[var(--accent)] bg-[var(--accent-alt)] scale-105 text-gray-900;
+            }
+          }
+          EOF
+      # ─────────────────────────────────────────────────────────
 
       - name: "🏗️ Build Project"
         run: npm run build
