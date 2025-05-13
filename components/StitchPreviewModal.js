@@ -37,7 +37,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       .catch((err) => console.error("[StitchPreviewModal] fetch error:", err));
   }, [fileUrl]);
 
-  // 2) Auto‑fit→ compute a good scale & reset pan/selection
+  // 2) Auto‑fit → compute a good scale & reset pan/selection
   useEffect(() => {
     if (segments.length === 0) return;
     const pts = segments.flat();
@@ -70,7 +70,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
 
-    // setup transform: center→invert Y→pan/zoom
+    // setup transform: center → invert Y → pan/zoom
     ctx.save();
     ctx.translate(C.width / 2, C.height / 2);
     ctx.scale(scale, -scale);
@@ -127,11 +127,11 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
 
-    // helper: screen→stitch coords
+    // helper: screen → stitch coords
     const midX = (minX + maxX) / 2,
           midY = (minY + maxY) / 2;
     const stitchPt = (() => {
-      // undo: translate(offset)→translate→scale→invert Y
+      // undo: translate(offset) → translate → scale → invert Y
       const sx = (mx - C.width/2 - offset.x) / scale + midX;
       const sy = -((my - C.height/2 + offset.y) / scale) + midY;
       return [sx, sy];
@@ -141,7 +141,7 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
       if (segments[i].some(([x, y]) => {
         const dx = x - stitchPt[0];
         const dy = y - stitchPt[1];
-        return Math.hypot(dx, dy) < 5/scale;  // 5px tolerance
+        return Math.hypot(dx, dy) < 5/scale;
       })) {
         setSelected(i);
         return;
@@ -160,14 +160,16 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 overflow-auto">
-        <h3 className="text-2xl font-semibold mb-4 text-gray-800">Stitch Preview</h3>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+          Stitch Preview
+        </h3>
 
         <canvas
           ref={canvasRef}
           width={450}
           height={450}
-          className="w-full border rounded mb-4"
+          className="w-full border rounded mb-4 bg-gray-50"
           onWheel={onWheel}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
@@ -177,7 +179,9 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
         />
 
         <div className="text-sm text-gray-600 mb-2">
-          <strong>Zoom:</strong> Scroll&nbsp;|&nbsp;<strong>Pan:</strong> Drag&nbsp;|&nbsp;<strong>Select:</strong> Click
+          <strong>Zoom:</strong> Scroll&nbsp;|&nbsp;
+          <strong>Pan:</strong> Drag&nbsp;|&nbsp;
+          <strong>Select:</strong> Click
         </div>
 
         {segments.length > 0 && (
@@ -185,7 +189,9 @@ export default function StitchPreviewModal({ fileUrl, onClose }) {
             {colors.map((clr, i) => (
               <div key={i} className="flex items-center space-x-1 text-sm">
                 <div
-                  className={`w-5 h-5 rounded-full border-2 ${selected === i ? "ring-2 ring-black" : ""}`}
+                  className={`w-5 h-5 rounded-full border-2 ${
+                    selected === i ? "ring-2 ring-black" : ""
+                  }`}
                   style={{ backgroundColor: clr }}
                 />
                 <span>Thread {i + 1}</span>
