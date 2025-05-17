@@ -1,33 +1,35 @@
-// components/StitchPreviewModal.js
 import { useEffect, useRef, useState } from "react";
 import isEqual from "lodash.isequal";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
 export default function StitchPreviewModal({
-  pngUrl,     // e.g. https://…/uploads/NAME.png
-  pesUrl,     // e.g. https://…/downloads/NAME.pes
+  pngUrl,     // URL to the original PNG (uploads)
+  pesUrl,     // URL to the .pes (downloads)
   onClose,
+  onReconvert // call this when bg-flags change
 }) {
   const canvasRef = useRef(null);
 
   // state
   const [segments, setSegments] = useState([]);
-  const [colors,   setColors]   = useState([]);
+  const [colors, setColors]     = useState([]);
   const [selected, setSelected] = useState(null);
-  const [scale,    setScale]    = useState(1);
-  const [offset,   setOffset]   = useState({ x: 0, y: 0 });
+
+  // pan & zoom
+  const [scale, setScale]       = useState(1);
+  const [offset, setOffset]     = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  // NEW: bg‐removal controls
-  const [removeBg,   setRemoveBg]   = useState(false);
+  // NEW: background-removal controls
+  const [removeBg, setRemoveBg]       = useState(false);
   const [bgThreshold, setBgThreshold] = useState(250);
 
   // derive a "baseName" from the PES URL
   const baseName = pesUrl?.split("/").pop()?.replace(/\.pes$/, "");
 
-  // 1) fetch stitch‐data whenever pesUrl changes
+  // 1) fetch stitch-data whenever pesUrl changes
   useEffect(() => {
     if (!pesUrl) {
       setSegments([]);
@@ -42,7 +44,14 @@ export default function StitchPreviewModal({
         if (!isEqual(d.colors,   colors))   setColors(d.colors);
       })
       .catch((err) => console.error("[StitchPreviewModal] fetch error:", err));
-  }, [pesUrl]);
+  }, [pesUrl, baseName]);
+
+  // 1.b) whenever user toggles bg-removal, re-kickoff conversion upstream
+  useEffect(() => {
+    if (pesUrl && onReconvert) {
+      onReconvert(pngUrl, { removeBg, bgThreshold });
+    }
+  }, [removeBg, bgThreshold]);
 
   // 2) auto-fit on new data
   useEffect(() => {
@@ -115,7 +124,7 @@ export default function StitchPreviewModal({
   }, [pngUrl, pesUrl, segments, colors, scale, offset, selected]);
 
   // pan/zoom/select handlers
-  const onWheel     = (e) => { e.preventDefault(); setScale(s => Math.max(0.1, s *(e.deltaY>0?0.9:1.1))); };
+  const onWheel     = (e) => { e.preventDefault(); setScale(s => Math.max(0.1, s * (e.deltaY>0?0.9:1.1))); };
   const onMouseDown = (e) => { setDragging(true); dragStart.current = { x: e.clientX, y: e.clientY }; };
   const onMouseMove = (e) => {
     if (!dragging) return;
@@ -144,6 +153,7 @@ export default function StitchPreviewModal({
     setSelected(null);
   };
 
+  // EXPORT flat-PNG of canvas
   const exportPNG = () => {
     const link = document.createElement("a");
     link.download = "stitch-preview.png";
