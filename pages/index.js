@@ -11,7 +11,7 @@ import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditorModal from "../components/StitchEditorModal";
 
-const FLASK_BASE = "https://embroideryfiles.duckdns.org";
+const FLASK_BASE     = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
 function Home() {
@@ -22,11 +22,13 @@ function Home() {
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [previewFileUrl, setPreviewFileUrl] = useState(null);
-  const [editFileUrl, setEditFileUrl] = useState(null);
+
+  // --- preview state: both the raw PNG and the PES URL ---
+  const [previewPNG, setPreviewPNG] = useState(null);
+  const [previewPES, setPreviewPES] = useState(null);
 
   // NEW: background‐removal toggles
-  const [removeBg, setRemoveBg] = useState(false);
+  const [removeBg, setRemoveBg]       = useState(false);
   const [bgThreshold, setBgThreshold] = useState(250);
 
   useEffect(() => setIsClient(true), []);
@@ -49,6 +51,19 @@ function Home() {
     setCurrentPage(1);
   };
 
+  const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
+    setUploadedFiles((prev) =>
+      prev.map((f) =>
+        f.url !== fileUrl ? f : { ...f, status, stage, ...(pesUrl && { pesUrl }) }
+      )
+    );
+    setFilteredFiles((prev) =>
+      prev.map((f) =>
+        f.url !== fileUrl ? f : { ...f, status, stage, ...(pesUrl && { pesUrl }) }
+      )
+    );
+  };
+
   const handleConvert = async (fileUrl) => {
     toast.loading("Starting conversion…", { id: fileUrl });
     updateFileStatus(fileUrl, "Converting", "initiating");
@@ -59,8 +74,8 @@ function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fileUrl,
-          removeBg,       // send user’s choice
-          bgThreshold     // send tuning value
+          removeBg,
+          bgThreshold
         })
       });
       const data = await res.json();
@@ -101,19 +116,6 @@ function Home() {
     }, 3000);
   };
 
-  const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
-    setUploadedFiles((prev) =>
-      prev.map((f) =>
-        f.url !== fileUrl ? f : { ...f, status, stage, ...(pesUrl && { pesUrl }) }
-      )
-    );
-    setFilteredFiles((prev) =>
-      prev.map((f) =>
-        f.url !== fileUrl ? f : { ...f, status, stage, ...(pesUrl && { pesUrl }) }
-      )
-    );
-  };
-
   const paginatedFiles = filteredFiles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -130,6 +132,7 @@ function Home() {
           <OnboardingModal onClose={() => setShowOnboarding(false)} />
         )}
 
+        {/* Filters */}
         <div className="mb-6">
           <SidebarFilters
             filters={{ status: "", type: "", query: "" }}
@@ -137,8 +140,8 @@ function Home() {
               setFilteredFiles(
                 uploadedFiles.filter((f) =>
                   (!updates.status || f.status === updates.status) &&
-                  (!updates.type || f.url.endsWith(updates.type)) &&
-                  (!updates.query ||
+                  (!updates.type   || f.url.endsWith(updates.type)) &&
+                  (!updates.query  ||
                     f.name.toLowerCase().includes(updates.query.toLowerCase()))
                 )
               );
@@ -176,18 +179,23 @@ function Home() {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {paginatedFiles.map(
-            (file) =>
-              file.url && (
-                <FileCard
-                  key={file.url}
-                  file={file}
-                  onConvert={() => handleConvert(file.url)}
-                  onDownload={() => {}}
-                  onPreview={() => setPreviewFileUrl(file.pesUrl)}
-                  onEdit={() => setEditFileUrl(file.url)}
-                />
-              )
+          {paginatedFiles.map((file) =>
+            file.url ? (
+              <FileCard
+                key={file.url}
+                file={file}
+                onConvert={() => handleConvert(file.url)}
+                onDownload={() => {}}
+                onPreview={() => {
+                  // set both PNG & PES URLs for the preview modal
+                  setPreviewPNG(
+                    file.url.replace("/downloads/", "/uploads/").replace(".pes", ".png")
+                  );
+                  setPreviewPES(file.pesUrl);
+                }}
+                onEdit={() => setEditFileUrl(file.url)}
+              />
+            ) : null
           )}
         </div>
 
@@ -200,12 +208,21 @@ function Home() {
 
         <RecentActivityPanel uploadedFiles={uploadedFiles} />
 
-        {previewFileUrl && (
+        {/* === STITCH PREVIEW MODAL === */}
+        {previewPES && previewPNG && (
           <StitchPreviewModal
-            fileUrl={previewFileUrl}
-            onClose={() => setPreviewFileUrl(null)}
+            pngUrl={previewPNG}
+            pesUrl={previewPES}
+            onClose={() => {
+              setPreviewPES(null);
+              setPreviewPNG(null);
+            }}
+            // if you want a “Re-Convert” button inside the modal,
+            // you can also pass:
+            onReconvert={(url) => handleConvert(url)}
           />
         )}
+
         {editFileUrl && (
           <StitchEditorModal
             fileUrl={editFileUrl}
