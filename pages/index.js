@@ -25,6 +25,10 @@ function Home() {
   const [previewFileUrl, setPreviewFileUrl] = useState(null);
   const [editFileUrl, setEditFileUrl] = useState(null);
 
+  // NEW: background‐removal toggles
+  const [removeBg, setRemoveBg] = useState(false);
+  const [bgThreshold, setBgThreshold] = useState(250);
+
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
     if (!localStorage.getItem("onboardingShown")) {
@@ -53,7 +57,11 @@ function Home() {
       const res = await fetch(`${FLASK_BASE}/convert`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileUrl }),
+        body: JSON.stringify({
+          fileUrl,
+          removeBg,       // send user’s choice
+          bgThreshold     // send tuning value
+        })
       });
       const data = await res.json();
       if (!res.ok || !data.task_id) {
@@ -73,9 +81,6 @@ function Home() {
       try {
         const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
         const data = await res.json();
-        if (!res.ok || !data) {
-          throw new Error("Bad status response");
-        }
         if (data.state === "SUCCESS" && data.pesUrl) {
           updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
           toast.success("Conversion complete!", { id: fileUrl });
@@ -130,7 +135,6 @@ function Home() {
             filters={{ status: "", type: "", query: "" }}
             onFilterChange={(updates) => {
               setFilteredFiles(
-                // you may need to re-filter against uploadedFiles or similar
                 uploadedFiles.filter((f) =>
                   (!updates.status || f.status === updates.status) &&
                   (!updates.type || f.url.endsWith(updates.type)) &&
@@ -141,6 +145,28 @@ function Home() {
               setCurrentPage(1);
             }}
           />
+        </div>
+
+        {/* == NEW: Bg‐removal controls == */}
+        <div className="mb-6 flex items-center space-x-4">
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={removeBg}
+              onChange={() => setRemoveBg((b) => !b)}
+              className="form-checkbox"
+            />
+            <span>Strip white background</span>
+          </label>
+          <label className="flex items-center space-x-2 text-sm">
+            <span>Threshold:</span>
+            <input
+              type="number"
+              value={bgThreshold}
+              onChange={(e) => setBgThreshold(Number(e.target.value))}
+              className="w-16 border rounded px-2 py-1"
+            />
+          </label>
         </div>
 
         <UploadBox
@@ -186,7 +212,6 @@ function Home() {
             onClose={() => setEditFileUrl(null)}
           />
         )}
-
       </div>
     </div>
   );
