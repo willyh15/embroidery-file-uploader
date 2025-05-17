@@ -196,5 +196,5 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         </div>
       )}
     </div>
-  );
+);
 }
