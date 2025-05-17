@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
@@ -25,7 +26,6 @@ function Home() {
   // --- preview state: both the raw PNG and the PES URL ---
   const [previewPNG, setPreviewPNG]   = useState(null);
   const [previewPES, setPreviewPES]   = useState(null);
-
   // track the “edit” modal too
   const [editFileUrl, setEditFileUrl] = useState(null);
 
@@ -225,6 +225,7 @@ function Home() {
           />
         )}
 
+        {/* === STITCH EDITOR MODAL === */}
         {editFileUrl && (
           <StitchEditorModal
             fileUrl={editFileUrl}
