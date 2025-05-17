@@ -1,4 +1,3 @@
-// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "react-hot-toast";
@@ -16,18 +15,21 @@ const ITEMS_PER_PAGE = 6;
 
 function Home() {
   const dropRef = useRef(null);
-  const [isClient, setIsClient] = useState(false);
+  const [isClient, setIsClient]       = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading]     = useState(false);
   const [filteredFiles, setFilteredFiles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // --- preview state: both the raw PNG and the PES URL ---
-  const [previewPNG, setPreviewPNG] = useState(null);
-  const [previewPES, setPreviewPES] = useState(null);
+  const [previewPNG, setPreviewPNG]   = useState(null);
+  const [previewPES, setPreviewPES]   = useState(null);
 
-  // NEW: background‐removal toggles
+  // track the “edit” modal too
+  const [editFileUrl, setEditFileUrl] = useState(null);
+
+  // NEW: background-removal toggles
   const [removeBg, setRemoveBg]       = useState(false);
   const [bgThreshold, setBgThreshold] = useState(250);
 
@@ -75,8 +77,8 @@ function Home() {
         body: JSON.stringify({
           fileUrl,
           removeBg,
-          bgThreshold
-        })
+          bgThreshold,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.task_id) {
@@ -150,7 +152,7 @@ function Home() {
           />
         </div>
 
-        {/* == NEW: Bg‐removal controls == */}
+        {/* == NEW: Bg-removal controls == */}
         <div className="mb-6 flex items-center space-x-4">
           <label className="flex items-center space-x-2 text-sm">
             <input
@@ -187,9 +189,11 @@ function Home() {
                 onConvert={() => handleConvert(file.url)}
                 onDownload={() => {}}
                 onPreview={() => {
-                  // set both PNG & PES URLs for the preview modal
+                  // pass _both_ PNG and PES into the modal:
                   setPreviewPNG(
-                    file.url.replace("/downloads/", "/uploads/").replace(".pes", ".png")
+                    file.url
+                      .replace("/downloads/", "/uploads/")
+                      .replace(".pes", ".png")
                   );
                   setPreviewPES(file.pesUrl);
                 }}
@@ -213,13 +217,11 @@ function Home() {
           <StitchPreviewModal
             pngUrl={previewPNG}
             pesUrl={previewPES}
+            onReconvert={() => handleConvert(previewPNG)}
             onClose={() => {
               setPreviewPES(null);
               setPreviewPNG(null);
             }}
-            // if you want a “Re-Convert” button inside the modal,
-            // you can also pass:
-            onReconvert={(url) => handleConvert(url)}
           />
         )}
 
