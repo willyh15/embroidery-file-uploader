@@ -1,8 +1,7 @@
-// components/StitchEditorModal.jsx
+// components/StitchEditorModal.js
 import { useState } from "react";
 
 export default function StitchEditorModal({ fileUrl, onClose }) {
-  const [activeTab, setActiveTab] = useState("info");
   const [loading, setLoading] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
 
