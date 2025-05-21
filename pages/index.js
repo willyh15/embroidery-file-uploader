@@ -14,6 +14,58 @@ import StitchEditorModal from "../components/StitchEditorModal";
 const FLASK_BASE     = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
+// A simple modal to show live SSE logs and final download links
+function ConversionStreamModal({ baseName, logs, urls, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6 overflow-auto">
+        <h2 className="text-xl font-semibold mb-4">Converting “{baseName}”</h2>
+        <div className="h-40 overflow-y-auto p-2 bg-gray-100 rounded mb-4">
+          <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+            {logs.map((l,i) => (
+              <div key={i}>{l}</div>
+            ))}
+          </pre>
+        </div>
+        {urls.complete ? (
+          <>
+            <h3 className="font-medium mb-2">Downloads:</h3>
+            <div className="space-x-2 flex flex-wrap mb-4">
+              {urls.svgUrl    && <a href={urls.svgUrl}    target="_blank" rel="noopener" className="btn">SVG</a>}
+              {urls.pesUrl    && <a href={urls.pesUrl}    target="_blank" rel="noopener" className="btn">PES</a>}
+              {urls.dstUrl    && <a href={urls.dstUrl}    target="_blank" rel="noopener" className="btn">DST</a>}
+              {urls.expUrl    && <a href={urls.expUrl}    target="_blank" rel="noopener" className="btn">EXP</a>}
+              {urls.vp3Url    && <a href={urls.vp3Url}    target="_blank" rel="noopener" className="btn">VP3</a>}
+              {urls.previewPngUrl && <a href={urls.previewPngUrl} target="_blank" rel="noopener" className="btn">PNG Preview</a>}
+              <a
+                href={`${FLASK_BASE}/download-zip/${baseName}`}
+                target="_blank"
+                rel="noopener"
+                className="btn bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                ZIP Bundle
+              </a>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const dropRef = useRef(null);
   const [isClient, setIsClient]       = useState(false);
@@ -23,15 +75,20 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // --- preview state: both the raw PNG and the PES URL ---
+  // preview + editor
   const [previewPNG, setPreviewPNG]   = useState(null);
   const [previewPES, setPreviewPES]   = useState(null);
-  // track the “edit” modal too
   const [editFileUrl, setEditFileUrl] = useState(null);
 
-  // NEW: background-removal toggles
+  // bg removal toggles
   const [removeBg, setRemoveBg]       = useState(false);
   const [bgThreshold, setBgThreshold] = useState(250);
+
+  // SSE state
+  const [streamingFile, setStreamingFile] = useState(null);
+  const [streamLogs, setStreamLogs]       = useState([]);
+  const [streamUrls, setStreamUrls]       = useState({});
+  const sourceRef = useRef(null);
 
   useEffect(() => setIsClient(true), []);
   useEffect(() => {
@@ -41,6 +98,7 @@ function Home() {
     }
   }, []);
 
+  // handle initial upload
   const handleUploadSuccess = (newFiles) => {
     const uploaded = newFiles.map((file) => ({
       ...file,
@@ -53,6 +111,7 @@ function Home() {
     setCurrentPage(1);
   };
 
+  // filter helper
   const updateFileStatus = (fileUrl, status, stage = "", pesUrl = "") => {
     setUploadedFiles((prev) =>
       prev.map((f) =>
@@ -66,56 +125,42 @@ function Home() {
     );
   };
 
-  const handleConvert = async (fileUrl) => {
-    toast.loading("Starting conversion…", { id: fileUrl });
-    updateFileStatus(fileUrl, "Converting", "initiating");
+  // SSE‐based convert
+  const handleConvertStream = (fileUrl) => {
+    const baseName = fileUrl.split("/").pop().replace(/\.\w+$/, "");
+    setStreamingFile(baseName);
+    setStreamLogs([`Starting conversion…`]);
+    setStreamUrls({});
+    // build a GET‐query so EventSource works
+    const q = new URLSearchParams({
+      fileUrl,
+      removeBg: removeBg.toString(),
+      bgThreshold: bgThreshold.toString(),
+    }).toString();
+    const source = new EventSource(`${FLASK_BASE}/convert-stream?${q}`);
+    sourceRef.current = source;
 
-    try {
-      const res = await fetch(`${FLASK_BASE}/convert`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileUrl,
-          removeBg,
-          bgThreshold,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.task_id) {
-        throw new Error(data.error || "Conversion failed to start");
-      }
-      updateFileStatus(fileUrl, "Converting", "processing");
-      pollConversionStatus(data.task_id, fileUrl);
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message, { id: fileUrl });
+    source.addEventListener("progress", (e) => {
+      const data = JSON.parse(e.data);
+      setStreamLogs((logs) => [...logs, `→ ${data.log}`]);
+      // capture any URL fields
+      setStreamUrls((u) => ({ ...u, ...data }));
+    });
+
+    source.addEventListener("complete", (e) => {
+      const data = JSON.parse(e.data);
+      setStreamLogs((logs) => [...logs, `✔ Conversion complete!`]);
+      setStreamUrls((u) => ({ ...u, ...data, complete: true }));
+      updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
+      source.close();
+    });
+
+    source.onerror = (err) => {
+      console.error("SSE error", err);
+      setStreamLogs((logs) => [...logs, `✖ Conversion failed.`]);
       updateFileStatus(fileUrl, "Error", "failed");
-    }
-  };
-
-  const pollConversionStatus = (taskId, fileUrl) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${FLASK_BASE}/status/${taskId}`);
-        const data = await res.json();
-        if (data.state === "SUCCESS" && data.pesUrl) {
-          updateFileStatus(fileUrl, "Converted", "done", data.pesUrl);
-          toast.success("Conversion complete!", { id: fileUrl });
-          clearInterval(interval);
-        } else if (data.state === "FAILURE" || data.status?.startsWith("Error")) {
-          updateFileStatus(fileUrl, "Error", "conversion-error");
-          toast.error("Conversion failed", { id: fileUrl });
-          clearInterval(interval);
-        } else {
-          updateFileStatus(fileUrl, "Converting", data.stage || "processing");
-        }
-      } catch (err) {
-        console.error(err);
-        updateFileStatus(fileUrl, "Error", "poll-failed");
-        toast.error("Polling error", { id: fileUrl });
-        clearInterval(interval);
-      }
-    }, 3000);
+      source.close();
+    };
   };
 
   const paginatedFiles = filteredFiles.slice(
@@ -127,7 +172,7 @@ function Home() {
 
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="container">
+      <div className="container max-w-screen-lg mx-auto">
         <h2 className="text-4xl font-bold mb-8">Welcome</h2>
 
         {showOnboarding && (
@@ -152,7 +197,7 @@ function Home() {
           />
         </div>
 
-        {/* == NEW: Bg-removal controls == */}
+        {/* BG removal */}
         <div className="mb-6 flex items-center space-x-4">
           <label className="flex items-center space-x-2 text-sm">
             <input
@@ -174,22 +219,23 @@ function Home() {
           </label>
         </div>
 
+        {/* Upload area */}
         <UploadBox
           uploading={uploading}
           dropRef={dropRef}
           onUploadSuccess={handleUploadSuccess}
         />
 
+        {/* File grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {paginatedFiles.map((file) =>
             file.url ? (
               <FileCard
                 key={file.url}
                 file={file}
-                onConvert={() => handleConvert(file.url)}
+                onConvert={() => handleConvertStream(file.url)}
                 onDownload={() => {}}
                 onPreview={() => {
-                  // pass _both_ PNG and PES into the modal:
                   setPreviewPNG(
                     file.url
                       .replace("/downloads/", "/uploads/")
@@ -203,6 +249,7 @@ function Home() {
           )}
         </div>
 
+        {/* Pagination */}
         <PaginationControls
           currentPage={currentPage}
           totalItems={filteredFiles.length}
@@ -210,26 +257,40 @@ function Home() {
           onPageChange={setCurrentPage}
         />
 
+        {/* Recent Activity */}
         <RecentActivityPanel uploadedFiles={uploadedFiles} />
 
-        {/* === STITCH PREVIEW MODAL === */}
+        {/* Preview / Editor Modals */}
         {previewPES && previewPNG && (
           <StitchPreviewModal
             pngUrl={previewPNG}
             pesUrl={previewPES}
-            onReconvert={() => handleConvert(previewPNG)}
+            onReconvert={() => handleConvertStream(previewPNG)}
             onClose={() => {
               setPreviewPES(null);
               setPreviewPNG(null);
             }}
           />
         )}
-
-        {/* === STITCH EDITOR MODAL === */}
         {editFileUrl && (
           <StitchEditorModal
             fileUrl={editFileUrl}
             onClose={() => setEditFileUrl(null)}
+          />
+        )}
+
+        {/* Conversion SSE Modal */}
+        {streamingFile && (
+          <ConversionStreamModal
+            baseName={streamingFile}
+            logs={streamLogs}
+            urls={streamUrls}
+            onClose={() => {
+              sourceRef.current?.close();
+              setStreamingFile(null);
+              setStreamLogs([]);
+              setStreamUrls({});
+            }}
           />
         )}
       </div>
