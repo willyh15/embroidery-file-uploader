@@ -16,26 +16,27 @@ const ITEMS_PER_PAGE = 6;
 
 function ConversionStreamModal({ baseName, logs, urls, onClose }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="glass-modal w-full max-w-xl p-6 overflow-auto">
-        <h2 className="text-xl font-semibold mb-4">Converting “{baseName}”</h2>
-        <div className="h-40 overflow-y-auto p-2 bg-gray-100 rounded mb-4">
-          <pre className="text-sm text-gray-800 whitespace-pre-wrap">
+    <div className="modal-overlay">
+      <div className="glass-panel w-full max-w-xl p-6 overflow-auto">
+        <h2 className="text-2xl mb-4">{`Converting “${baseName}”`}</h2>
+        <div className="h-40 overflow-y-auto p-2 bg-white/10 rounded-lg mb-4">
+          <pre className="text-sm whitespace-pre-wrap">
             {logs.map((l, i) => (
               <div key={i}>{l}</div>
             ))}
           </pre>
         </div>
+
         {urls.complete ? (
           <>
-            <h3 className="font-medium mb-2">Downloads:</h3>
+            <h3 className="mb-2">Downloads:</h3>
             <div className="flex flex-wrap gap-3 mb-4">
               {urls.svgUrl && (
                 <a
                   href={urls.svgUrl}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   SVG
                 </a>
@@ -45,7 +46,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   href={urls.pesUrl}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   PES
                 </a>
@@ -55,7 +56,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   href={urls.dstUrl}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   DST
                 </a>
@@ -65,7 +66,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   href={urls.expUrl}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   EXP
                 </a>
@@ -75,7 +76,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   href={urls.vp3Url}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   VP3
                 </a>
@@ -85,7 +86,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   href={urls.previewPngUrl}
                   target="_blank"
                   rel="noopener"
-                  className="btn btn-secondary"
+                  className="btn btn-accent"
                 >
                   PNG Preview
                 </a>
@@ -99,7 +100,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                 ZIP Bundle
               </a>
             </div>
-            <button onClick={onClose} className="btn btn-secondary">
+            <button onClick={onClose} className="btn btn-outline">
               Close
             </button>
           </>
@@ -115,11 +116,11 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
 
 function Home() {
   const dropRef = useRef(null);
-  const [isClient, setIsClient]       = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [uploading, setUploading]     = useState(false);
-  const [filteredFiles, setFilteredFiles] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isClient, setIsClient]             = useState(false);
+  const [uploadedFiles, setUploadedFiles]   = useState([]);
+  const [uploading, setUploading]           = useState(false);
+  const [filteredFiles, setFilteredFiles]   = useState([]);
+  const [currentPage, setCurrentPage]       = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // preview + editor
@@ -172,25 +173,25 @@ function Home() {
     );
   };
 
-  // SSE‐based convert
+  // SSE-based convert
   const handleConvertStream = (fileUrl) => {
     const baseName = fileUrl.split("/").pop().replace(/\.\w+$/, "");
     setStreamingFile(baseName);
     setStreamLogs([`Starting conversion…`]);
     setStreamUrls({});
-    // build a GET‐query so EventSource works
+
     const q = new URLSearchParams({
       fileUrl,
       removeBg: removeBg.toString(),
       bgThreshold: bgThreshold.toString(),
     }).toString();
+
     const source = new EventSource(`${FLASK_BASE}/convert-stream?${q}`);
     sourceRef.current = source;
 
     source.addEventListener("progress", (e) => {
       const data = JSON.parse(e.data);
       setStreamLogs((logs) => [...logs, `→ ${data.log}`]);
-      // capture any URL fields
       setStreamUrls((u) => ({ ...u, ...data }));
     });
 
@@ -219,8 +220,8 @@ function Home() {
 
   return (
     <div className="min-h-screen py-8 px-4">
-      <div className="container max-w-screen-lg mx-auto">
-        <h2 className="text-4xl font-bold mb-8">Welcome</h2>
+      <div className="container">
+        <h2 className="text-5xl mb-8">Welcome</h2>
 
         {showOnboarding && (
           <OnboardingModal onClose={() => setShowOnboarding(false)} />
@@ -261,7 +262,7 @@ function Home() {
               type="number"
               value={bgThreshold}
               onChange={(e) => setBgThreshold(Number(e.target.value))}
-              className="w-16 border rounded px-2 py-1"
+              className="form-input w-20"
             />
           </label>
         </div>
