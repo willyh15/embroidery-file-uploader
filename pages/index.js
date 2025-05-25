@@ -14,7 +14,6 @@ import StitchEditorModal from "../components/StitchEditorModal";
 const FLASK_BASE     = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
-// A simple modal to show live SSE logs and final download links
 function ConversionStreamModal({ baseName, logs, urls, onClose }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -22,7 +21,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
         <h2 className="text-xl font-semibold mb-4">Converting “{baseName}”</h2>
         <div className="h-40 overflow-y-auto p-2 bg-gray-100 rounded mb-4">
           <pre className="text-sm text-gray-800 whitespace-pre-wrap">
-            {logs.map((l,i) => (
+            {logs.map((l, i) => (
               <div key={i}>{l}</div>
             ))}
           </pre>
@@ -30,34 +29,82 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
         {urls.complete ? (
           <>
             <h3 className="font-medium mb-2">Downloads:</h3>
-            <div className="space-x-2 flex flex-wrap mb-4">
-              {urls.svgUrl    && <a href={urls.svgUrl}    target="_blank" rel="noopener" className="btn">SVG</a>}
-              {urls.pesUrl    && <a href={urls.pesUrl}    target="_blank" rel="noopener" className="btn">PES</a>}
-              {urls.dstUrl    && <a href={urls.dstUrl}    target="_blank" rel="noopener" className="btn">DST</a>}
-              {urls.expUrl    && <a href={urls.expUrl}    target="_blank" rel="noopener" className="btn">EXP</a>}
-              {urls.vp3Url    && <a href={urls.vp3Url}    target="_blank" rel="noopener" className="btn">VP3</a>}
-              {urls.previewPngUrl && <a href={urls.previewPngUrl} target="_blank" rel="noopener" className="btn">PNG Preview</a>}
+            <div className="flex flex-wrap gap-3 mb-4">
+              {urls.svgUrl && (
+                <a
+                  href={urls.svgUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  SVG
+                </a>
+              )}
+              {urls.pesUrl && (
+                <a
+                  href={urls.pesUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  PES
+                </a>
+              )}
+              {urls.dstUrl && (
+                <a
+                  href={urls.dstUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  DST
+                </a>
+              )}
+              {urls.expUrl && (
+                <a
+                  href={urls.expUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  EXP
+                </a>
+              )}
+              {urls.vp3Url && (
+                <a
+                  href={urls.vp3Url}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  VP3
+                </a>
+              )}
+              {urls.previewPngUrl && (
+                <a
+                  href={urls.previewPngUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-secondary"
+                >
+                  PNG Preview
+                </a>
+              )}
               <a
                 href={`${FLASK_BASE}/download-zip/${baseName}`}
                 target="_blank"
                 rel="noopener"
-                className="btn bg-indigo-600 text-white hover:bg-indigo-700"
+                className="btn btn-primary"
               >
                 ZIP Bundle
               </a>
             </div>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
-            >
+            <button onClick={onClose} className="btn btn-secondary">
               Close
             </button>
           </>
         ) : (
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
+          <button onClick={onClose} className="btn btn-danger">
             Cancel
           </button>
         )}
