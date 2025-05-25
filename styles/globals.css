@@ -7,109 +7,56 @@
 
 /* ─── Base Resets & Typography ─── */
 @layer base {
-  :root {
-    --radius: 1rem;
-  }
   body {
-    @apply bg-[var(--primary-bg)] text-[var(--primary-txt)]
-           font-sans antialiased;
+    /* use the theme colors you extended in tailwind.config.js */
+    @apply bg-primaryBg text-primaryTxt font-sans antialiased;
   }
-  h1,h2,h3,h4,h5,h6 {
-    @apply font-display font-bold text-[var(--primary-txt)];
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold text-primaryTxt;
   }
 }
 
 /* ─── Custom Components & Utilities ─── */
 @layer components {
-  /* ─── Glassmorphism Panel ─── */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4;
+  }
   .glass-panel {
     @apply bg-white/10 backdrop-blur-md
-           border border-[var(--border)] rounded-xl
+           border border-border rounded-xl
            shadow-glass;
   }
 
-  /* ─── Buttons ─── */
   .btn {
     @apply inline-flex items-center justify-center
            px-4 py-2 font-semibold rounded-full
            transition duration-200 ease-in-out;
   }
   .btn-primary {
-    @apply bg-gradient-to-r from-neonPink to-neonCyan
-           text-white shadow-lg
+    @apply bg-gradient-to-r from-neonPink to-neonCyan text-white shadow-lg
            hover:from-neonCyan hover:to-neonPink;
   }
   .btn-accent {
-    @apply bg-gradient-to-r from-neonYellow to-accent
-           text-[var(--primary-bg)] shadow
-           hover:from-accent-alt hover:to-neonYellow;
+    @apply bg-gradient-to-r from-neonYellow to-accent text-primaryBg shadow
+           hover:from-accentAlt hover:to-neonYellow;
   }
   .btn-outline {
-    @apply border border-[var(--accent)]
-           text-[var(--accent)] bg-transparent
-           hover:bg-[var(--accent)] hover:text-white;
+    @apply border border-accent text-accent bg-transparent
+           hover:bg-accent hover:text-white;
   }
   .btn-danger {
-    @apply bg-gradient-to-r from-red-500 to-pink-500
-           text-white shadow
+    @apply bg-gradient-to-r from-red-500 to-pink-500 text-white shadow
            hover:from-red-600 hover:to-pink-600;
   }
 
-  /* ─── Form Controls ─── */
-  .form-input,
-  .form-select,
-  .form-textarea {
+  .form-input, .form-select, .form-textarea {
     @apply w-full px-3 py-2 bg-white/10
-           border border-[var(--border)] rounded-lg
-           placeholder-gray-400 text-[var(--primary-txt)]
+           border border-border rounded-lg
+           placeholder-gray-400 text-primaryTxt
            focus:outline-none focus:ring-2 focus:ring-accent;
   }
 
-  /* ─── File Card ─── */
-  .file-card {
-    @apply glass-panel p-4 mb-4 flex flex-col
-           space-y-3 transition-transform duration-200;
-  }
-  .file-card:hover {
-    @apply scale-[1.02];
-  }
-  .file-card__header {
-    @apply flex justify-between items-center;
-  }
-  .file-card__progress {
-    @apply h-2 bg-white/20 rounded-full overflow-hidden;
-  }
-  .file-card__progress-bar {
-    @apply h-full bg-accent transition-width duration-500;
-  }
-
-  /* ─── Badge ─── */
-  .badge {
-    @apply text-xs font-medium uppercase
-           px-2 py-1 rounded-full
-           bg-[var(--accent)] text-[var(--primary-bg)];
-  }
-
-  /* ─── Sidebar / Filters ─── */
   .sidebar {
-    @apply glass-panel p-6 space-y-4;
-  }
-  .sidebar__group {
-    @apply space-y-1;
-  }
-
-  /* ─── Pagination ─── */
-  .pagination {
-    @apply flex justify-center space-x-2;
-  }
-  .pagination__item {
-    @apply px-3 py-1 rounded-lg
-           bg-white/10 text-[var(--primary-txt)]
-           hover:bg-white/20;
-  }
-
-  /* ─── Modal Overlay (you already have this) ─── */
-  .modal-overlay {
-    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4;
+    @apply glass-panel p-6 space-y-4 mb-6;
   }
 }
