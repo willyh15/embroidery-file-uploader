@@ -62,10 +62,14 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       onDragOver={prevent}
       onDragLeave={prevent}
       onDrop={handleDrop}
-      className={`upload-box ${busy ? "dragover" : ""}`}
+      className={`upload-box glass-modal transition ${
+        busy
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:border-[var(--accent)] hover:scale-105"
+      }`}
     >
-      <label className="flex flex-col items-center cursor-pointer">
-        <span className="text-lg font-medium text-gray-700 mb-2">
+      <label className="flex flex-col items-center justify-center cursor-pointer h-full">
+        <span className="text-lg font-medium text-[var(--primary-text)] mb-2">
           {busy
             ? "Uploading…"
             : "Drag & drop files here or click to select"}
