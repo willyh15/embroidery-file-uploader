@@ -27,6 +27,15 @@
 
 /* ─── Component Utilities ─── */
 @layer components {
+  .glass-modal {
+    /* semi-transparent white + heavy blur + soft dark shadow + light border */
+    @apply bg-white/10
+           backdrop-blur-lg
+           border
+           border-[var(--border-color)]
+           rounded-[var(--radius)]
+           shadow-[0_8px_32px_var(--shadow-color)];
+  }
   .container {
     @apply mx-auto w-full max-w-screen-lg px-4 text-center;
   }
