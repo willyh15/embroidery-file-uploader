@@ -17,7 +17,7 @@ const ITEMS_PER_PAGE = 6;
 function ConversionStreamModal({ baseName, logs, urls, onClose }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-xl p-6 overflow-auto">
+      <div className="glass-modal w-full max-w-xl p-6 overflow-auto">
         <h2 className="text-xl font-semibold mb-4">Converting “{baseName}”</h2>
         <div className="h-40 overflow-y-auto p-2 bg-gray-100 rounded mb-4">
           <pre className="text-sm text-gray-800 whitespace-pre-wrap">
