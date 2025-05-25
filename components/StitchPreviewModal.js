@@ -5,10 +5,10 @@ import isEqual from "lodash.isequal";
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
 export default function StitchPreviewModal({
-  pngUrl,      // URL to the original PNG (uploads)
-  pesUrl,      // URL to the .pes (downloads)
+  pngUrl,
+  pesUrl,
   onClose,
-  onReconvert  // called when bg-removal flags change
+  onReconvert
 }) {
   const canvasRef = useRef(null);
 
@@ -30,7 +30,7 @@ export default function StitchPreviewModal({
   // derive baseName from pesUrl
   const baseName = pesUrl?.split("/").pop()?.replace(/\.pes$/, "");
 
-  // 1) fetch stitch data whenever pesUrl changes
+  // fetch stitch data whenever pesUrl changes
   useEffect(() => {
     if (!pesUrl) {
       setSegments([]);
@@ -47,14 +47,14 @@ export default function StitchPreviewModal({
       .catch(err => console.error("[StitchPreviewModal] fetch error:", err));
   }, [pesUrl, baseName]);
 
-  // 1.b) trigger a re-convert upstream when bg settings change
+  // trigger a re-convert upstream when bg settings change
   useEffect(() => {
     if (pesUrl && onReconvert) {
       onReconvert(pngUrl, { removeBg, bgThreshold });
     }
   }, [removeBg, bgThreshold]);
 
-  // 2) auto-fit on new segments
+  // auto-fit on new segments
   useEffect(() => {
     if (!segments.length) return;
     const pts = segments.flat();
@@ -69,34 +69,18 @@ export default function StitchPreviewModal({
     setSelected(null);
   }, [segments]);
 
-  // 3) redraw canvas: checkerboard → raw PNG → stitches
+  // redraw canvas
   useEffect(() => {
     const C = canvasRef.current;
     if (!C) return;
     const ctx = C.getContext("2d");
-
-    // clear so checkerboard shows through
     ctx.clearRect(0, 0, C.width, C.height);
 
-    // draw raw PNG underlay
-    if (pngUrl) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = pngUrl;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, C.width, C.height);
-        drawStitches();
-      };
-    } else {
-      drawStitches();
-    }
-
-    function drawStitches() {
+    const drawStitches = () => {
       if (!segments.length) return;
       ctx.save();
       ctx.globalAlpha = 0.8;
 
-      // center & flip Y → pan/zoom
       const pts  = segments.flat();
       const xs   = pts.map(p => p[0]), ys = pts.map(p => p[1]);
       const minX = Math.min(...xs), maxX = Math.max(...xs);
@@ -119,8 +103,20 @@ export default function StitchPreviewModal({
 
       ctx.restore();
       ctx.globalAlpha = 1;
+    };
+
+    if (pngUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = pngUrl;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, C.width, C.height);
+        drawStitches();
+      };
+    } else {
+      drawStitches();
     }
-  }, [pngUrl, pesUrl, segments, colors, scale, offset, selected]);
+  }, [pngUrl, segments, colors, scale, offset, selected]);
 
   // interactions
   const onWheel     = e => { e.preventDefault(); setScale(s => Math.max(0.1, s * (e.deltaY>0 ? 0.9 : 1.1))); };
@@ -162,18 +158,15 @@ export default function StitchPreviewModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center p-4 z-50"
-      style={{ background: "rgba(0,0,0,0.7)" }}
-    >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 overflow-auto">
-        <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+      <div className="glass-modal w-full max-w-3xl p-6">
+        <h3 className="text-2xl font-semibold mb-4 text-[var(--primary-text)]">
           Stitch Preview
         </h3>
 
         {/* BG-REMOVAL CONTROLS */}
-        <div className="flex items-center space-x-6 mb-4">
-          <label className="flex items-center space-x-2 text-sm">
+        <div className="flex items-center space-x-6 mb-4 text-[var(--primary-text)]">
+          <label className="flex items-center space-x-2">
             <input
               type="checkbox"
               checked={removeBg}
@@ -182,13 +175,13 @@ export default function StitchPreviewModal({
             />
             <span>Strip white background</span>
           </label>
-          <label className="flex items-center space-x-2 text-sm">
+          <label className="flex items-center space-x-2">
             <span>Threshold:</span>
             <input
               type="number"
               value={bgThreshold}
               onChange={e => setBgThreshold(+e.target.value)}
-              className="w-16 border rounded px-1 py-0.5 text-sm"
+              className="w-16 border border-[var(--border-color)] rounded px-1 py-0.5 text-sm bg-[var(--primary-bg)] text-[var(--primary-text)]"
             />
           </label>
         </div>
@@ -198,9 +191,9 @@ export default function StitchPreviewModal({
           ref={canvasRef}
           width={450}
           height={450}
-          className="w-full rounded mb-4 border"
+          className="w-full rounded mb-4 border border-[var(--border-color)]"
           style={{
-            backgroundImage: "repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%)",
+            backgroundImage: "repeating-conic-gradient(rgba(255,255,255,0.1) 0% 25%, transparent 0% 50%)",
             backgroundSize:  "16px 16px",
           }}
           onWheel={onWheel}
@@ -211,23 +204,17 @@ export default function StitchPreviewModal({
           onClick={clickSeg}
         />
 
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-[var(--accent-alt)] mb-4">
           <strong>Zoom:</strong> Scroll&nbsp;|&nbsp;
           <strong>Pan:</strong> Drag&nbsp;|&nbsp;
           <strong>Select:</strong> Click
         </div>
 
         <div className="flex justify-between">
-          <button
-            onClick={exportPNG}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
+          <button onClick={exportPNG} className="btn btn-primary">
             Export PNG
           </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
-          >
+          <button onClick={onClose} className="btn btn-secondary">
             Close
           </button>
         </div>
