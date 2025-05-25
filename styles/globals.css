@@ -8,48 +8,108 @@
 /* ─── Base Resets & Typography ─── */
 @layer base {
   :root {
-    --primary-bg:      #33202E;
-    --primary-text:    #FBD3E0;
-    --secondary-bg:    #44303D;
-    --accent:          #F4A9A8;
-    --accent-alt:      #C1D7C3;
-    --border-color:    rgba(255,255,255,0.2);
-    --shadow-color:    rgba(0,0,0,0.5);
-    --radius:          12px;
+    --radius: 1rem;
   }
   body {
-    @apply bg-[var(--primary-bg)] text-[var(--primary-text)] font-montserrat;
+    @apply bg-[var(--primary-bg)] text-[var(--primary-txt)]
+           font-sans antialiased;
   }
   h1,h2,h3,h4,h5,h6 {
-    @apply font-quicksand font-semibold text-[var(--primary-text)];
+    @apply font-display font-bold text-[var(--primary-txt)];
   }
 }
 
-/* ─── Component Utilities ─── */
+/* ─── Custom Components & Utilities ─── */
 @layer components {
-  .glass-modal {
-    /* semi-transparent white + heavy blur + soft dark shadow + light border */
-    @apply bg-white/10
-           backdrop-blur-lg
-           border
-           border-[var(--border-color)]
-           rounded-[var(--radius)]
-           shadow-[0_8px_32px_var(--shadow-color)];
+  /* ─── Glassmorphism Panel ─── */
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-md
+           border border-[var(--border)] rounded-xl
+           shadow-glass;
   }
-  .container {
-    @apply mx-auto w-full max-w-screen-lg px-4 text-center;
+
+  /* ─── Buttons ─── */
+  .btn {
+    @apply inline-flex items-center justify-center
+           px-4 py-2 font-semibold rounded-full
+           transition duration-200 ease-in-out;
   }
-  .card {
-    @apply bg-[var(--secondary-bg)] rounded-2xl shadow-lg p-6 mb-6 transition-all duration-200;
+  .btn-primary {
+    @apply bg-gradient-to-r from-neonPink to-neonCyan
+           text-white shadow-lg
+           hover:from-neonCyan hover:to-neonPink;
   }
-  .card:hover {
-    @apply translate-y-[-2px] shadow-xl;
+  .btn-accent {
+    @apply bg-gradient-to-r from-neonYellow to-accent
+           text-[var(--primary-bg)] shadow
+           hover:from-accent-alt hover:to-neonYellow;
   }
-  .upload-box {
-    @apply mx-auto w-full max-w-screen-lg border-4 border-dashed rounded-2xl
-           p-8 flex flex-col items-center justify-center transition-all duration-300;
+  .btn-outline {
+    @apply border border-[var(--accent)]
+           text-[var(--accent)] bg-transparent
+           hover:bg-[var(--accent)] hover:text-white;
   }
-  .upload-box:hover {
-    @apply border-[var(--accent)] bg-[var(--accent-alt)] scale-105 text-gray-900;
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-pink-500
+           text-white shadow
+           hover:from-red-600 hover:to-pink-600;
+  }
+
+  /* ─── Form Controls ─── */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply w-full px-3 py-2 bg-white/10
+           border border-[var(--border)] rounded-lg
+           placeholder-gray-400 text-[var(--primary-txt)]
+           focus:outline-none focus:ring-2 focus:ring-accent;
+  }
+
+  /* ─── File Card ─── */
+  .file-card {
+    @apply glass-panel p-4 mb-4 flex flex-col
+           space-y-3 transition-transform duration-200;
+  }
+  .file-card:hover {
+    @apply scale-[1.02];
+  }
+  .file-card__header {
+    @apply flex justify-between items-center;
+  }
+  .file-card__progress {
+    @apply h-2 bg-white/20 rounded-full overflow-hidden;
+  }
+  .file-card__progress-bar {
+    @apply h-full bg-accent transition-width duration-500;
+  }
+
+  /* ─── Badge ─── */
+  .badge {
+    @apply text-xs font-medium uppercase
+           px-2 py-1 rounded-full
+           bg-[var(--accent)] text-[var(--primary-bg)];
+  }
+
+  /* ─── Sidebar / Filters ─── */
+  .sidebar {
+    @apply glass-panel p-6 space-y-4;
+  }
+  .sidebar__group {
+    @apply space-y-1;
+  }
+
+  /* ─── Pagination ─── */
+  .pagination {
+    @apply flex justify-center space-x-2;
+  }
+  .pagination__item {
+    @apply px-3 py-1 rounded-lg
+           bg-white/10 text-[var(--primary-txt)]
+           hover:bg-white/20;
+  }
+
+  /* ─── Modal Overlay (you already have this) ─── */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4;
   }
 }
