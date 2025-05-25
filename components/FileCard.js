@@ -1,5 +1,13 @@
 // components/FileCard.js
-import { Loader2, RotateCw, CheckCircle, XCircle, ArrowDownCircle, Sparkles, Eye } from "lucide-react";
+import {
+  Loader2,
+  RotateCw,
+  CheckCircle,
+  XCircle,
+  ArrowDownCircle,
+  Sparkles,
+  Eye,
+} from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
@@ -19,7 +27,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
   // countdown timer
   useEffect(() => {
     if (!retrying || countdown <= 0) return;
-    const t = setTimeout(() => setCountdown(c => c - 1), 1_000);
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1_000);
     return () => clearTimeout(t);
   }, [retrying, countdown]);
 
@@ -35,7 +43,10 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         const el = cardRef.current;
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
         el?.classList.add("ring-4", "ring-green-400", "animate-bounce");
-        setTimeout(() => el?.classList.remove("ring-4", "ring-green-400", "animate-bounce"), 3_000);
+        setTimeout(
+          () => el?.classList.remove("ring-4", "ring-green-400", "animate-bounce"),
+          3_000
+        );
       }, 100);
 
       setTimeout(() => {
@@ -54,16 +65,17 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     }
   };
 
-  const getStageColor = (stage) => ({
-    uploading: "bg-blue-300",
-    downloading: "bg-blue-500",
-    resizing: "bg-yellow-500",
-    vectorizing: "bg-orange-500",
-    "converting-pes": "bg-purple-500",
-    done: "bg-green-600",
-    failed: "bg-red-600",
-    error: "bg-red-600",
-  }[stage] || "bg-gray-400");
+  const getStageColor = (stage) =>
+    ({
+      uploading: "bg-blue-300",
+      downloading: "bg-blue-500",
+      resizing: "bg-yellow-500",
+      vectorizing: "bg-orange-500",
+      "converting-pes": "bg-purple-500",
+      done: "bg-green-600",
+      failed: "bg-red-600",
+      error: "bg-red-600",
+    }[stage] || "bg-gray-400");
 
   const renderIcon = () => {
     if (file.status === "Uploading" || file.status === "Converting") {
@@ -82,20 +94,20 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
     <div
       ref={cardRef}
       data-file-url={file.url}
-      className={`card ${retrying ? "ring-4 ring-blue-400 animate-pulse" : ""}`}
+      className={`glass-modal p-4 mb-6 ${retrying ? "ring-4 ring-blue-400 animate-pulse" : ""}`}
     >
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center space-x-2">
-          <strong className="truncate max-w-xs">{file.name}</strong>
+          <strong className="truncate">{file.name}</strong>
           {isNew && (
-            <span className="flex items-center space-x-1 px-2 py-0.5 bg-green-100 text-green-800 rounded-full animate-fade-in text-xs">
+            <span className="flex items-center space-x-1 px-2 py-0.5 bg-[var(--accent)] text-[var(--primary-bg)] rounded-full text-xs animate-fade-in">
               <Sparkles className="w-4 h-4" />
               <span>NEW</span>
             </span>
           )}
           {renderIcon()}
         </div>
-        <span className="text-sm text-gray-600 dark:text-gray-400">{file.status}</span>
+        <span className="text-sm text-[var(--primary-text)]">{file.status}</span>
       </div>
 
       {file.stage && (
@@ -117,7 +129,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         {file.status === "Uploaded" && (
           <button
             onClick={() => onConvert(file.url)}
-            className="flex items-center space-x-1 px-4 py-1 bg-blue-500 text-white rounded-full hover:bg-blue-600 text-sm"
+            className="btn btn-primary flex items-center space-x-1 text-sm"
           >
             <RotateCw className="w-4 h-4" />
             <span>Convert</span>
@@ -125,7 +137,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         )}
 
         {file.status === "Converting" && (
-          <span className="text-sm text-blue-600">Converting…</span>
+          <span className="text-sm text-blue-500">Converting…</span>
         )}
 
         {file.status === "Converted" && file.pesUrl && (
@@ -135,21 +147,21 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => onDownload(file.url, "pes")}
-              className="flex items-center space-x-1 px-4 py-1 bg-green-600 text-white rounded-full hover:bg-green-700 text-sm"
+              className="btn btn-accent flex items-center space-x-1 text-sm"
             >
               <ArrowDownCircle className="w-4 h-4" />
               <span>Download PES</span>
             </a>
             <button
               onClick={() => onPreview(file.pesUrl)}
-              className="flex items-center space-x-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 text-sm"
+              className="btn btn-outline flex items-center space-x-1 text-sm"
             >
               <Eye className="w-4 h-4" />
               <span>Preview</span>
             </button>
             <button
               onClick={() => onEdit(file.url)}
-              className="flex items-center space-x-1 px-3 py-1 bg-yellow-400 text-white rounded-full hover:bg-yellow-500 text-sm"
+              className="btn btn-accent flex items-center space-x-1 text-sm"
             >
               <span>Edit</span>
             </button>
@@ -160,12 +172,8 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
           <button
             onClick={handleRetry}
             disabled={retrying || cooldownActive}
-            className={`flex items-center space-x-1 px-4 py-1 rounded-full text-white text-sm transition ${
-              retrying
-                ? "bg-gray-400 cursor-not-allowed"
-                : cooldownActive
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-red-500 hover:bg-red-600"
+            className={`btn btn-danger flex items-center space-x-1 text-sm ${
+              retrying || cooldownActive ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {retrying ? (
@@ -186,7 +194,7 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
       </div>
 
       {file.status === "Converted" && (
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="text-xs text-gray-400">
           <strong>Debug Info:</strong> pesUrl: {file.pesUrl || "N/A"}
           {!file.pesUrl && (
             <div className="text-red-500 font-semibold mt-1">
@@ -196,5 +204,5 @@ export default function FileCard({ file, onConvert, onDownload, onPreview, onEdi
         </div>
       )}
     </div>
-);
+  );
 }
