@@ -22,9 +22,7 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || errorMsg);
       setInfoMessage(data.message || successMsg);
-      if (data.pesUrl) {
-        toast.success(successMsg);
-      }
+      if (data.pesUrl) toast.success(successMsg);
     } catch (err) {
       console.error(err);
       setInfoMessage(errorMsg);
@@ -36,26 +34,32 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg relative">
+      <div className="glass-modal relative w-full max-w-lg p-6">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
+          className="absolute top-4 right-4 text-[var(--primary-text)] hover:text-[var(--accent)]"
         >
           ✕
         </button>
 
-        <h2 className="text-2xl font-semibold mb-2">Stitch Editor</h2>
-        <p className="text-sm text-gray-600 mb-4 truncate">File: {fileUrl}</p>
+        <h2 className="text-2xl font-semibold mb-2 text-[var(--primary-text)]">
+          Stitch Editor
+        </h2>
+        <p className="text-sm mb-4 text-[var(--accent-alt)] truncate">
+          File: {fileUrl}
+        </p>
 
-        {loading && <p className="text-blue-500 mb-2">Processing…</p>}
+        {loading && (
+          <p className="text-[var(--accent)] mb-2">Processing…</p>
+        )}
         {infoMessage && (
-          <p className="text-gray-800 mb-4">{infoMessage}</p>
+          <p className="text-[var(--primary-text)] mb-4">{infoMessage}</p>
         )}
 
         {/* Visualization Placeholder */}
-        <div className="border border-gray-300 rounded-lg p-4 mb-6">
-          <p className="text-center text-gray-500">
+        <div className="border border-[var(--border-color)] rounded-lg p-4 mb-6 bg-[var(--secondary-bg)]">
+          <p className="text-center text-[var(--accent-alt)]">
             (Preview of SVG / Canvas editor would go here)
           </p>
         </div>
@@ -72,7 +76,7 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
               )
             }
             disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:bg-[var(--accent-alt)] disabled:opacity-50"
           >
             Increase Density
           </button>
@@ -87,7 +91,7 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
               )
             }
             disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:bg-[var(--accent-alt)] disabled:opacity-50"
           >
             Simplify Paths
           </button>
@@ -102,36 +106,42 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
               )
             }
             disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:bg-[var(--accent-alt)] disabled:opacity-50"
           >
             Optimize Order
           </button>
         </div>
 
         {/* Fill & Trim Controls */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h4 className="font-semibold mb-2">Fill & Trim</h4>
+        <div className="bg-[var(--secondary-bg)] rounded-lg p-4 mb-6">
+          <h4 className="font-semibold mb-2 text-[var(--primary-text)]">
+            Fill & Trim
+          </h4>
 
           {/* Fill controls */}
-          <div className="flex items-center space-x-2 mb-4">
-            <label className="text-sm">Fill Type:</label>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <label className="text-sm text-[var(--primary-text)]">
+              Fill Type:
+            </label>
             <select
               value={fillType}
               onChange={(e) => setFillType(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              className="border border-[var(--border-color)] rounded px-2 py-1 text-sm bg-[var(--primary-bg)] text-[var(--primary-text)]"
             >
               <option value="zigzag">Zig-zag</option>
               <option value="tatami">Tatami</option>
             </select>
 
-            <label className="text-sm">Spacing:</label>
+            <label className="text-sm text-[var(--primary-text)]">
+              Spacing:
+            </label>
             <input
               type="number"
               step="0.1"
               min="0.1"
               value={fillSpacing}
               onChange={(e) => setFillSpacing(parseFloat(e.target.value))}
-              className="w-16 border rounded px-2 py-1 text-sm"
+              className="w-16 border border-[var(--border-color)] rounded px-2 py-1 text-sm bg-[var(--primary-bg)] text-[var(--primary-text)]"
             />
 
             <button
@@ -139,12 +149,14 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
                 performRequest(
                   "/api/stitch-fill",
                   { fileUrl, fillType, fillSpacing },
-                  `${fillType.charAt(0).toUpperCase() + fillType.slice(1)} fill applied!`,
+                  `${fillType.charAt(0).toUpperCase()}${fillType.slice(
+                    1
+                  )} fill applied!`,
                   "Failed to apply fill."
                 )
               }
               disabled={loading}
-              className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 text-sm"
+              className="px-3 py-1 bg-[var(--accent-alt)] text-black rounded-lg hover:bg-[var(--accent)] disabled:opacity-50 text-sm"
             >
               Apply Fill
             </button>
@@ -161,19 +173,25 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
               )
             }
             disabled={loading}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 text-sm"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm"
           >
             Trim Edges
           </button>
         </div>
 
         {/* Tips & Info */}
-        <div className="bg-gray-100 rounded-lg p-4">
-          <h4 className="font-semibold mb-2">Tips & Info</h4>
-          <p className="text-gray-700 text-sm">
-            Use “Increase Density” to pack more stitches, “Simplify Paths” to decimate vector noise,<br/>
-            “Optimize Order” to minimize jump stitches,<br/>
-            “Apply Fill” to switch between zig-zag or tatami patterns,<br/>
+        <div className="bg-[var(--secondary-bg)] rounded-lg p-4">
+          <h4 className="font-semibold mb-2 text-[var(--primary-text)]">
+            Tips & Info
+          </h4>
+          <p className="text-sm text-[var(--accent-alt)] leading-relaxed">
+            Use “Increase Density” to pack more stitches, “Simplify Paths” to
+            decimate vector noise,
+            <br />
+            “Optimize Order” to minimize jump stitches,
+            <br />
+            “Apply Fill” to switch between zig-zag or tatami patterns,
+            <br />
             and “Trim Edges” to remove stray jump tails.
           </p>
         </div>
