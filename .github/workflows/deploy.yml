@@ -25,13 +25,13 @@ jobs:
 
       - name: Install missing modules & Tailwind
         run: |
-          # your runtime deps
+          # runtime deps
           npm install react-hot-toast lucide-react lodash.isequal
-          # Tailwind & PostCSS
-          npm install -D tailwindcss postcss autoprefixer @tailwindcss/forms
+          # Tailwind & PostCSS plugins
+          npm install -D tailwindcss @tailwindcss/postcss postcss autoprefixer @tailwindcss/forms
 
       - name: Debug dependencies
-        run: npm ls tailwindcss postcss autoprefixer "@tailwindcss/forms"
+        run: npm ls tailwindcss @tailwindcss/postcss postcss autoprefixer @tailwindcss/forms
 
       - name: Clean & Build
         run: |
