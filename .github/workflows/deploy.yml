@@ -21,7 +21,7 @@ jobs:
       - name: Fix missing modules
         run: |
           npm install react-hot-toast lucide-react lodash.isequal
-          npm install -D tailwindcss postcss autoprefixer
+          npm install -D tailwindcss @tailwindcss/postcss postcss autoprefixer
 
       - name: Build Project
         run: npm run build
