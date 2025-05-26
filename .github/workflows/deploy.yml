@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
 
 on:
@@ -9,11 +10,15 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with: { node-version: 18 }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
       - name: Install dependencies
         run: npm ci
@@ -22,6 +27,9 @@ jobs:
         run: |
           npm install react-hot-toast lucide-react lodash.isequal
           npm install -D tailwindcss @tailwindcss/postcss postcss autoprefixer
+
+      - name: Debug dependencies
+        run: npm ls tailwindcss @tailwindcss/postcss postcss autoprefixer
 
       - name: Build Project
         run: npm run build
