@@ -8,7 +8,6 @@
 /* ─── Base Resets & Typography ─── */
 @layer base {
   body {
-    /* use the theme colors you extended in tailwind.config.js */
     @apply bg-primaryBg text-primaryTxt font-sans antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -49,7 +48,9 @@
            hover:from-red-600 hover:to-pink-600;
   }
 
-  .form-input, .form-select, .form-textarea {
+  .form-input,
+  .form-select,
+  .form-textarea {
     @apply w-full px-3 py-2 bg-white/10
            border border-border rounded-lg
            placeholder-gray-400 text-primaryTxt
