@@ -20,20 +20,26 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
+      - name: Install runtime dependencies
         run: npm ci
 
-      - name: Install missing modules & Tailwind
+      - name: Install missing JS modules
+        run: npm install react-hot-toast lucide-react lodash.isequal
+
+      - name: Download Tailwind CLI
         run: |
-          # runtime deps
-          npm install react-hot-toast lucide-react lodash.isequal
-          # Tailwind & PostCSS plugins
-          npm install -D tailwindcss @tailwindcss/postcss postcss autoprefixer @tailwindcss/forms
+          curl -L \
+            https://github.com/jorenvh/tailwindcss-extra/releases/latest/download/tailwindcss-extra-linux \
+            -o tailwindcss
+          chmod +x tailwindcss
 
-      - name: Debug dependencies
-        run: npm ls tailwindcss @tailwindcss/postcss postcss autoprefixer @tailwindcss/forms
+      - name: Generate Tailwind CSS
+        run: |
+          # read your @tailwind directives from styles/globals.css
+          # and overwrite it with the compiled output
+          ./tailwindcss -i styles/globals.css -o styles/globals.css --minify
 
-      - name: Clean & Build
+      - name: Clean & Build Next.js
         run: |
           rm -rf .next
           npm run build
