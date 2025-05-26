@@ -37,6 +37,9 @@ jobs:
         run: |
           ./tailwindcss \
             --config tailwind.config.js \
+            --content "./pages/**/*.{js,jsx,ts,tsx}" \
+            --content "./components/**/*.{js,jsx,ts,tsx}" \
+            --content "./styles/globals.css" \
             -i styles/globals.css \
             -o styles/globals.generated.css \
             --minify
