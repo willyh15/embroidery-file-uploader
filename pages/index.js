@@ -216,7 +216,7 @@ function Home() {
   if (!isClient) return null;
 
   return (
-    <div className="min-h-screen py-8 px-4 bg-primaryBg">
+    <div className="min-h-screen py-8 px-4 bg-primary-bg">
       <div className="container">
         <h2 className="text-5xl mb-8">Welcome</h2>
 
