@@ -1,5 +1,3 @@
-/* styles/globals.css */
-
 /* ─── Tailwind Directives ─── */
 @tailwind base;
 @tailwind components;
@@ -8,11 +6,10 @@
 /* ─── Base Resets & Typography ─── */
 @layer base {
   body {
-    /* uses your extended theme colors */
-    @apply bg-primaryBg text-primaryTxt font-sans antialiased;
+    @apply bg-primary-bg text-primary-txt font-sans antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display font-bold text-primaryTxt;
+    @apply font-display font-bold text-primary-txt;
   }
 }
 
@@ -34,12 +31,12 @@
            transition duration-200 ease-in-out;
   }
   .btn-primary {
-    @apply bg-gradient-to-r from-neonPink to-neonCyan text-white shadow-lg
-           hover:from-neonCyan hover:to-neonPink;
+    @apply bg-gradient-to-r from-neon-pink to-neon-cyan text-white shadow-lg
+           hover:from-neon-cyan hover:to-neon-pink;
   }
   .btn-accent {
-    @apply bg-gradient-to-r from-neonYellow to-accent text-primaryBg shadow
-           hover:from-accentAlt hover:to-neonYellow;
+    @apply bg-gradient-to-r from-neon-yellow to-accent text-primary-bg shadow
+           hover:from-accent-alt hover:to-neon-yellow;
   }
   .btn-outline {
     @apply border border-accent text-accent bg-transparent
@@ -55,7 +52,7 @@
   .form-textarea {
     @apply w-full px-3 py-2 bg-white/10
            border border-border rounded-lg
-           placeholder-gray-400 text-primaryTxt
+           placeholder-gray-400 text-primary-txt
            focus:outline-none focus:ring-2 focus:ring-accent;
   }
 
