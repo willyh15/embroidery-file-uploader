@@ -20,12 +20,14 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies & Tailwind CLI
+        run: |
+          npm ci
+          npm install -D tailwindcss postcss autoprefixer @tailwindcss/forms
 
       - name: Generate Tailwind CSS
         run: |
-          npx tailwindcss@latest \
+          npx tailwindcss \
             --config tailwind.config.js \
             --content "./pages/**/*.{js,jsx,ts,tsx}" \
             --content "./components/**/*.{js,jsx,ts,tsx}" \
@@ -34,11 +36,10 @@ jobs:
             -o styles/globals.generated.css \
             --minify
 
-      - name: Clean previous build
-        run: rm -rf .next
-
-      - name: Build Next.js
-        run: npm run build
+      - name: Clean up & Build Next.js
+        run: |
+          rm -rf .next
+          npm run build
 
       - name: Deploy to Vercel
         run: npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
