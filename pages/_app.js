@@ -1,5 +1,5 @@
 // pages/_app.js
-import "../styles/globals.css";
+import "../styles/globals.generated.css";
 import { CustomToaster } from "../components/CustomToaster";
 import { useEffect } from "react";
 import { toast } from "react-hot-toast";
