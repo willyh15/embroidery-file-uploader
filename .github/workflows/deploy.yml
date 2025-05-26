@@ -1,5 +1,5 @@
-# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
+
 on:
   push:
     branches: [ main ]
@@ -19,7 +19,9 @@ jobs:
         run: npm ci
 
       - name: Fix missing modules
-        run: npm install react-hot-toast lucide-react lodash.isequal
+        run: |
+          npm install react-hot-toast lucide-react lodash.isequal
+          npm install -D tailwindcss postcss autoprefixer
 
       - name: Build Project
         run: npm run build
