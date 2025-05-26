@@ -9,7 +9,6 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // core palette
         primaryBg:   "#33202E",
         primaryTxt:  "#FBD3E0",
         secondaryBg: "#44303D",
@@ -17,7 +16,6 @@ module.exports = {
         accentAlt:   "#C1D7C3",
         border:      "rgba(255,255,255,0.2)",
         shadow:      "rgba(0,0,0,0.5)",
-        // neon accents
         neonPink:    "#FF488E",
         neonCyan:    "#48FFE6",
         neonYellow:  "#FFC948",
@@ -38,8 +36,6 @@ module.exports = {
     },
   },
   plugins: [
-    require("@tailwindcss/forms")({
-      strategy: "class"
-    }),
+    require("@tailwindcss/forms")({ strategy: "class" }),
   ],
 };
