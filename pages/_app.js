@@ -1,6 +1,8 @@
+// pages/_app.js
 import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import theme from "../theme";
 import { CustomToaster } from "../components/CustomToaster";
+import React from "react";
 
 function CSSChecker() {
   React.useEffect(() => {
@@ -13,7 +15,6 @@ function CSSChecker() {
 export default function MyApp({ Component, pageProps }) {
   return (
     <ChakraProvider theme={theme}>
-      {/* ensure dark mode on load */}
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <CustomToaster />
       <CSSChecker />
