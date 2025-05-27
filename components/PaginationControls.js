@@ -1,4 +1,3 @@
-// components/PaginationControls.js
 import { useEffect } from "react";
 import { Flex, Button, Text } from "@chakra-ui/react";
 
@@ -21,6 +20,15 @@ export default function PaginationControls({
       align="center"
       gap={4}
       my={6}
+      bg="whiteAlpha.100"
+      backdropFilter="blur(10px)"
+      border="1px solid"
+      borderColor="rgba(255,255,255,0.2)"
+      rounded="xl"
+      boxShadow="0 8px 32px rgba(0,0,0,0.18)"
+      px={6}
+      py={3}
+      userSelect="none"
     >
       <Button
         onClick={() => onPageChange(currentPage - 1)}
@@ -31,7 +39,7 @@ export default function PaginationControls({
       >
         Previous
       </Button>
-      <Text color="primaryTxt">
+      <Text color="primaryTxt" fontWeight="semibold" fontSize="sm" userSelect="text">
         Page {currentPage} of {totalPages}
       </Text>
       <Button
