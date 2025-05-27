@@ -1,4 +1,3 @@
-// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Box, Container, Heading } from "@chakra-ui/react";
@@ -12,6 +11,7 @@ import RecentActivitySection from "../components/RecentActivitySection";
 import PreviewModals from "../components/PreviewModals";
 import ConversionStreamModalWrapper from "../components/ConversionStreamModalWrapper";
 import OnboardingModal from "../components/OnboardingModal";
+import Background from "../components/Background"; // Import your new Background component
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
@@ -134,9 +134,18 @@ function Home() {
   );
 
   return (
-    <Box minH="100vh" bg="primaryBg" py={8} px={4}>
-      <Container maxW="container.lg">
-        <Heading size="2xl" mb={8} color="primaryTxt">
+    <Box minH="100vh" position="relative" overflow="hidden">
+      {/* Background component placed behind all content */}
+      <Background />
+
+      <Container
+        maxW="container.lg"
+        position="relative"
+        zIndex={1}
+        py={8}
+        px={4}
+      >
+        <Heading size="2xl" mb={8} color="primaryTxt" fontWeight="bold">
           Welcome
         </Heading>
 
