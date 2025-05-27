@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
 
 on:
@@ -21,12 +22,15 @@ jobs:
         with:
           node-version: 18
 
-      # install ALL deps (including Chakra v2 + its exact peers)
+      # install ALL deps (including Chakra v2 + icons + peers)
       - name: Install dependencies
         run: |
           npm install \
-            @chakra-ui/react@2 @chakra-ui/theme-tools@2 \
-            @emotion/react@^11 @emotion/styled@^11 \
+            @chakra-ui/react@2 \
+            @chakra-ui/icons@2 \
+            @chakra-ui/theme-tools@2 \
+            @emotion/react@^11 \
+            @emotion/styled@^11 \
             framer-motion@^7
 
       - name: Build Next.js
