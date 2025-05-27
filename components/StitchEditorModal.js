@@ -1,4 +1,3 @@
-// components/StitchEditorModal.js
 import React, { useState } from "react";
 import {
   Modal,
@@ -20,7 +19,6 @@ import {
   NumberInput,
   NumberInputField,
   useToast,
-  useColorModeValue,
 } from "@chakra-ui/react";
 
 export default function StitchEditorModal({ fileUrl, onClose }) {
@@ -29,8 +27,6 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
   const [fillType, setFillType] = useState("zigzag");
   const [fillSpacing, setFillSpacing] = useState(1.0);
   const toast = useToast();
-  const bg = useColorModeValue("whiteAlpha.100", "whiteAlpha.100");
-  const borderColor = useColorModeValue("border", "border");
 
   const performRequest = async (endpoint, body, successMsg, errorMsg) => {
     setLoading(true);
@@ -57,21 +53,32 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
   return (
     <Modal isOpen onClose={onClose} isCentered size="xl">
       <ModalOverlay bg="blackAlpha.700" />
-      <ModalContent bg={bg} border="1px solid" borderColor={borderColor} p={4}>
-        <ModalHeader>Stitch Editor</ModalHeader>
-        <ModalCloseButton />
+      <ModalContent
+        bg="whiteAlpha.100"
+        backdropFilter="blur(10px)"
+        border="1px solid"
+        borderColor="rgba(255,255,255,0.2)"
+        p={4}
+        rounded="xl"
+        boxShadow="0 8px 32px rgba(0,0,0,0.18)"
+      >
+        <ModalHeader color="primaryTxt" fontWeight="bold">
+          Stitch Editor
+        </ModalHeader>
+        <ModalCloseButton color="primaryTxt" />
+
         <ModalBody>
           <Text fontSize="sm" mb={4} color="accentAlt" isTruncated>
             File: {fileUrl}
           </Text>
 
           {loading && (
-            <Text color="accent" mb={2}>
-              <Spinner size="sm" mr={2} /> Processing…
+            <Text color="accent" mb={2} display="flex" alignItems="center" gap={2}>
+              <Spinner size="sm" /> Processing…
             </Text>
           )}
           {infoMessage && (
-            <Text color="primaryTxt" mb={4}>
+            <Text color="primaryTxt" mb={4} whiteSpace="pre-wrap">
               {infoMessage}
             </Text>
           )}
@@ -79,14 +86,15 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
           <Box
             bg="secondaryBg"
             border="1px solid"
-            borderColor={borderColor}
+            borderColor="rgba(255,255,255,0.2)"
             rounded="lg"
             p={4}
             mb={6}
+            textAlign="center"
+            color="accentAlt"
+            fontStyle="italic"
           >
-            <Text textAlign="center" color="accentAlt">
-              (Preview of SVG / Canvas editor would go here)
-            </Text>
+            (Preview of SVG / Canvas editor would go here)
           </Box>
 
           <VStack spacing={4} align="stretch" mb={6}>
@@ -170,10 +178,7 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
                     size="sm"
                     w="16"
                   >
-                    <NumberInputField
-                      bg="primaryBg"
-                      color="primaryTxt"
-                    />
+                    <NumberInputField bg="primaryBg" color="primaryTxt" />
                   </NumberInput>
                 </FormControl>
                 <Button
@@ -228,7 +233,7 @@ export default function StitchEditorModal({ fileUrl, onClose }) {
         </ModalBody>
 
         <ModalFooter justifyContent="center">
-          <Button onClick={onClose} variant="outline" size="sm">
+          <Button onClick={onClose} variant="outline" size="sm" color="primaryTxt">
             Close
           </Button>
         </ModalFooter>
