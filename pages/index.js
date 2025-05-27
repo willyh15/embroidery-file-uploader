@@ -1,3 +1,4 @@
+// pages/index.js
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -9,7 +10,6 @@ import {
   Checkbox,
   Input,
   Button,
-  useColorMode,
 } from "@chakra-ui/react";
 
 import FileCard from "../components/FileCard";
@@ -21,7 +21,7 @@ import RecentActivityPanel from "../components/RecentActivityPanel";
 import StitchPreviewModal from "../components/StitchPreviewModal";
 import StitchEditorModal from "../components/StitchEditorModal";
 
-const FLASK_BASE = "https://embroideryfiles.duckdns.org";
+const FLASK_BASE     = "https://embroideryfiles.duckdns.org";
 const ITEMS_PER_PAGE = 6;
 
 function ConversionStreamModal({ baseName, logs, urls, onClose }) {
@@ -40,9 +40,9 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
         bg="whiteAlpha.100"
         backdropFilter="blur(10px)"
         border="1px solid"
-        borderColor="rgba(255,255,255,0.2)"
+        borderColor="border"
         rounded="xl"
-        shadow="lg"
+        boxShadow="glass"
         w="full"
         maxW="xl"
         p={6}
@@ -51,6 +51,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
         <Heading size="xl" mb={4} color="primaryTxt">
           Converting “{baseName}”
         </Heading>
+
         <Box
           h="40"
           overflowY="auto"
@@ -67,6 +68,7 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
             ))}
           </pre>
         </Box>
+
         {urls.complete ? (
           <>
             <Heading size="md" mb={2} color="primaryTxt">
@@ -83,7 +85,56 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
                   SVG
                 </Button>
               )}
-              {/* …other format buttons… */}
+              {urls.pesUrl && (
+                <Button
+                  as="a"
+                  href={urls.pesUrl}
+                  target="_blank"
+                  variant="accent"
+                >
+                  PES
+                </Button>
+              )}
+              {urls.dstUrl && (
+                <Button
+                  as="a"
+                  href={urls.dstUrl}
+                  target="_blank"
+                  variant="accent"
+                >
+                  DST
+                </Button>
+              )}
+              {urls.expUrl && (
+                <Button
+                  as="a"
+                  href={urls.expUrl}
+                  target="_blank"
+                  variant="accent"
+                >
+                  EXP
+                </Button>
+              )}
+              {urls.vp3Url && (
+                <Button
+                  as="a"
+                  href={urls.vp3Url}
+                  target="_blank"
+                  variant="accent"
+                >
+                  VP3
+                </Button>
+              )}
+              {urls.previewPngUrl && (
+                <Button
+                  as="a"
+                  href={urls.previewPngUrl}
+                  target="_blank"
+                  variant="accent"
+                >
+                  PNG Preview
+                </Button>
+              )}
               <Button
                 as="a"
                 href={`${FLASK_BASE}/download-zip/${baseName}`}
@@ -109,19 +160,26 @@ function ConversionStreamModal({ baseName, logs, urls, onClose }) {
 
 function Home() {
   const dropRef = useRef(null);
-  const [isClient, setIsClient] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [filteredFiles, setFilteredFiles] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isClient, setIsClient]             = useState(false);
+  const [uploadedFiles, setUploadedFiles]   = useState([]);
+  const [uploading, setUploading]           = useState(false);
+  const [filteredFiles, setFilteredFiles]   = useState([]);
+  const [currentPage, setCurrentPage]       = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [previewPNG, setPreviewPNG] = useState(null);
-  const [previewPES, setPreviewPES] = useState(null);
+
+  // preview + editor
+  const [previewPNG, setPreviewPNG]   = useState(null);
+  const [previewPES, setPreviewPES]   = useState(null);
   const [editFileUrl, setEditFileUrl] = useState(null);
-  const [removeBg, setRemoveBg] = useState(false);
+
+  // bg removal toggles
+  const [removeBg, setRemoveBg]       = useState(false);
   const [bgThreshold, setBgThreshold] = useState(250);
+
+  // SSE state
   const [streamingFile, setStreamingFile] = useState(null);
-  const [streamLogs, setStreamLogs] = useState([]);
-  const [streamUrls, setStreamUrls] = useState({});
+  const [streamLogs, setStreamLogs]       = useState([]);
+  const [streamUrls, setStreamUrls]       = useState({});
   const sourceRef = useRef(null);
 
   useEffect(() => setIsClient(true), []);
@@ -209,7 +267,9 @@ function Home() {
           Welcome
         </Heading>
 
-        {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
+        {showOnboarding && (
+          <OnboardingModal onClose={() => setShowOnboarding(false)} />
+        )}
 
         {/* Filters */}
         <Box mb={6}>
@@ -250,7 +310,11 @@ function Home() {
         </Flex>
 
         {/* Upload area */}
-        <UploadBox uploading={false} dropRef={dropRef} onUploadSuccess={() => {}} />
+        <UploadBox
+          uploading={uploading}
+          dropRef={dropRef}
+          onUploadSuccess={handleUploadSuccess}
+        />
 
         {/* File grid */}
         <Flex wrap="wrap" gap={6} mb={8}>
@@ -259,9 +323,17 @@ function Home() {
               <FileCard
                 key={file.url}
                 file={file}
-                onConvert={() => {}}
-                onPreview={() => {}}
-                onEdit={() => {}}
+                onConvert={() => handleConvertStream(file.url)}
+                onDownload={() => {}}
+                onPreview={() => {
+                  setPreviewPNG(
+                    file.url
+                      .replace("/downloads/", "/uploads/")
+                      .replace(".pes", ".png")
+                  );
+                  setPreviewPES(file.pesUrl);
+                }}
+                onEdit={() => setEditFileUrl(file.url)}
               />
             ) : null
           )}
@@ -278,15 +350,37 @@ function Home() {
         {/* Recent Activity */}
         <RecentActivityPanel uploadedFiles={uploadedFiles} />
 
-        {/* Modals */}
-        {previewPES && previewPNG && <StitchPreviewModal />}
-        {editFileUrl && <StitchEditorModal />}
+        {/* Preview / Editor Modals */}
+        {previewPES && previewPNG && (
+          <StitchPreviewModal
+            pngUrl={previewPNG}
+            pesUrl={previewPES}
+            onReconvert={() => handleConvertStream(previewPNG)}
+            onClose={() => {
+              setPreviewPES(null);
+              setPreviewPNG(null);
+            }}
+          />
+        )}
+        {editFileUrl && (
+          <StitchEditorModal
+            fileUrl={editFileUrl}
+            onClose={() => setEditFileUrl(null)}
+          />
+        )}
+
+        {/* Conversion SSE Modal */}
         {streamingFile && (
           <ConversionStreamModal
             baseName={streamingFile}
             logs={streamLogs}
             urls={streamUrls}
-            onClose={() => {}}
+            onClose={() => {
+              sourceRef.current?.close();
+              setStreamingFile(null);
+              setStreamLogs([]);
+              setStreamUrls({});
+            }}
           />
         )}
       </Container>
