@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
 
 on:
@@ -10,7 +11,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      NPM_CONFIG_PRODUCTION: false    # ensure devDependencies are installed
+      NPM_CONFIG_PRODUCTION: false
 
     steps:
       - name: Checkout code
@@ -21,19 +22,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies (incl. devDeps, legacy peers)
+      - name: Install all deps (incl. dev)
         run: npm install --legacy-peer-deps
-
-      - name: Generate Tailwind CSS
-        run: |
-          npx tailwindcss \
-            --config tailwind.config.js \
-            --content "./pages/**/*.{js,jsx,ts,tsx}" \
-            --content "./components/**/*.{js,jsx,ts,tsx}" \
-            --content "./styles/globals.css" \
-            -i styles/globals.css \
-            -o styles/globals.generated.css \
-            --minify
 
       - name: Build Next.js
         run: npm run build
