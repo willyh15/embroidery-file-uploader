@@ -1,11 +1,21 @@
 // components/UploadBox.js
 import { useCallback, useState } from "react";
-import toast from "react-hot-toast";
+import {
+  Box,
+  Flex,
+  Text,
+  Input,
+  Spinner,
+  useToast,
+  useColorModeValue,
+} from "@chakra-ui/react";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
 export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
   const [localUploading, setLocalUploading] = useState(false);
+  const toast = useToast();
+  const busy = uploading || localUploading;
 
   const prevent = (e) => {
     e.preventDefault();
@@ -17,7 +27,12 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
     files.forEach((f) => form.append("files", f));
 
     setLocalUploading(true);
-    toast.loading("Uploading…", { id: "upload" });
+    toast({
+      id: "upload",
+      title: "Uploading…",
+      status: "info",
+      isClosable: false,
+    });
 
     try {
       const res = await fetch(`${FLASK_BASE}/upload`, {
@@ -30,10 +45,18 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       }
       const data = await res.json();
       onUploadSuccess?.(data.urls);
-      toast.success("Upload complete!", { id: "upload" });
+      toast.update("upload", {
+        title: "Upload complete!",
+        status: "success",
+        isClosable: true,
+      });
     } catch (err) {
       console.error(err);
-      toast.error(`Upload failed: ${err.message}`, { id: "upload" });
+      toast.update("upload", {
+        title: `Upload failed: ${err.message}`,
+        status: "error",
+        isClosable: true,
+      });
     } finally {
       setLocalUploading(false);
     }
@@ -53,35 +76,59 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
     if (files.length) await uploadFiles(files);
   };
 
-  const busy = uploading || localUploading;
+  const borderColor = useColorModeValue("accent", "accent");
+  const bg = useColorModeValue("whiteAlpha.100", "whiteAlpha.100");
 
   return (
-    <div
+    <Box
       ref={dropRef}
       onDragEnter={prevent}
       onDragOver={prevent}
       onDragLeave={prevent}
       onDrop={handleDrop}
-      className={`upload-box glass-modal transition ${
-        busy
-          ? "opacity-50 cursor-not-allowed"
-          : "hover:border-[var(--accent)] hover:scale-105"
-      }`}
+      position="relative"
+      bg={bg}
+      border="2px dashed"
+      borderColor={busy ? "gray.500" : borderColor}
+      rounded="xl"
+      transition="all 0.2s"
+      _hover={!busy && { borderColor: "accent", transform: "scale(1.02)" }}
+      cursor={busy ? "not-allowed" : "pointer"}
+      opacity={busy ? 0.6 : 1}
+      p={8}
+      textAlign="center"
     >
-      <label className="flex flex-col items-center justify-center cursor-pointer h-full">
-        <span className="text-lg font-medium text-[var(--primary-text)] mb-2">
+      <Flex direction="column" align="center" justify="center">
+        {busy && (
+          <Spinner
+            size="lg"
+            thickness="4px"
+            mb={4}
+            color="accent"
+            position="absolute"
+            top="1rem"
+            right="1rem"
+          />
+        )}
+        <Text fontSize="lg" fontWeight="medium" color="primaryTxt" mb={2}>
           {busy
             ? "Uploading…"
             : "Drag & drop files here or click to select"}
-        </span>
-        <input
+        </Text>
+        <Input
           type="file"
           multiple
-          className="hidden"
           onChange={handleSelect}
           disabled={busy}
+          position="absolute"
+          top={0}
+          left={0}
+          width="100%"
+          height="100%"
+          opacity={0}
+          cursor={busy ? "not-allowed" : "pointer"}
         />
-      </label>
-    </div>
+      </Flex>
+    </Box>
   );
 }
