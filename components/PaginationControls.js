@@ -1,5 +1,6 @@
 // components/PaginationControls.js
 import { useEffect } from "react";
+import { Flex, Button, Text } from "@chakra-ui/react";
 
 export default function PaginationControls({
   currentPage,
@@ -15,30 +16,33 @@ export default function PaginationControls({
   }, [currentPage]);
 
   return (
-    <div className="container flex justify-center items-center space-x-4 my-6">
-      <button
+    <Flex
+      justify="center"
+      align="center"
+      gap={4}
+      my={6}
+    >
+      <Button
         onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`
-          btn btn-secondary
-          ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}
-        `}
+        isDisabled={currentPage === 1}
+        variant="outline"
+        colorScheme="accent"
+        size="sm"
       >
         Previous
-      </button>
-      <span className="text-[var(--primary-text)]">
+      </Button>
+      <Text color="primaryTxt">
         Page {currentPage} of {totalPages}
-      </span>
-      <button
+      </Text>
+      <Button
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`
-          btn btn-secondary
-          ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}
-        `}
+        isDisabled={currentPage === totalPages}
+        variant="outline"
+        colorScheme="accent"
+        size="sm"
       >
         Next
-      </button>
-    </div>
+      </Button>
+    </Flex>
   );
 }
