@@ -19,5 +19,12 @@
     "resend": "^4.1.2",
     "speakeasy": "^2.0.0",
     "stripe": "^17.7.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.7",
+    "postcss": "^8.4.21",
+    "autoprefixer": "^10.4.14",
+    "@tailwindcss/postcss": "^0.2.5",
+    "@tailwindcss/forms": "^0.6.13"
   }
 }
