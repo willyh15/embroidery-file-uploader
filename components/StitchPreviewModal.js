@@ -1,6 +1,23 @@
 // components/StitchPreviewModal.js
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import isEqual from "lodash.isequal";
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Box,
+  Flex,
+  Checkbox,
+  NumberInput,
+  NumberInputField,
+  Text,
+  Button,
+  useColorModeValue,
+} from "@chakra-ui/react";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
@@ -8,7 +25,7 @@ export default function StitchPreviewModal({
   pngUrl,
   pesUrl,
   onClose,
-  onReconvert
+  onReconvert,
 }) {
   const canvasRef = useRef(null);
 
@@ -45,14 +62,15 @@ export default function StitchPreviewModal({
         if (!isEqual(d.colors,   colors))   setColors(d.colors);
       })
       .catch(err => console.error("[StitchPreviewModal] fetch error:", err));
-  }, [pesUrl, baseName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pesUrl]);
 
   // trigger a re-convert upstream when bg settings change
   useEffect(() => {
     if (pesUrl && onReconvert) {
-      onReconvert(pngUrl, { removeBg, bgThreshold });
+      onReconvert();
     }
-  }, [removeBg, bgThreshold]);
+  }, [removeBg, bgThreshold, pesUrl, onReconvert]);
 
   // auto-fit on new segments
   useEffect(() => {
@@ -61,9 +79,8 @@ export default function StitchPreviewModal({
     const xs  = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const w = maxX - minX, h = maxY - minY;
     const C = canvasRef.current;
-    const f = Math.min(C.width / w, C.height / h) * 0.9;
+    const f = Math.min(C.width / (maxX - minX), C.height / (maxY - minY)) * 0.9;
     setScale(f);
     setOffset({ x: 0, y: 0 });
     setSelected(null);
@@ -80,12 +97,10 @@ export default function StitchPreviewModal({
       if (!segments.length) return;
       ctx.save();
       ctx.globalAlpha = 0.8;
-
       const pts  = segments.flat();
       const xs   = pts.map(p => p[0]), ys = pts.map(p => p[1]);
       const minX = Math.min(...xs), maxX = Math.max(...xs);
       const minY = Math.min(...ys), maxY = Math.max(...ys);
-
       ctx.translate(C.width/2, C.height/2);
       ctx.scale(scale, -scale);
       ctx.translate(-(minX + maxX)/2, -(minY + maxY)/2);
@@ -157,68 +172,77 @@ export default function StitchPreviewModal({
     link.click();
   };
 
+  const bg         = useColorModeValue("whiteAlpha.100", "whiteAlpha.100");
+  const borderColor = useColorModeValue("border", "border");
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-      <div className="glass-modal w-full max-w-3xl p-6">
-        <h3 className="text-2xl font-semibold mb-4 text-[var(--primary-text)]">
-          Stitch Preview
-        </h3>
-
-        {/* BG-REMOVAL CONTROLS */}
-        <div className="flex items-center space-x-6 mb-4 text-[var(--primary-text)]">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={removeBg}
+    <Modal isOpen onClose={onClose} size="xl" isCentered>
+      <ModalOverlay bg="blackAlpha.700" />
+      <ModalContent bg={bg} border="1px solid" borderColor={borderColor} rounded="xl" p={4}>
+        <ModalHeader color="primaryTxt">Stitch Preview</ModalHeader>
+        <ModalCloseButton color="primaryTxt" />
+        <ModalBody>
+          {/* BG-REMOVAL CONTROLS */}
+          <Flex align="center" mb={4} color="primaryTxt" gap={6}>
+            <Checkbox
+              isChecked={removeBg}
               onChange={e => setRemoveBg(e.target.checked)}
-              className="form-checkbox"
+              colorScheme="accent"
+            >
+              Strip white background
+            </Checkbox>
+            <Flex align="center" gap={2}>
+              <Text>Threshold:</Text>
+              <NumberInput
+                value={bgThreshold}
+                onChange={(_, v) => setBgThreshold(v)}
+                min={0}
+                max={255}
+                size="sm"
+                w="16"
+              >
+                <NumberInputField bg="primaryBg" color="primaryTxt" />
+              </NumberInput>
+            </Flex>
+          </Flex>
+
+          {/* CANVAS */}
+          <Box mb={4} border="1px solid" borderColor={borderColor} rounded="md">
+            <canvas
+              ref={canvasRef}
+              width={450}
+              height={450}
+              style={{
+                width: "100%",
+                borderRadius: "4px",
+                backgroundImage: "repeating-conic-gradient(rgba(255,255,255,0.1) 0% 25%, transparent 0% 50%)",
+                backgroundSize: "16px 16px",
+                display: "block",
+              }}
+              onWheel={onWheel}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              onClick={clickSeg}
             />
-            <span>Strip white background</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <span>Threshold:</span>
-            <input
-              type="number"
-              value={bgThreshold}
-              onChange={e => setBgThreshold(+e.target.value)}
-              className="w-16 border border-[var(--border-color)] rounded px-1 py-0.5 text-sm bg-[var(--primary-bg)] text-[var(--primary-text)]"
-            />
-          </label>
-        </div>
+          </Box>
 
-        {/* CANVAS */}
-        <canvas
-          ref={canvasRef}
-          width={450}
-          height={450}
-          className="w-full rounded mb-4 border border-[var(--border-color)]"
-          style={{
-            backgroundImage: "repeating-conic-gradient(rgba(255,255,255,0.1) 0% 25%, transparent 0% 50%)",
-            backgroundSize:  "16px 16px",
-          }}
-          onWheel={onWheel}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          onClick={clickSeg}
-        />
-
-        <div className="text-sm text-[var(--accent-alt)] mb-4">
-          <strong>Zoom:</strong> Scroll&nbsp;|&nbsp;
-          <strong>Pan:</strong> Drag&nbsp;|&nbsp;
-          <strong>Select:</strong> Click
-        </div>
-
-        <div className="flex justify-between">
-          <button onClick={exportPNG} className="btn btn-primary">
+          <Text fontSize="sm" color="accentAlt" mb={4}>
+            <strong>Zoom:</strong> Scroll &nbsp;|&nbsp;
+            <strong>Pan:</strong> Drag &nbsp;|&nbsp;
+            <strong>Select:</strong> Click
+          </Text>
+        </ModalBody>
+        <ModalFooter justifyContent="space-between">
+          <Button variant="primary" onClick={exportPNG}>
             Export PNG
-          </button>
-          <button onClick={onClose} className="btn btn-secondary">
+          </Button>
+          <Button variant="outline" onClick={onClose}>
             Close
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }
