@@ -18,7 +18,10 @@
     "react-zoom-pan-pinch": "^3.7.0",
     "resend": "^4.1.2",
     "speakeasy": "^2.0.0",
-    "stripe": "^17.7.0"
+    "stripe": "^17.7.0",
+    "react-hot-toast": "^2.4.0",
+    "lucide-react": "^0.269.0",
+    "lodash.isequal": "^4.5.0"
   },
   "devDependencies": {
     "tailwindcss": "^4.1.7",
