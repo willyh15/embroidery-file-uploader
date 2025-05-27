@@ -1,4 +1,3 @@
-// components/SidebarFilters.js
 import {
   Box,
   Heading,
@@ -20,13 +19,13 @@ export default function SidebarFilters({ filters, onFilterChange }) {
       bg="whiteAlpha.100"
       backdropFilter="blur(10px)"
       border="1px solid"
-      borderColor="border"
+      borderColor="rgba(255,255,255,0.2)"
       rounded="xl"
       p={6}
       mb={6}
-      boxShadow="glass"
+      boxShadow="0 8px 32px rgba(0,0,0,0.18)"
     >
-      <Heading size="md" mb={4} color="primaryTxt">
+      <Heading size="md" mb={4} color="primaryTxt" fontWeight="bold">
         Filters
       </Heading>
       <SimpleGrid columns={{ base: 1, sm: 3 }} gap={6}>
@@ -39,7 +38,7 @@ export default function SidebarFilters({ filters, onFilterChange }) {
             onChange={handle}
             bg="secondaryBg"
             color="primaryTxt"
-            borderColor="border"
+            borderColor="rgba(255,255,255,0.2)"
             focusBorderColor="accent"
             rounded="lg"
           >
@@ -60,7 +59,7 @@ export default function SidebarFilters({ filters, onFilterChange }) {
             onChange={handle}
             bg="secondaryBg"
             color="primaryTxt"
-            borderColor="border"
+            borderColor="rgba(255,255,255,0.2)"
             focusBorderColor="accent"
             rounded="lg"
           >
@@ -83,8 +82,8 @@ export default function SidebarFilters({ filters, onFilterChange }) {
             placeholder="Name…"
             bg="secondaryBg"
             color="primaryTxt"
-            placeholderTextColor="primaryTxt"
-            borderColor="border"
+            _placeholder={{ color: "gray.400" }}
+            borderColor="rgba(255,255,255,0.2)"
             focusBorderColor="accent"
             rounded="lg"
           />
