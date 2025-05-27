@@ -1,38 +1,62 @@
 // components/OnboardingModal.js
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  UnorderedList,
+  ListItem,
+} from "@chakra-ui/react";
 
 export default function OnboardingModal({ onClose }) {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), 15000);
+    const t = setTimeout(() => {
+      setShow(false);
+      onClose();
+    }, 15000);
     return () => clearTimeout(t);
-  }, []);
+  }, [onClose]);
 
-  if (!show) return null;
+  const handleClose = () => {
+    setShow(false);
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 px-4">
-      <div className="glass-modal p-6 w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-4 text-center text-[var(--primary-text)]">
+    <Modal isOpen={show} onClose={handleClose} isCentered>
+      <ModalOverlay bg="blackAlpha.700" />
+      <ModalContent
+        bg="whiteAlpha.100"
+        backdropFilter="blur(10px)"
+        border="1px solid"
+        borderColor="border"
+        rounded="xl"
+        p={6}
+      >
+        <ModalHeader textAlign="center" color="primaryTxt">
           Welcome!
-        </h2>
-        <ul className="list-disc list-inside space-y-2 mb-4 text-[var(--primary-text)]">
-          <li>Upload PNG, JPG or SVG designs.</li>
-          <li>Click “Convert” to generate PES files.</li>
-          <li>Watch real-time status badges.</li>
-          <li>Filter and page through your uploads.</li>
-          <li>Preview your stitches and review activity.</li>
-        </ul>
-        <div className="flex justify-center">
-          <button
-            onClick={onClose}
-            className="btn btn-primary"
-          >
+        </ModalHeader>
+        <ModalBody color="primaryTxt">
+          <UnorderedList spacing={2}>
+            <ListItem>Upload PNG, JPG or SVG designs.</ListItem>
+            <ListItem>Click “Convert” to generate PES files.</ListItem>
+            <ListItem>Watch real-time status badges.</ListItem>
+            <ListItem>Filter and page through your uploads.</ListItem>
+            <ListItem>Preview your stitches and review activity.</ListItem>
+          </UnorderedList>
+        </ModalBody>
+        <ModalFooter justifyContent="center">
+          <Button variant="primary" onClick={handleClose}>
             Got it!
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }
