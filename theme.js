@@ -1,6 +1,5 @@
-// components/Background.js
-import React, { useEffect, useState, useRef } from "react";
-import { Box, keyframes, usePrefersReducedMotion, useTheme } from "@chakra-ui/react";
+// theme.js
+import { extendTheme, keyframes } from "@chakra-ui/react";
 
 const gradientShift = keyframes`
   0% { background-position: 0% 50%; }
@@ -8,134 +7,141 @@ const gradientShift = keyframes`
   100% { background-position: 0% 50%; }
 `;
 
-function AnimatedSvg() {
-  const svgRef = useRef(null);
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
+const config = {
+  initialColorMode: "dark",
+  useSystemColorMode: false,
+};
 
-    const circles = svg.querySelectorAll("circle");
-    let idx = 0;
-    const interval = setInterval(() => {
-      circles.forEach((c, i) => {
-        c.style.opacity = i === idx ? "1" : "0.25";
-      });
-      idx = (idx + 1) % circles.length;
-    }, 1200);
+const colors = {
+  primaryBg: "#2B1F34",      // Darker rich purple
+  primaryTxt: "#F7D1DE",     // Soft pinkish text
+  secondaryBg: "#3A2B47",    // Deep muted purple for panels
+  accent: "#FCA3B7",         // Soft neon pink for highlights
+  accentAlt: "#C4D9D4",      // Soft mintish accent
+  border: "rgba(255,255,255,0.15)",  // Slightly lighter border
+  shadow: "rgba(0,0,0,0.6)",          // Stronger shadow
+  neonPink: "#FF488E",
+  neonCyan: "#48FFE6",
+  neonYellow: "#FFC948",
+  glowPink: "rgba(255, 72, 142, 0.35)",
+  glowCyan: "rgba(72, 255, 230, 0.25)",
+};
 
-    return () => clearInterval(interval);
-  }, []);
+const styles = {
+  global: {
+    body: {
+      bg: "primaryBg",
+      color: "primaryTxt",
+      fontFamily: "Montserrat, sans-serif",
+      WebkitFontSmoothing: "antialiased",
+      MozOsxFontSmoothing: "grayscale",
+      userSelect: "none",  // Optional: prevent accidental text selection for cleaner UX
+    },
+    "h1,h2,h3,h4,h5,h6": {
+      fontFamily: "Quicksand, sans-serif",
+      fontWeight: "bold",
+      color: "primaryTxt",
+      userSelect: "text",
+    },
+    ".modal-overlay": {
+      position: "fixed",
+      inset: 0,
+      bg: "blackAlpha.700",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      p: 4,
+      zIndex: 9999,
+    },
+    ".glass-panel": {
+      bg: "whiteAlpha.100",
+      backdropFilter: "blur(12px) saturate(180%)",
+      border: "1px solid",
+      borderColor: "border",
+      borderRadius: "2xl",
+      boxShadow: "0 12px 48px rgba(0, 0, 0, 0.35)",
+      p: 6,
+      color: "primaryTxt",
+    },
+    "input::placeholder": {
+      color: "gray.400",
+      opacity: 0.7,
+    },
+    "::-webkit-scrollbar": {
+      width: "8px",
+      height: "8px",
+    },
+    "::-webkit-scrollbar-track": {
+      background: "transparent",
+    },
+    "::-webkit-scrollbar-thumb": {
+      backgroundColor: "accent",
+      borderRadius: "24px",
+      border: "2px solid transparent",
+      backgroundClip: "content-box",
+    },
+  },
+};
 
-  return (
-    <svg
-      ref={svgRef}
-      style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0 }}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-    >
-      <circle cx="20" cy="30" r="15" fill="rgba(255, 72, 142, 0.4)" />
-      <circle cx="50" cy="70" r="20" fill="rgba(72, 255, 230, 0.3)" />
-      <circle cx="80" cy="40" r="12" fill="rgba(255, 200, 50, 0.3)" />
-    </svg>
-  );
-}
+const components = {
+  Button: {
+    baseStyle: { rounded: "full", fontWeight: "semibold" },
+    variants: {
+      primary: {
+        bgGradient: "linear(to-r, neonPink, neonCyan)",
+        color: "white",
+        _hover: { bgGradient: "linear(to-r, neonCyan, neonPink)" },
+        _active: { transform: "scale(0.95)" },
+        boxShadow: "0 4px 14px rgba(255, 72, 142, 0.6)",
+      },
+      accent: {
+        bgGradient: "linear(to-r, neonYellow, accent)",
+        color: "primaryBg",
+        _hover: { bgGradient: "linear(to-r, accentAlt, neonYellow)" },
+        boxShadow: "0 4px 14px rgba(252, 163, 183, 0.6)",
+      },
+      outline: {
+        border: "1px solid",
+        borderColor: "accent",
+        color: "accent",
+        _hover: { bg: "accent", color: "white" },
+      },
+      danger: {
+        bgGradient: "linear(to-r, red.500, pink.500)",
+        _hover: { bgGradient: "linear(to-r, red.600, pink.600)" },
+      },
+    },
+  },
+  Input: {
+    variants: {
+      outline: {
+        field: {
+          bg: "whiteAlpha.100",
+          borderColor: "border",
+          color: "primaryTxt",
+          _placeholder: { color: "gray.400" },
+          _focus: { ring: 2, ringColor: "accent" },
+          _hover: { borderColor: "accent" },
+          transition: "all 0.2s",
+        },
+      },
+    },
+  },
+};
 
-export default function Background({
-  duration = "30s",
-  pink = "#FF488E",
-  cyan = "#48FFE6",
-  secondary = "#44303D",
-}) {
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const theme = useTheme();
+const theme = extendTheme({
+  config,
+  colors,
+  styles,
+  components,
+  fonts: {
+    heading: "Quicksand, sans-serif",
+    body: "Montserrat, sans-serif",
+  },
+  radii: { xl: "1.5rem" },
+  keyframes: {
+    gradientShift,
+  },
+});
 
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMove = (e) => {
-      setOffset({
-        x: (e.clientX / window.innerWidth - 0.5) * 20,
-        y: (e.clientY / window.innerHeight - 0.5) * 20,
-      });
-    };
-    window.addEventListener("mousemove", handleMove);
-    return () => window.removeEventListener("mousemove", handleMove);
-  }, []);
-
-  return (
-    <Box
-      position="fixed"
-      inset={0}
-      zIndex={-1}
-      style={{
-        transform: `translate(${offset.x}px, ${offset.y}px)`,
-        transition: "transform 0.1s ease-out",
-      }}
-      _before={{
-        content: '""',
-        position: "absolute",
-        inset: 0,
-        bgGradient: `linear-gradient(270deg, ${pink}, ${cyan}, ${secondary}, ${pink})`,
-        backgroundSize: "1000% 1000%",
-        animation: prefersReducedMotion ? undefined : `${gradientShift} ${duration} ease infinite`,
-        filter: "blur(80px)",
-        opacity: 0.7,
-        borderRadius: "2xl",
-        pointerEvents: "none",
-        transform: "translateZ(0)",
-        zIndex: 0,
-      }}
-      _after={{
-        content: '""',
-        position: "absolute",
-        top: "25%",
-        left: "-10%",
-        width: "30rem",
-        height: "30rem",
-        bgGradient: `radial-gradient(circle at center, ${pink} 0%, transparent 70%)`,
-        filter: "blur(130px)",
-        opacity: 0.4,
-        borderRadius: "50%",
-        pointerEvents: "none",
-        transform: "translateZ(0)",
-        zIndex: 0,
-      }}
-    >
-      {/* Additional glow blobs */}
-      <Box
-        position="absolute"
-        top="20%"
-        right="10%"
-        width="25rem"
-        height="25rem"
-        bgGradient={`radial-gradient(circle at center, ${theme.colors.glowCyan || "rgba(72, 255, 230, 0.3)"} 0%, transparent 80%)`}
-        filter="blur(100px)"
-        opacity={0.3}
-        borderRadius="50%"
-        animation={prefersReducedMotion ? undefined : `${gradientShift} 35s ease infinite`}
-        animationDelay="5s"
-        pointerEvents="none"
-        zIndex={0}
-      />
-
-      <Box
-        position="absolute"
-        bottom="15%"
-        left="5%"
-        width="20rem"
-        height="20rem"
-        bgGradient={`radial-gradient(circle at center, ${theme.colors.glowPink || "rgba(255, 72, 142, 0.4)"} 0%, transparent 80%)`}
-        filter="blur(110px)"
-        opacity={0.25}
-        borderRadius="50%"
-        animation={prefersReducedMotion ? undefined : `${gradientShift} 40s ease infinite reverse`}
-        animationDelay="2s"
-        pointerEvents="none"
-        zIndex={0}
-      />
-
-      {/* Animated SVG overlay */}
-      <AnimatedSvg />
-    </Box>
-  );
-}
+export default theme;
