@@ -1,36 +1,23 @@
-import "../styles/globals.css";
+import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
+import theme from "../theme";
 import { CustomToaster } from "../components/CustomToaster";
-import { useEffect } from "react";
-import { toast } from "react-hot-toast";
 
 function CSSChecker() {
-  useEffect(() => {
+  React.useEffect(() => {
     console.log("🔍 Loaded styleSheets:");
-    Array.from(document.styleSheets).forEach((ss) => {
-      console.log("  ", ss.href);
-    });
+    Array.from(document.styleSheets).forEach((ss) => console.log("  ", ss.href));
   }, []);
   return null;
 }
 
 export default function MyApp({ Component, pageProps }) {
-  useEffect(() => {
-    window.onerror = (message, source, lineno, colno, error) => {
-      const msg = `${message} at ${source}:${lineno}:${colno}`;
-      console.error("Global error:", error || msg);
-      toast.error(`🚨 JS Error: ${message}`, { duration: 8000 });
-    };
-    window.onunhandledrejection = (event) => {
-      console.error("Unhandled Promise Rejection:", event.reason);
-      toast.error(`🚨 Unhandled Rejection: ${event.reason}`, { duration: 8000 });
-    };
-  }, []);
-
   return (
-    <>
+    <ChakraProvider theme={theme}>
+      {/* ensure dark mode on load */}
+      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <CustomToaster />
       <CSSChecker />
       <Component {...pageProps} />
-    </>
+    </ChakraProvider>
   );
 }
