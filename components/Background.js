@@ -1,6 +1,7 @@
 // components/Background.js
 import React, { useEffect, useState, useRef } from "react";
-import { Box, keyframes, usePrefersReducedMotion, useTheme } from "@chakra-ui/react";
+import { Box, usePrefersReducedMotion, useTheme } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react"; // <-- change here
 
 const gradientShift = keyframes`
   0% { background-position: 0% 50%; }
