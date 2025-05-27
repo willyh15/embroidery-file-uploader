@@ -1,5 +1,6 @@
 // theme.js
-import { extendTheme, keyframes } from "@chakra-ui/react";
+import { extendTheme } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react"; // <-- change here
 
 const gradientShift = keyframes`
   0% { background-position: 0% 50%; }
