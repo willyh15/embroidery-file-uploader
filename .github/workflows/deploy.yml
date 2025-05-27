@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: "🚀 Deploy to Vercel"
 
 on:
@@ -10,7 +9,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,16 +18,12 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies & Tailwind
-        run: |
-          # install your app deps
-          npm ci
-          # ensure Tailwind CLI + plugins are in node_modules
-          npm install tailwindcss postcss autoprefixer @tailwindcss/forms
+      - name: Install app dependencies
+        run: npm ci
 
-      - name: Compile Tailwind → globals.generated.css
+      - name: Generate Tailwind CSS
         run: |
-          npx tailwindcss \
+          npx --package tailwindcss@latest tailwindcss \
             --config tailwind.config.js \
             --content "./pages/**/*.{js,jsx,ts,tsx}" \
             --content "./components/**/*.{js,jsx,ts,tsx}" \
