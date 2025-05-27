@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies (including devDeps)
+      - name: Install dependencies
         run: npm install
 
       - name: Build Next.js
