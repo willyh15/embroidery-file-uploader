@@ -1,4 +1,14 @@
 // components/SidebarFilters.js
+import {
+  Box,
+  Heading,
+  SimpleGrid,
+  FormControl,
+  FormLabel,
+  Select,
+  Input,
+} from "@chakra-ui/react";
+
 export default function SidebarFilters({ filters, onFilterChange }) {
   const handle = (e) => {
     const { name, value } = e.target;
@@ -6,56 +16,80 @@ export default function SidebarFilters({ filters, onFilterChange }) {
   };
 
   return (
-    <div className="glass-modal p-6 mb-6">
-      <h3 className="text-2xl font-semibold mb-4">Filters</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <Box
+      bg="whiteAlpha.100"
+      backdropFilter="blur(10px)"
+      border="1px solid"
+      borderColor="border"
+      rounded="xl"
+      p={6}
+      mb={6}
+      boxShadow="glass"
+    >
+      <Heading size="md" mb={4} color="primaryTxt">
+        Filters
+      </Heading>
+      <SimpleGrid columns={{ base: 1, sm: 3 }} gap={6}>
         {/* Status Filter */}
-        <div className="flex flex-col">
-          <label className="mb-2">Status</label>
-          <select
+        <FormControl>
+          <FormLabel color="primaryTxt">Status</FormLabel>
+          <Select
             name="status"
             value={filters.status}
             onChange={handle}
-            className="p-3 bg-[var(--secondary-bg)] text-[var(--primary-text)] rounded-lg border border-[var(--border-color)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            bg="secondaryBg"
+            color="primaryTxt"
+            borderColor="border"
+            focusBorderColor="accent"
+            rounded="lg"
           >
             <option value="">All</option>
             <option>Uploaded</option>
             <option>Converting</option>
             <option>Converted</option>
             <option>Error</option>
-          </select>
-        </div>
+          </Select>
+        </FormControl>
 
         {/* Type Filter */}
-        <div className="flex flex-col">
-          <label className="mb-2">File Type</label>
-          <select
+        <FormControl>
+          <FormLabel color="primaryTxt">File Type</FormLabel>
+          <Select
             name="type"
             value={filters.type}
             onChange={handle}
-            className="p-3 bg-[var(--secondary-bg)] text-[var(--primary-text)] rounded-lg border border-[var(--border-color)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            bg="secondaryBg"
+            color="primaryTxt"
+            borderColor="border"
+            focusBorderColor="accent"
+            rounded="lg"
           >
             <option value="">All Types</option>
             <option value=".png">PNG</option>
             <option value=".jpg">JPG</option>
             <option value=".svg">SVG</option>
             <option value=".pes">PES</option>
-          </select>
-        </div>
+          </Select>
+        </FormControl>
 
         {/* Search Filter */}
-        <div className="flex flex-col">
-          <label className="mb-2">Search</label>
-          <input
+        <FormControl>
+          <FormLabel color="primaryTxt">Search</FormLabel>
+          <Input
             type="text"
             name="query"
             value={filters.query}
             onChange={handle}
             placeholder="Name…"
-            className="p-3 bg-[var(--secondary-bg)] text-[var(--primary-text)] placeholder-[color:var(--primary-text)] rounded-lg border border-[var(--border-color)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            bg="secondaryBg"
+            color="primaryTxt"
+            placeholderTextColor="primaryTxt"
+            borderColor="border"
+            focusBorderColor="accent"
+            rounded="lg"
           />
-        </div>
-      </div>
-    </div>
+        </FormControl>
+      </SimpleGrid>
+    </Box>
   );
 }
