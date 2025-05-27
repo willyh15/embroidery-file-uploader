@@ -1,4 +1,3 @@
-// components/OnboardingModal.js
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -35,15 +34,16 @@ export default function OnboardingModal({ onClose }) {
         bg="whiteAlpha.100"
         backdropFilter="blur(10px)"
         border="1px solid"
-        borderColor="border"
+        borderColor="rgba(255,255,255,0.2)"
         rounded="xl"
         p={6}
+        boxShadow="0 8px 32px rgba(0,0,0,0.18)"
       >
-        <ModalHeader textAlign="center" color="primaryTxt">
+        <ModalHeader textAlign="center" color="primaryTxt" fontWeight="bold">
           Welcome!
         </ModalHeader>
-        <ModalBody color="primaryTxt">
-          <UnorderedList spacing={2}>
+        <ModalBody color="primaryTxt" fontSize="md">
+          <UnorderedList spacing={3} pl={5}>
             <ListItem>Upload PNG, JPG or SVG designs.</ListItem>
             <ListItem>Click “Convert” to generate PES files.</ListItem>
             <ListItem>Watch real-time status badges.</ListItem>
