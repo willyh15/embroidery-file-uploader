@@ -1,4 +1,4 @@
-import "../styles/globals.generated.css";
+import "../styles/globals.css";
 import { CustomToaster } from "../components/CustomToaster";
 import { useEffect } from "react";
 import { toast } from "react-hot-toast";
