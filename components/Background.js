@@ -1,5 +1,5 @@
 // components/Background.js
-import { Box, keyframes, usePrefersReducedMotion } from "@chakra-ui/react";
+import { Box, keyframes, usePrefersReducedMotion, useTheme } from "@chakra-ui/react";
 
 const gradientShift = keyframes`
   0% { background-position: 0% 50%; }
@@ -9,43 +9,41 @@ const gradientShift = keyframes`
 
 export default function Background() {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const theme = useTheme();
 
   return (
     <Box
       position="fixed"
       inset={0}
-      zIndex={0}
+      zIndex={-1}
       _before={{
         content: '""',
         position: "absolute",
         inset: 0,
         bgGradient:
-          "linear-gradient(270deg, #33202E, #44303D, #2C1F2B, #493D4A, #33202E)",
+          `linear-gradient(270deg, ${theme.colors.primaryBg}, ${theme.colors.secondaryBg}, #2C1F2B, #493D4A, ${theme.colors.primaryBg})`,
         backgroundSize: "1000% 1000%",
-        animation: prefersReducedMotion ? undefined : `${gradientShift} 20s ease infinite`,
+        animation: prefersReducedMotion ? undefined : `${gradientShift} 30s ease infinite`,
         filter: "blur(60px)",
-        opacity: 0.6,
+        opacity: 0.7,
         borderRadius: "2xl",
-        transform: "translateZ(0)",
         pointerEvents: "none",
-        zIndex: -1,
+        transform: "translateZ(0)",
       }}
       _after={{
         content: '""',
         position: "absolute",
-        top: "20%",
+        top: "25%",
         left: "-10%",
         width: "30rem",
         height: "30rem",
-        bgGradient: "radial-gradient(circle at center, #FF488E 0%, transparent 70%)",
+        bgGradient: `radial-gradient(circle at center, ${theme.colors.neonPink} 0%, transparent 70%)`,
         filter: "blur(120px)",
         opacity: 0.4,
         borderRadius: "50%",
-        transform: "translateZ(0)",
         pointerEvents: "none",
-        zIndex: -1,
+        transform: "translateZ(0)",
       }}
-      bg="primaryBg"
     />
   );
 }
