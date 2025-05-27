@@ -1,4 +1,6 @@
 // components/RecentActivityPanel.js
+import { Box, Heading, List, ListItem, Flex, Text, Badge } from "@chakra-ui/react";
+
 export default function RecentActivityPanel({ uploadedFiles }) {
   if (!uploadedFiles || uploadedFiles.length === 0) return null;
 
@@ -6,43 +8,66 @@ export default function RecentActivityPanel({ uploadedFiles }) {
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, 5);
 
-  const badgeClasses = (status) => {
+  const statusColorScheme = (status) => {
     switch (status) {
       case "Converted":
-        return "bg-green-500 text-white";
+        return "green";
       case "Uploaded":
-        return "bg-blue-500 text-white";
+        return "blue";
       case "Converting":
-        return "bg-yellow-500 text-white";
+        return "yellow";
       case "Error":
-        return "bg-red-500 text-white";
+        return "red";
       default:
-        return "bg-gray-400 text-white";
+        return "gray";
     }
   };
 
   return (
-    <div className="glass-modal p-6 mt-8">
-      <h3 className="text-2xl font-semibold mb-4">Recent Activity</h3>
-      <ul className="space-y-4">
+    <Box
+      bg="whiteAlpha.100"
+      backdropFilter="blur(10px)"
+      border="1px solid"
+      borderColor="border"
+      rounded="xl"
+      p={6}
+      mt={8}
+      boxShadow="glass"
+    >
+      <Heading size="md" mb={4} color="primaryTxt">
+        Recent Activity
+      </Heading>
+      <List spacing={4}>
         {recent.map((f) => (
-          <li
-            key={f.url}
-            className="flex justify-between items-center p-4 bg-[var(--secondary-bg)] rounded-lg"
-          >
-            <span className="truncate max-w-xs text-[var(--primary-text)]">
-              {f.name}
-            </span>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${badgeClasses(
-                f.status
-              )}`}
+          <ListItem key={f.url}>
+            <Flex
+              justify="space-between"
+              align="center"
+              bg="secondaryBg"
+              p={4}
+              rounded="lg"
             >
-              {f.status}
-            </span>
-          </li>
+              <Text
+                color="primaryTxt"
+                isTruncated
+                maxW="70%"
+              >
+                {f.name}
+              </Text>
+              <Badge
+                colorScheme={statusColorScheme(f.status)}
+                variant="solid"
+                fontSize="0.75rem"
+                px={3}
+                py={1}
+                rounded="full"
+              >
+                {f.status}
+              </Badge>
+            </Flex>
+          </ListItem>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Box>
   );
 }
