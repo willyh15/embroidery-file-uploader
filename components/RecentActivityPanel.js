@@ -1,4 +1,3 @@
-// components/RecentActivityPanel.js
 import { Box, Heading, List, ListItem, Flex, Text, Badge } from "@chakra-ui/react";
 
 export default function RecentActivityPanel({ uploadedFiles }) {
@@ -28,13 +27,13 @@ export default function RecentActivityPanel({ uploadedFiles }) {
       bg="whiteAlpha.100"
       backdropFilter="blur(10px)"
       border="1px solid"
-      borderColor="border"
+      borderColor="rgba(255,255,255,0.2)"
       rounded="xl"
       p={6}
       mt={8}
-      boxShadow="glass"
+      boxShadow="0 8px 32px rgba(0,0,0,0.18)"
     >
-      <Heading size="md" mb={4} color="primaryTxt">
+      <Heading size="md" mb={4} color="primaryTxt" fontWeight="bold">
         Recent Activity
       </Heading>
       <List spacing={4}>
@@ -46,11 +45,14 @@ export default function RecentActivityPanel({ uploadedFiles }) {
               bg="secondaryBg"
               p={4}
               rounded="lg"
+              boxShadow="0 4px 12px rgba(255, 255, 255, 0.05)"
+              _hover={{ bg: "whiteAlpha.200" }}
             >
               <Text
                 color="primaryTxt"
                 isTruncated
                 maxW="70%"
+                fontWeight="medium"
               >
                 {f.name}
               </Text>
@@ -61,6 +63,7 @@ export default function RecentActivityPanel({ uploadedFiles }) {
                 px={3}
                 py={1}
                 rounded="full"
+                userSelect="none"
               >
                 {f.status}
               </Badge>
