@@ -1,4 +1,3 @@
-// components/UploadBox.js
 import { useCallback, useState } from "react";
 import {
   Box,
@@ -97,8 +96,9 @@ export default function UploadBox({ uploading, dropRef, onUploadSuccess }) {
       opacity={busy ? 0.6 : 1}
       p={8}
       textAlign="center"
+      boxShadow="0 8px 32px rgba(0,0,0,0.18)"
     >
-      <Flex direction="column" align="center" justify="center">
+      <Flex direction="column" align="center" justify="center" position="relative">
         {busy && (
           <Spinner
             size="lg"
