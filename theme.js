@@ -1,5 +1,10 @@
-// theme.js
-import { extendTheme } from "@chakra-ui/react";
+import { extendTheme, keyframes } from "@chakra-ui/react";
+
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
 
 const config = {
   initialColorMode: "dark",
@@ -7,16 +12,18 @@ const config = {
 };
 
 const colors = {
-  primaryBg:   "#33202E",
-  primaryTxt:  "#FBD3E0",
+  primaryBg: "#33202E",
+  primaryTxt: "#FBD3E0",
   secondaryBg: "#44303D",
-  accent:      "#F4A9A8",
-  accentAlt:   "#C1D7C3",
-  border:      "rgba(255,255,255,0.2)",
-  shadow:      "rgba(0,0,0,0.5)",
-  neonPink:    "#FF488E",
-  neonCyan:    "#48FFE6",
-  neonYellow:  "#FFC948",
+  accent: "#F4A9A8",
+  accentAlt: "#C1D7C3",
+  border: "rgba(255,255,255,0.2)",
+  shadow: "rgba(0,0,0,0.5)",
+  neonPink: "#FF488E",
+  neonCyan: "#48FFE6",
+  neonYellow: "#FFC948",
+  glowPink: "rgba(255, 72, 142, 0.4)",
+  glowCyan: "rgba(72, 255, 230, 0.3)",
 };
 
 const styles = {
@@ -102,6 +109,9 @@ const theme = extendTheme({
     body: "Montserrat, sans-serif",
   },
   radii: { xl: "1.5rem" },
+  keyframes: {
+    gradientShift,
+  },
 });
 
 export default theme;
