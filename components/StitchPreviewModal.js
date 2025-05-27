@@ -10,41 +10,35 @@ import {
   ModalFooter,
   Box,
   Flex,
-  Checkbox,
-  NumberInput,
-  NumberInputField,
   Text,
   Button,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
   useColorModeValue,
 } from "@chakra-ui/react";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
-export default function StitchPreviewModal({
-  pngUrl,
-  pesUrl,
-  onClose,
-  onReconvert,
-}) {
+export default function StitchPreviewModal({ pngUrl, pesUrl, onClose }) {
   const canvasRef = useRef(null);
-
-  // stitch-preview data
   const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
   const [selected, setSelected] = useState(null);
 
-  // pan & zoom state
+  // zoom and pan state
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  // background-removal controls
-  const [removeBg, setRemoveBg] = useState(false);
-  const [bgThreshold, setBgThreshold] = useState(250);
+  // opacity for stitch layer overlay
+  const [stitchOpacity, setStitchOpacity] = useState(0.7);
 
   const baseName = pesUrl?.split("/").pop()?.replace(/\.pes$/, "");
 
+  // Load stitch segments and colors
   useEffect(() => {
     if (!pesUrl) {
       setSegments([]);
@@ -59,15 +53,9 @@ export default function StitchPreviewModal({
         if (!isEqual(d.colors, colors)) setColors(d.colors);
       })
       .catch((err) => console.error("[StitchPreviewModal] fetch error:", err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pesUrl]);
 
-  useEffect(() => {
-    if (pesUrl && onReconvert) {
-      onReconvert();
-    }
-  }, [removeBg, bgThreshold, pesUrl, onReconvert]);
-
+  // Auto scale and center on segments
   useEffect(() => {
     if (!segments.length) return;
     const pts = segments.flat();
@@ -78,22 +66,43 @@ export default function StitchPreviewModal({
     const minY = Math.min(...ys),
       maxY = Math.max(...ys);
     const C = canvasRef.current;
+    if (!C) return;
     const f = Math.min(C.width / (maxX - minX), C.height / (maxY - minY)) * 0.9;
     setScale(f);
     setOffset({ x: 0, y: 0 });
     setSelected(null);
   }, [segments]);
 
+  // Draw both original image and stitches on single canvas
   useEffect(() => {
     const C = canvasRef.current;
     if (!C) return;
     const ctx = C.getContext("2d");
     ctx.clearRect(0, 0, C.width, C.height);
 
-    const drawStitches = () => {
+    // Draw original image first
+    if (pngUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = pngUrl;
+      img.onload = () => {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(img, 0, 0, C.width, C.height);
+
+        drawStitches(ctx);
+      };
+      img.onerror = () => {
+        // fallback: just draw stitches if image fails to load
+        drawStitches(ctx);
+      };
+    } else {
+      drawStitches(ctx);
+    }
+
+    function drawStitches(ctx) {
       if (!segments.length) return;
       ctx.save();
-      ctx.globalAlpha = 0.8;
+      ctx.globalAlpha = stitchOpacity;
       const pts = segments.flat();
       const xs = pts.map((p) => p[0]),
         ys = pts.map((p) => p[1]);
@@ -101,6 +110,7 @@ export default function StitchPreviewModal({
         maxX = Math.max(...xs);
       const minY = Math.min(...ys),
         maxY = Math.max(...ys);
+
       ctx.translate(C.width / 2, C.height / 2);
       ctx.scale(scale, -scale);
       ctx.translate(-(minX + maxX) / 2, -(minY + maxY) / 2);
@@ -118,21 +128,10 @@ export default function StitchPreviewModal({
 
       ctx.restore();
       ctx.globalAlpha = 1;
-    };
-
-    if (pngUrl) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = pngUrl;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, C.width, C.height);
-        drawStitches();
-      };
-    } else {
-      drawStitches();
     }
-  }, [pngUrl, segments, colors, scale, offset, selected]);
+  }, [pngUrl, segments, colors, scale, offset, selected, stitchOpacity]);
 
+  // Interaction handlers
   const onWheel = (e) => {
     e.preventDefault();
     setScale((s) => Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1)));
@@ -149,6 +148,7 @@ export default function StitchPreviewModal({
     dragStart.current = { x: e.clientX, y: e.clientY };
   };
   const onMouseUp = () => setDragging(false);
+
   const clickSeg = (e) => {
     const C = canvasRef.current,
       rect = C.getBoundingClientRect();
@@ -175,6 +175,7 @@ export default function StitchPreviewModal({
     setSelected(null);
   };
 
+  // Export canvas as PNG file
   const exportPNG = () => {
     const link = document.createElement("a");
     link.download = "stitch-preview.png";
@@ -203,27 +204,24 @@ export default function StitchPreviewModal({
         <ModalCloseButton color="primaryTxt" />
 
         <ModalBody>
-          <Flex align="center" mb={4} color="primaryTxt" gap={6}>
-            <Checkbox
-              isChecked={removeBg}
-              onChange={(e) => setRemoveBg(e.target.checked)}
-              colorScheme="accent"
+          {/* Opacity slider */}
+          <Flex align="center" mb={4} gap={4}>
+            <Text color="primaryTxt" whiteSpace="nowrap">
+              Stitch Overlay Opacity:
+            </Text>
+            <Slider
+              aria-label="Stitch overlay opacity"
+              defaultValue={stitchOpacity * 100}
+              min={0}
+              max={100}
+              onChange={(val) => setStitchOpacity(val / 100)}
+              flex="1"
             >
-              Strip white background
-            </Checkbox>
-            <Flex align="center" gap={2}>
-              <Text>Threshold:</Text>
-              <NumberInput
-                value={bgThreshold}
-                onChange={(_, v) => setBgThreshold(v)}
-                min={0}
-                max={255}
-                size="sm"
-                w="16"
-              >
-                <NumberInputField bg="primaryBg" color="primaryTxt" />
-              </NumberInput>
-            </Flex>
+              <SliderTrack bg="gray.600">
+                <SliderFilledTrack bg="accent" />
+              </SliderTrack>
+              <SliderThumb />
+            </Slider>
           </Flex>
 
           <Box
@@ -241,10 +239,10 @@ export default function StitchPreviewModal({
               style={{
                 width: "100%",
                 borderRadius: "4px",
-                backgroundImage:
-                  "repeating-conic-gradient(rgba(255,255,255,0.1) 0% 25%, transparent 0% 50%)",
-                backgroundSize: "16px 16px",
+                cursor: dragging ? "grabbing" : "grab",
+                userSelect: "none",
                 display: "block",
+                background: "transparent",
               }}
               onWheel={onWheel}
               onMouseDown={onMouseDown}
