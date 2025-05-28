@@ -15,40 +15,39 @@ import {
   NumberInputField,
   Text,
   Button,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
   useColorModeValue,
 } from "@chakra-ui/react";
 
 const FLASK_BASE = "https://embroideryfiles.duckdns.org";
 
-export default function StitchPreviewModal({
-  pngUrl,
-  pesUrl,
-  onClose,
-  onReconvert,
-}) {
+export default function StitchPreviewModal({ pngUrl, pesUrl, onClose, onReconvert }) {
   const canvasRef = useRef(null);
 
-  // stitch-preview data
+  // stitch preview data
   const [segments, setSegments] = useState([]);
   const [colors, setColors] = useState([]);
   const [selected, setSelected] = useState(null);
 
-  // pan & zoom state
+  // pan & zoom
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
 
-  // background-removal controls
-  const [removeBg, setRemoveBg] = useState(false);
-  const [bgThreshold, setBgThreshold] = useState(250);
+  // overlay opacity toggle
+  const [showStitches, setShowStitches] = useState(true);
+  const [stitchOpacity, setStitchOpacity] = useState(0.8);
 
   const baseName = pesUrl?.split("/").pop()?.replace(/\.pes$/, "");
 
-  // Fetch stitch data with debug logs
+  // Fetch stitch data
   useEffect(() => {
     if (!pesUrl) {
-      console.log("[StitchPreviewModal] No pesUrl provided, clearing segments/colors");
+      console.log("[StitchPreviewModal] No pesUrl provided");
       setSegments([]);
       setColors([]);
       return;
@@ -62,17 +61,9 @@ export default function StitchPreviewModal({
         if (!isEqual(d.colors, colors)) setColors(d.colors);
       })
       .catch((err) => console.error("[StitchPreviewModal] fetch error:", err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pesUrl]);
 
-  // Trigger upstream reconvert on BG removal changes
-  useEffect(() => {
-    if (pesUrl && onReconvert) {
-      onReconvert();
-    }
-  }, [removeBg, bgThreshold, pesUrl, onReconvert]);
-
-  // Auto-fit scale and reset offset when segments change
+  // Auto-fit canvas on segments change
   useEffect(() => {
     if (!segments.length) {
       console.log("[StitchPreviewModal] No segments to fit");
@@ -87,35 +78,46 @@ export default function StitchPreviewModal({
       maxY = Math.max(...ys);
     const C = canvasRef.current;
     if (!C) {
-      console.warn("[StitchPreviewModal] Canvas ref not available");
+      console.warn("[StitchPreviewModal] Canvas not found");
       return;
     }
-    const f = Math.min(C.width / (maxX - minX), C.height / (maxY - minY)) * 0.9;
-    console.log("[StitchPreviewModal] Setting scale to", f);
-    setScale(f);
+    const fitScale = Math.min(C.width / (maxX - minX), C.height / (maxY - minY)) * 0.9;
+    console.log("[StitchPreviewModal] Setting scale to", fitScale);
+    setScale(fitScale);
     setOffset({ x: 0, y: 0 });
     setSelected(null);
   }, [segments]);
 
-  // Draw stitches and original image on canvas with debug logs and temp fixes
+  // Draw canvas with original and stitches overlay
   useEffect(() => {
     const C = canvasRef.current;
-    if (!C) {
-      console.warn("[StitchPreviewModal] Canvas ref not available for drawing");
-      return;
-    }
+    if (!C) return;
     const ctx = C.getContext("2d");
     ctx.clearRect(0, 0, C.width, C.height);
 
-    const drawStitches = () => {
-      if (!segments.length) {
-        console.log("[StitchPreviewModal] No segments to draw");
-        return;
-      }
-      console.log("[StitchPreviewModal] Drawing stitches, segments count:", segments.length);
-      ctx.save();
-      ctx.globalAlpha = 0.8;  // Adjust opacity here if needed
+    // Draw original image
+    const drawOriginal = () => {
+      if (!pngUrl) return Promise.resolve();
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = pngUrl;
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, C.width, C.height);
+          resolve();
+        };
+        img.onerror = (e) => {
+          console.error("[StitchPreviewModal] Error loading PNG", e);
+          resolve();
+        };
+      });
+    };
 
+    // Draw stitch overlay
+    const drawStitches = () => {
+      if (!showStitches || !segments.length) return;
+      ctx.save();
+      ctx.globalAlpha = stitchOpacity;
       const pts = segments.flat();
       const xs = pts.map((p) => p[0]),
         ys = pts.map((p) => p[1]);
@@ -131,38 +133,18 @@ export default function StitchPreviewModal({
 
       segments.forEach((seg, i) => {
         ctx.beginPath();
-        // Temp: fixed stroke colors for debugging
-        ctx.strokeStyle = selected === i ? "#FF0000" : "#00FF00"; // red selected, green normal
+        ctx.strokeStyle = selected === i ? "#FF0000" : colors[i] || "#00FF00";
         ctx.lineWidth = selected === i ? 3 : 1.5;
-        seg.forEach(([x, y], idx) =>
-          idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-        );
+        seg.forEach(([x, y], idx) => (idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
         ctx.stroke();
       });
-
       ctx.restore();
-      ctx.globalAlpha = 1;
     };
 
-    if (pngUrl) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = pngUrl;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, C.width, C.height);
-        drawStitches();
-      };
-      img.onerror = (e) => {
-        console.error("[StitchPreviewModal] Error loading PNG image", e);
-        drawStitches(); // fallback to just stitches if PNG fails
-      };
-    } else {
-      drawStitches();
-    }
-  }, [pngUrl, segments, colors, scale, offset, selected]);
+    drawOriginal().then(drawStitches);
+  }, [pngUrl, segments, colors, scale, offset, selected, showStitches, stitchOpacity]);
 
-  // Interaction handlers...
-
+  // Interaction handlers (zoom, pan, select)
   const onWheel = (e) => {
     e.preventDefault();
     setScale((s) => Math.max(0.1, s * (e.deltaY > 0 ? 0.9 : 1.1)));
@@ -205,6 +187,7 @@ export default function StitchPreviewModal({
     setSelected(null);
   };
 
+  // Export PNG
   const exportPNG = () => {
     const link = document.createElement("a");
     link.download = "stitch-preview.png";
@@ -235,24 +218,27 @@ export default function StitchPreviewModal({
         <ModalBody>
           <Flex align="center" mb={4} color="primaryTxt" gap={6}>
             <Checkbox
-              isChecked={removeBg}
-              onChange={(e) => setRemoveBg(e.target.checked)}
+              isChecked={showStitches}
+              onChange={(e) => setShowStitches(e.target.checked)}
               colorScheme="accent"
             >
-              Strip white background
+              Show Stitch Overlay
             </Checkbox>
-            <Flex align="center" gap={2}>
-              <Text>Threshold:</Text>
-              <NumberInput
-                value={bgThreshold}
-                onChange={(_, v) => setBgThreshold(v)}
+            <Flex align="center" gap={2} w="200px">
+              <Text flexShrink={0}>Overlay Opacity:</Text>
+              <Slider
+                aria-label="stitch-opacity-slider"
+                value={stitchOpacity}
                 min={0}
-                max={255}
-                size="sm"
-                w="16"
+                max={1}
+                step={0.05}
+                onChange={(v) => setStitchOpacity(v)}
               >
-                <NumberInputField bg="primaryBg" color="primaryTxt" />
-              </NumberInput>
+                <SliderTrack bg="gray.600">
+                  <SliderFilledTrack bg="accent" />
+                </SliderTrack>
+                <SliderThumb />
+              </Slider>
             </Flex>
           </Flex>
 
