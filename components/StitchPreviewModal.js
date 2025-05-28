@@ -63,7 +63,7 @@ export default function StitchPreviewModal({ pngUrl, pesUrl, onClose, onReconver
       .catch((err) => console.error("[StitchPreviewModal] fetch error:", err));
   }, [pesUrl]);
 
-  // Auto-fit canvas on segments change
+  // Auto-fit canvas on segments change with improved scale clamping and debug logs
   useEffect(() => {
     if (!segments.length) {
       console.log("[StitchPreviewModal] No segments to fit");
@@ -81,8 +81,25 @@ export default function StitchPreviewModal({ pngUrl, pesUrl, onClose, onReconver
       console.warn("[StitchPreviewModal] Canvas not found");
       return;
     }
-    const fitScale = Math.min(C.width / (maxX - minX), C.height / (maxY - minY)) * 0.9;
-    console.log("[StitchPreviewModal] Setting scale to", fitScale);
+    const rangeX = maxX - minX;
+    const rangeY = maxY - minY;
+
+    if (rangeX < 1e-6 || rangeY < 1e-6) {
+      console.warn("[StitchPreviewModal] Invalid or zero range, skipping scale calculation.");
+      setScale(1);
+      setOffset({ x: 0, y: 0 });
+      setSelected(null);
+      return;
+    }
+
+    const rawScale = Math.min(C.width / rangeX, C.height / rangeY) * 0.9;
+    const minScale = 0.01; // Prevent scale from being too small
+    const fitScale = Math.max(rawScale, minScale);
+
+    console.log("[StitchPreviewModal] minX,maxX:", minX, maxX, "rangeX:", rangeX);
+    console.log("[StitchPreviewModal] minY,maxY:", minY, maxY, "rangeY:", rangeY);
+    console.log("[StitchPreviewModal] rawScale:", rawScale, "clamped fitScale:", fitScale);
+
     setScale(fitScale);
     setOffset({ x: 0, y: 0 });
     setSelected(null);
